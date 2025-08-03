@@ -1,0 +1,13 @@
+{
+  "name": "Validator Test",
+  "steps": [
+    {
+      "action": "send",
+      "message": "S2F41"
+    },
+    {
+      "action": "expect",
+      "message": "S2F42"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Test Message Validation",
+  "steps": [
+    {
+      "action": "send",
+      "message": "S2F41"
+    }
+  ]
+}

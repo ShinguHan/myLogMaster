@@ -4,11 +4,18 @@
   "S1F17": { "name": "Request ON-LINE", "stream": 1, "function": 17, "body_definition": [] },
   "S1F18": { "name": "ON-LINE Acknowledgment", "stream": 1, "function": 18, "body_definition": [{ "name": "ONLACK", "format": "U1", "value": 0 }] },
   "S2F41": {
-    "name": "Host Command Send",
+    "name": "Host Command Send (with params)",
     "stream": 2,
     "function": 41,
     "body_definition": [
-      { "name": "RCMD", "format": "A", "value": "START" }
+      {
+        "name": "RCMD_WITH_PARAMS",
+        "format": "L",
+        "value": [
+          { "name": "RCMD", "format": "A", "value": "START" },
+          { "name": "PARAM", "format": "A", "value": "P1" }
+        ]
+      }
     ]
   },
   "S2F42": {
@@ -16,7 +23,10 @@
     "stream": 2,
     "function": 42,
     "body_definition": [
-      { "name": "HCACK", "format": "U1", "value": 0 }
+      { "name": "HCACK_GROUP", "format": "L", "value": [
+          { "name": "HCACK", "format": "U1", "value": 0 },
+          { "name": "ERR_TEXT", "format": "A", "value": "OK" }
+      ]}
     ]
   }
 }
