@@ -1,0 +1,3 @@
+2025-08-04 09:05:20, S1F13, Host -> Equip, "Establish Comm Request"
+2025-08-04 09:05:25, S1F13, Host -> Equip, "Establish Comm Request (Retry)"
+2025-08-04 09:05:30, S9F9, Equip -> Host, "Transaction Timer Timeout"
