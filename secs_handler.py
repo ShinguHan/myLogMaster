@@ -2,7 +2,7 @@ import socket
 import struct
 import threading
 import json
-import time # Added for duration calculation
+import time
 from PySide6.QtCore import QObject, Signal
 from types import SimpleNamespace
 
@@ -31,62 +31,57 @@ class EquipmentHandler(QObject):
 
 class ScenarioExecutor(QObject):
     log_signal = Signal(str)
-    scenario_finished = Signal(dict) # NEW: Signal to emit the final report
-
+    scenario_finished = Signal(dict)
     def __init__(self, factory, scenario_data):
-        super().__init__()
-        self.factory = factory
-        self.scenario = scenario_data
-        self.context = {}
+        super().__init__(); self.factory = factory; self.scenario = scenario_data; self.context = {}
         self.report = {"name": scenario_data.get('name'), "result": "Pass", "duration": 0, "steps": []}
-
-    def start(self):
-        thread = threading.Thread(target=self.run)
-        thread.daemon = True
-        thread.start()
-
+    def start(self): thread = threading.Thread(target=self.run); thread.daemon = True; thread.start()
+    def _parse_body_recursive(self, body_io):
+        items = []; format_code = body_io.read(1)
+        if not format_code: return items
+        length_byte = struct.unpack('>B', body_io.read(1))[0]
+        if format_code == b'\x01': items.append(SimpleNamespace(type='L', value=[item for _ in range(length_byte) for item in self._parse_body_recursive(body_io)]))
+        elif format_code == b'\x21': items.append(SimpleNamespace(type='U1', value=struct.unpack('>B', body_io.read(length_byte))[0]))
+        elif format_code == b'\x41': items.append(SimpleNamespace(type='A', value=body_io.read(length_byte).decode('ascii')))
+        return items
+    def _parse_body(self, body_bytes): return self._parse_body_recursive(__import__('io').BytesIO(body_bytes))
     def run(self):
         self.log_signal.emit(f"Executing Scenario: {self.report['name']}")
         start_time = time.time()
-        
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.connect(('127.0.0.1', 5000))
-                self.log_signal.emit("Host connected.")
+                s.connect(('127.0.0.1', 5000)); self.log_signal.emit("Host connected.")
                 self._execute_steps(self.scenario['steps'], s)
             except Exception as e:
-                self.log_signal.emit(f"[ERROR] Scenario failed: {e}")
-                self.report['result'] = "Fail"
-        
+                self.log_signal.emit(f"[ERROR] Scenario failed: {e}"); self.report['result'] = "Fail"
         self.report['duration'] = f"{time.time() - start_time:.2f} seconds"
-        self.log_signal.emit("Scenario finished.")
-        self.scenario_finished.emit(self.report) # Emit the final report
+        self.log_signal.emit("Scenario finished."); self.scenario_finished.emit(self.report)
 
     def _execute_steps(self, steps, sock):
         for step in steps:
-            action = step['action']
-            step_result = "Pass"
-            
+            action = step['action']; step_result = "Pass"
             try:
                 if action == 'send':
-                    sock.sendall(self.factory.create(step['message']))
+                    # Pass context and params to the factory
+                    params = step.get('params', {})
+                    msg = self.factory.create(step['message'], context=self.context, params=params)
+                    sock.sendall(msg)
                     self.log_signal.emit(f"SENT | {step['message']}")
                 elif action == 'expect':
-                    raw_len = sock.recv(4); msg_len, = struct.unpack('>I', raw_len)
-                    header, body = sock.recv(10), sock.recv(msg_len)
-                    s, f = header[2] & 0x7F, header[3]
-                    received_msg = f"S{s}F{f}"
-                    self.log_signal.emit(f"RECV | {received_msg}")
-                    if received_msg != step['message']:
-                        step_result = f"Fail: Expected {step['message']}, got {received_msg}"
+                    raw_len = sock.recv(4); msg_len, = struct.unpack('>I', raw_len); header, body = sock.recv(10), sock.recv(msg_len)
+                    s, f = header[2] & 0x7F, header[3]; received_msg = f"S{s}F{f}"; self.log_signal.emit(f"RECV | {received_msg}")
+                    if received_msg != step['message']: step_result = f"Fail: Expected {step['message']}, got {received_msg}"
+                    if 'save_to_context' in step:
+                        parsed_body = self._parse_body(body)
+                        key = step['save_to_context']['key']; path = step['save_to_context']['path']
+                        self.context[key] = eval(path, {"body": parsed_body})
+                        self.log_signal.emit(f"Saved to context: {key} = {self.context[key]}")
                 # Other actions...
+                elif action == 'log': self.log_signal.emit(f"[SCENARIO LOG] {step['message']}")
                 
-                if step_result != "Pass":
-                    self.report['result'] = "Fail"
+                if step_result != "Pass": self.report['result'] = "Fail"
                 self.report['steps'].append(f"- {action.upper()} {step.get('message', '')}: {step_result}")
                 if self.report['result'] == "Fail": raise Exception("Step failed")
-
             except Exception as e:
-                self.report['result'] = "Fail"
-                self.report['steps'].append(f"- {action.upper()} {step.get('message', '')}: Fail ({e})")
-                raise # Stop execution on failure
+                self.report['result'] = "Fail"; self.report['steps'].append(f"- {action.upper()} {step.get('message', '')}: Fail ({e})")
+                raise
