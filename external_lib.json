@@ -1,0 +1,18 @@
+{
+  "S5F1": {
+    "name": "Alarm Report Send",
+    "stream": 5,
+    "function": 1,
+    "body_definition": [
+      { "name": "ALID", "format": "U1", "value": 100 }
+    ]
+  },
+  "S5F2": {
+    "name": "Alarm Report Acknowledge",
+    "stream": 5,
+    "function": 2,
+    "body_definition": [
+      { "name": "ACKC5", "format": "U1", "value": 0 }
+    ]
+  }
+}

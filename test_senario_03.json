@@ -1,0 +1,43 @@
+{
+  "name": "Conditional Go Online",
+  "steps": [
+    {
+      "action": "send",
+      "message": "S1F13"
+    },
+    {
+      "action": "expect",
+      "message": "S1F14",
+      "save_to_context": {
+        "comm_ack": "body[0].value"
+      }
+    },
+    {
+      "action": "if",
+      "condition": "context['comm_ack'] == 0",
+      "then": [
+        {
+          "action": "log",
+          "message": "Handshake successful. Proceeding to go ON-LINE."
+        },
+        {
+          "action": "send",
+          "message": "S1F17"
+        },
+        {
+          "action": "expect",
+          "message": "S1F18"
+        }
+      ],
+      "else": [
+        {
+          "action": "log",
+          "message": "Handshake FAILED. Aborting scenario."
+        },
+        {
+          "action": "abort"
+        }
+      ]
+    }
+  ]
+}

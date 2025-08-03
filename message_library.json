@@ -1,0 +1,22 @@
+{
+  "S1F13": { "name": "Establish Communication Request", "stream": 1, "function": 13, "body_definition": [] },
+  "S1F14": { "name": "Establish Communication Acknowledgment", "stream": 1, "function": 14, "body_definition": [{ "name": "COMMACK", "format": "U1", "value": 0 }] },
+  "S1F17": { "name": "Request ON-LINE", "stream": 1, "function": 17, "body_definition": [] },
+  "S1F18": { "name": "ON-LINE Acknowledgment", "stream": 1, "function": 18, "body_definition": [{ "name": "ONLACK", "format": "U1", "value": 0 }] },
+  "S2F41": {
+    "name": "Host Command Send",
+    "stream": 2,
+    "function": 41,
+    "body_definition": [
+      { "name": "RCMD", "format": "A", "value": "START" }
+    ]
+  },
+  "S2F42": {
+    "name": "Host Command Acknowledge",
+    "stream": 2,
+    "function": 42,
+    "body_definition": [
+      { "name": "HCACK", "format": "U1", "value": 0 }
+    ]
+  }
+}
