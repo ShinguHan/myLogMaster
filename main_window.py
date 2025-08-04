@@ -1,13 +1,24 @@
 import json
 from PySide6.QtWidgets import (QMainWindow, QTextEdit, QVBoxLayout, QHBoxLayout, QWidget,
                                QPushButton, QFileDialog, QListWidget, QSplitter,
-                               QFormLayout, QComboBox, QSpinBox, QDialog, QDialogButtonBox, QLabel, QLineEdit)
+                               QFormLayout, QComboBox, QSpinBox, QDialog, QDialogButtonBox, QLabel,
+                               QAbstractItemView, QLineEdit, QListWidgetItem) # FIX: Added QListWidgetItem
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt
 
 from message_factory import MessageFactory
 from secs_handler import EquipmentHandler, ScenarioExecutor
-from report_dialog import ReportDialog # Import the new dialog
+from report_dialog import ReportDialog
+
+# This custom widget handles the drag-and-drop logic.
+class DraggableListWidget(QListWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setDragDropMode(QAbstractItemView.InternalMove)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+
+    # The dropEvent is automatically handled by Qt to reorder items visually.
+    # We will connect to its model's rowsMoved signal to sync our data.
 
 class AddStepDialog(QDialog):
     def __init__(self, parent=None):
@@ -29,7 +40,7 @@ class AddStepDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SECS/GEM Simulator v1.6.0")
+        self.setWindowTitle("SECS/GEM Simulator v1.7.2")
         self.setGeometry(100, 100, 1000, 700)
         self.factory = MessageFactory()
         self.scenario_data = {'name': 'New Scenario', 'steps': []}
@@ -48,19 +59,15 @@ class MainWindow(QMainWindow):
         save_action = QAction("&Save Scenario", self)
         save_action.triggered.connect(self.save_scenario)
         file_menu.addAction(save_action)
-        
-        file_menu.addSeparator()
-        
-        import_action = QAction("&Import External Library...", self)
-        import_action.triggered.connect(self.import_library)
-        file_menu.addAction(import_action)
 
-        self.steps_list_widget = QListWidget()
+        # Use our new DraggableListWidget
+        self.steps_list_widget = DraggableListWidget(self)
         self.steps_list_widget.currentItemChanged.connect(self.populate_step_editor)
+        # Connect the signal that fires *after* a drag-drop is complete
+        self.steps_list_widget.model().rowsMoved.connect(self.on_steps_reordered)
 
         add_step_btn = QPushButton("Add Step")
         add_step_btn.clicked.connect(self.add_step)
-
         remove_step_btn = QPushButton("Remove Step")
         remove_step_btn.clicked.connect(self.remove_step)
 
@@ -70,46 +77,93 @@ class MainWindow(QMainWindow):
         editor_layout.addWidget(self.steps_list_widget)
         editor_widget = QWidget()
         editor_widget.setLayout(editor_layout)
-
+        
         self.step_editor_widget = QWidget()
         self.step_editor_layout = QFormLayout(self.step_editor_widget)
-
+        
         self.log_area = QTextEdit()
         self.log_area.setReadOnly(True)
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Filter logs...")
         self.filter_input.textChanged.connect(self.filter_logs)
-
+        
         log_layout = QVBoxLayout()
         log_layout.addWidget(self.filter_input)
         log_layout.addWidget(self.log_area)
         log_widget = QWidget()
         log_widget.setLayout(log_layout)
-
+        
         self.btn_start_equip = QPushButton("Start Equipment")
         self.btn_start_equip.clicked.connect(self.start_equipment)
         self.btn_run_scenario = QPushButton("Run Current Scenario")
         self.btn_run_scenario.clicked.connect(self.run_scenario)
-
+        
         main_controls_layout = QHBoxLayout()
         main_controls_layout.addWidget(self.btn_start_equip)
         main_controls_layout.addWidget(self.btn_run_scenario)
-
+        
         left_pane = QSplitter(Qt.Orientation.Vertical)
         left_pane.addWidget(editor_widget)
         left_pane.addWidget(self.step_editor_widget)
-
+        
         main_splitter = QSplitter(Qt.Orientation.Horizontal)
         main_splitter.addWidget(left_pane)
         main_splitter.addWidget(log_widget)
         main_splitter.setSizes([400, 600])
-
+        
         central_layout = QVBoxLayout()
         central_layout.addLayout(main_controls_layout)
         central_layout.addWidget(main_splitter)
         central_widget = QWidget()
         central_widget.setLayout(central_layout)
         self.setCentralWidget(central_widget)
+
+    def on_steps_reordered(self):
+        """Callback to re-sync the data model after a drag-and-drop."""
+        # Create a temporary list based on the new visual order
+        new_order_data = [self.steps_list_widget.item(i).data(Qt.UserRole) for i in range(self.steps_list_widget.count())]
+        self.scenario_data['steps'] = new_order_data
+        self.refresh_steps_list()
+        self.log_message("UI_UPDATE | Scenario steps reordered.")
+
+    def refresh_steps_list(self):
+        self.steps_list_widget.model().rowsMoved.disconnect(self.on_steps_reordered)
+        self.steps_list_widget.currentItemChanged.disconnect(self.populate_step_editor)
+        
+        self.steps_list_widget.clear()
+        for i, step in enumerate(self.scenario_data['steps']):
+            action = step.get('action', 'N/A').upper()
+            details = ""
+            if action in ["SEND", "EXPECT"]:
+                details = step.get('message', '')
+            
+            # FIX: Used the correct QListWidgetItem constructor
+            item = QListWidgetItem(f"{i+1}: {action} - {details}")
+            # Store the actual step dictionary as data in the item
+            item.setData(Qt.UserRole, step)
+            self.steps_list_widget.addItem(item)
+        
+        self.steps_list_widget.model().rowsMoved.connect(self.on_steps_reordered)
+        self.steps_list_widget.currentItemChanged.connect(self.populate_step_editor)
+
+    def add_step(self):
+        dialog = AddStepDialog(self)
+        if dialog.exec():
+            action = dialog.get_selected_action()
+            new_step = {"action": action}
+            if action in ["send", "expect"]:
+                new_step["message"] = "S1F13"
+            else:
+                new_step.update({"seconds": 1})
+            self.scenario_data['steps'].append(new_step)
+            self.refresh_steps_list()
+            self.steps_list_widget.setCurrentRow(len(self.scenario_data['steps']) - 1)
+
+    def remove_step(self):
+        current_row = self.steps_list_widget.currentRow()
+        if current_row > -1:
+            del self.scenario_data['steps'][current_row]
+            self.refresh_steps_list()
 
     def populate_step_editor(self, current, previous):
         while self.step_editor_layout.rowCount() > 0:
@@ -146,7 +200,6 @@ class MainWindow(QMainWindow):
             seconds_spin.blockSignals(False)
             seconds_spin.valueChanged.connect(lambda val, r=row, k='seconds': self.update_step_data(r, k, val))
             self.step_editor_layout.addRow("Seconds:", seconds_spin)
-        # Add editors for other action types (if, loop, call, log) as needed
 
     def update_step_data(self, row, key, value):
         if row < len(self.scenario_data['steps']):
@@ -166,33 +219,6 @@ class MainWindow(QMainWindow):
         if action in ["SEND", "EXPECT"]:
             details = step.get('message', '')
         item.setText(f"{row+1}: {action} - {details}")
-
-    def add_step(self):
-        dialog = AddStepDialog(self)
-        if dialog.exec():
-            action = dialog.get_selected_action()
-            new_step = {"action": action}
-            if action in ["send", "expect"]:
-                new_step["message"] = "S1F13"
-            else:
-                new_step.update({"seconds": 1}) # Default for delay, can be adapted
-            self.scenario_data['steps'].append(new_step)
-            self.refresh_steps_list()
-            self.steps_list_widget.setCurrentRow(len(self.scenario_data['steps']) - 1)
-
-    def refresh_steps_list(self):
-        self.steps_list_widget.clear()
-        for i, step in enumerate(self.scenario_data['steps']):
-            action = step.get('action', 'N/A').upper()
-            details = ""
-            if action in ["SEND", "EXPECT"]:
-                details = step.get('message', '')
-            self.steps_list_widget.addItem(f"{i+1}: {action} - {details}")
-
-    def remove_step(self):
-        if (current_row := self.steps_list_widget.currentRow()) > -1:
-            del self.scenario_data['steps'][current_row]
-            self.refresh_steps_list()
 
     def start_equipment(self):
         handler = EquipmentHandler(self.factory)
