@@ -1,54 +1,76 @@
 import csv
 import json
 from datetime import datetime
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit, QFileDialog, QListWidget
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit, QFileDialog, QListWidget, QLabel
 from types import SimpleNamespace
 
 class AnalysisWindow(QWidget):
     def __init__(self, factory):
         super().__init__()
-        self.setWindowTitle("SECS/GEM Simulator - Analysis Mode v2.2.0")
+        self.setWindowTitle("SECS/GEM Simulator - Analysis Mode v2.3.0")
         self.factory = factory
-        self.parsed_log = []
+        self.parsed_secs_log = []
+        self.parsed_json_log = []
         self.analysis_scenario = []
         self._setup_ui()
 
     def _setup_ui(self):
-        self.log_display = QTextEdit(); self.log_display.setReadOnly(True)
+        self.secs_log_display = QTextEdit(); self.secs_log_display.setReadOnly(True)
+        self.json_log_display = QTextEdit(); self.json_log_display.setReadOnly(True)
         self.results_display = QTextEdit(); self.results_display.setReadOnly(True)
         self.scenario_list = QListWidget()
-        load_log_btn = QPushButton("Load Log File"); load_log_btn.clicked.connect(self.load_log_file)
+
+        load_secs_btn = QPushButton("Load SECS Log (CSV)"); load_secs_btn.clicked.connect(self.load_secs_log)
+        load_json_btn = QPushButton("Load MHS Log (JSON)"); load_json_btn.clicked.connect(self.load_json_log)
         load_scenario_btn = QPushButton("Load Analysis Scenario"); load_scenario_btn.clicked.connect(self.load_analysis_scenario)
         run_analysis_btn = QPushButton("Run Analysis"); run_analysis_btn.clicked.connect(self.run_analysis)
-        top_bar = QHBoxLayout(); top_bar.addWidget(load_log_btn); top_bar.addWidget(load_scenario_btn); top_bar.addWidget(run_analysis_btn)
-        bottom_layout = QHBoxLayout(); bottom_layout.addWidget(self.scenario_list); bottom_layout.addWidget(self.results_display)
-        main_layout = QVBoxLayout(self); main_layout.addLayout(top_bar); main_layout.addWidget(self.log_display); main_layout.addLayout(bottom_layout)
 
-    def load_log_file(self):
-        filepath, _ = QFileDialog.getOpenFileName(self, "Load Log File", "", "Log Files (*.csv *.json)")
+        top_bar = QHBoxLayout(); top_bar.addWidget(load_secs_btn); top_bar.addWidget(load_json_btn); top_bar.addWidget(load_scenario_btn); top_bar.addWidget(run_analysis_btn)
+        
+        log_viewers = QHBoxLayout()
+        secs_pane = QVBoxLayout(); secs_pane.addWidget(QLabel("SECS/GEM Log")); secs_pane.addWidget(self.secs_log_display)
+        json_pane = QVBoxLayout(); json_pane.addWidget(QLabel("MHS Log")); json_pane.addWidget(self.json_log_display)
+        log_viewers.addLayout(secs_pane); log_viewers.addLayout(json_pane)
+
+        bottom_layout = QHBoxLayout(); bottom_layout.addWidget(self.scenario_list); bottom_layout.addWidget(self.results_display)
+        main_layout = QVBoxLayout(self); main_layout.addLayout(top_bar); main_layout.addLayout(log_viewers); main_layout.addLayout(bottom_layout)
+
+    def _parse_body_recursive(self, body_io):
+        items = []; format_code = body_io.read(1)
+        if not format_code: return items
+        length_byte = int.from_bytes(body_io.read(1), 'big')
+        if format_code == b'\x01': items.append(SimpleNamespace(type='L', value=[item for _ in range(length_byte) for item in self._parse_body_recursive(body_io)]))
+        elif format_code == b'\x21': items.append(SimpleNamespace(type='U1', value=int.from_bytes(body_io.read(length_byte), 'big')))
+        elif format_code == b'\x41': items.append(SimpleNamespace(type='A', value=body_io.read(length_byte).decode('ascii')))
+        return items
+
+    def load_secs_log(self):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Load SECS Log", "", "CSV Files (*.csv)")
         if filepath:
-            self.parsed_log = []
-            self.log_display.clear()
-            
+            self.parsed_secs_log = []; self.secs_log_display.clear()
+            with open(filepath, 'r', newline='') as f:
+                reader = csv.reader(f)
+                for i, row in enumerate(reader):
+                    self.secs_log_display.append(", ".join(row))
+                    try:
+                        ts = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S'); msg = row[1].strip()
+                        raw_body_hex = row[4].strip() if len(row) > 4 else ""
+                        body_obj = self._parse_body_recursive(__import__('io').BytesIO(bytes.fromhex(raw_body_hex)))
+                        self.parsed_secs_log.append({'ts': ts, 'msg': msg, 'body': body_obj})
+                    except (ValueError, IndexError): continue
+
+    def load_json_log(self):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Load MHS Log", "", "JSON Files (*.json)")
+        if filepath:
+            self.parsed_json_log = []; self.json_log_display.clear()
             with open(filepath, 'r') as f:
-                if filepath.endswith('.csv'):
-                    reader = csv.reader(f)
-                    for i, row in enumerate(reader):
-                        self.log_display.append(", ".join(row))
-                        try:
-                            ts = datetime.strptime(row[0], '%Y-%m-%d %H:%M:%S'); msg = row[1].strip()
-                            self.parsed_log.append({'type': 'secs', 'ts': ts, 'msg': msg, 'line': i})
-                        except (ValueError, IndexError): continue
-                elif filepath.endswith('.json'):
-                    log_data = json.load(f)
-                    self.log_display.setText(json.dumps(log_data, indent=2))
-                    for i, entry in enumerate(log_data):
-                        try:
-                            ts = datetime.strptime(entry['timestamp'], '%Y-%m-%d %H:%M:%S')
-                            self.parsed_log.append({'type': 'json', 'ts': ts, 'entry': entry, 'line': i})
-                        except (ValueError, KeyError): continue
-            
-            self.results_display.setText(f"Loaded and parsed {len(self.parsed_log)} log entries.")
+                log_data = json.load(f)
+                self.json_log_display.setText(json.dumps(log_data, indent=2))
+                for i, entry in enumerate(log_data):
+                    try:
+                        ts = datetime.strptime(entry['timestamp'], '%Y-%m-%d %H:%M:%S')
+                        self.parsed_json_log.append({'ts': ts, 'entry': entry})
+                    except (ValueError, KeyError): continue
 
     def load_analysis_scenario(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Load Analysis Scenario", "", "JSON Files (*.json)")
@@ -59,39 +81,33 @@ class AnalysisWindow(QWidget):
 
     def run_analysis(self):
         self.results_display.clear()
-        if not self.parsed_log or not self.analysis_scenario:
-            self.results_display.setText("Error: Load a log and a scenario first."); return
+        if not self.parsed_secs_log or not self.parsed_json_log or not self.analysis_scenario:
+            self.results_display.setText("Error: Load both logs and a scenario first."); return
 
         overall_result = "Pass"; results_summary = []
-        
         for step in self.analysis_scenario:
-            action = step['action']
-            # --- Logic for SECS/GEM rules ---
-            if action == 'expect_within_time':
-                # ... (previous timing logic is unchanged) ...
-                pass
-            # --- NEW: Logic for JSON rules ---
-            elif action == 'verify_json_value':
-                event_to_check, condition = step['event'], step['condition']
-                found_and_passed = False; found_but_failed = False
+            if step['action'] == 'correlate':
+                secs_msg, json_event = step['secs_message'], step['json_event']
+                key_path_s, key_path_j = step['key_path_secs'], step['key_path_json']
                 
-                json_entries = [log for log in self.parsed_log if log['type'] == 'json']
-                for log in json_entries:
-                    if log['entry'].get('event') == event_to_check:
+                correlation_found = False
+                for secs_entry in self.parsed_secs_log:
+                    if secs_entry['msg'] == secs_msg:
                         try:
-                            if eval(condition, {"entry": log['entry']}):
-                                results_summary.append(f"PASS: Found event '{event_to_check}' and condition '{condition}' was true.")
-                                found_and_passed = True
-                            else:
-                                found_but_failed = True
+                            secs_key = eval(key_path_s, {"body": secs_entry['body']})
+                            for json_entry in self.parsed_json_log:
+                                if json_entry['entry'].get('event') == json_event:
+                                    json_key = eval(key_path_j, {"entry": json_entry['entry']})
+                                    if secs_key == json_key:
+                                        results_summary.append(f"PASS: Found correlation for ID '{secs_key}'.")
+                                        correlation_found = True
+                                        break
+                            if correlation_found: break
                         except Exception as e:
-                            results_summary.append(f"FAIL: Error evaluating condition for '{event_to_check}': {e}")
-                            overall_result = "Fail"; found_but_failed = True
-                        break
+                            results_summary.append(f"FAIL: Error evaluating key path: {e}"); overall_result = "Fail"; break
                 
-                if found_but_failed: overall_result = "Fail"
-                elif not found_and_passed:
-                    results_summary.append(f"FAIL: Never found event '{event_to_check}' that met condition.")
+                if not correlation_found and overall_result == "Pass":
+                    results_summary.append(f"FAIL: No correlation found between '{secs_msg}' and '{json_event}'.")
                     overall_result = "Fail"
 
         self.results_display.setText(f"Overall Result: {overall_result}\n\n" + "\n".join(results_summary))
