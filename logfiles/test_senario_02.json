@@ -1,0 +1,31 @@
+{
+  "name": "Looping Status Request",
+  "steps": [
+    {
+      "action": "send",
+      "message": "S1F13"
+    },
+    {
+      "action": "expect",
+      "message": "S1F14"
+    },
+    {
+      "action": "loop",
+      "count": 3,
+      "steps": [
+        {
+          "action": "send",
+          "message": "S1F17"
+        },
+        {
+          "action": "expect",
+          "message": "S1F18"
+        },
+        {
+          "action": "delay",
+          "seconds": 1
+        }
+      ]
+    }
+  ]
+}

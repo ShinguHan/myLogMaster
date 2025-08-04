@@ -1,0 +1,25 @@
+{
+  "name": "Main Scenario with Sub-routine Call",
+  "steps": [
+    {
+      "action": "send",
+      "message": "S1F13"
+    },
+    {
+      "action": "expect",
+      "message": "S1F14"
+    },
+    {
+      "action": "call",
+      "file": "sub_scenario_01.json"
+    },
+    {
+      "action": "send",
+      "message": "S5F1"
+    },
+    {
+      "action": "expect",
+      "message": "S5F2"
+    }
+  ]
+}
