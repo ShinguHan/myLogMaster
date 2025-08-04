@@ -1,1 +1,3 @@
 *.secsproj
+*.html
+__pycache__/
