@@ -1,0 +1,10 @@
+[
+  {
+    "timestamp": "2025-08-05 10:35:15",
+    "event": "CarrierArrived",
+    "data": {
+      "CarrierID": "C222",
+      "SourcePort": "STK01"
+    }
+  }
+]

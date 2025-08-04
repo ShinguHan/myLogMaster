@@ -1,0 +1,6 @@
+2025-08-04 10:00:01, S1F13, Host -> Equip, "Establish Comm Request"
+2025-08-04 10:00:02, S1F14, Equip -> Host, "Establish Comm Ack"
+2025-08-04 10:00:03, S1F1, Host -> Equip, "Are you there Request"
+2025-08-04 10:00:04, S1F2, Equip -> Host, "On-Line Data"
+2025-08-04 10:00:05, S2F41, Host -> Equip, "Host Command Send (START)"
+2025-08-04 10:00:06, S2F42, Equip -> Host, "Host Command Ack"

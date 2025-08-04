@@ -56,3 +56,12 @@ Evolve the editor to allow visual reordering of steps.
 GUI: Multi-Connection Dashboard
 
 UI to manage and monitor multiple equipment connections.
+
+Key Recommendations (What to Add) 🚀
+Based on her analysis, Dr. Reed provided three key recommendations to elevate our tool to a professional level.
+
+Implement a Log Pre-processor & Indexer: This is her top priority. When a log file is loaded, instead of just displaying the text, we should parse the entire file once into a structured, in-memory database. This data should be indexed by message type and timestamp. All analysis rules should then query this fast, indexed data structure, not the raw text file. This will provide a massive performance boost.
+
+Develop a State Machine Engine: The analyzer should be able to track the equipment's state (Control State, Process State, etc.) as it processes the log. This would allow us to write much more powerful rules, such as "Verify that a START command is only received when the Control State is REMOTE."
+
+Add Data Value Validation: The rules engine must be upgraded to inspect the content of message bodies. A user needs to be able to write a rule like, VERIFY S6F11 (Event Report) contains a variable 'Pressure' with a value > 5.0.
