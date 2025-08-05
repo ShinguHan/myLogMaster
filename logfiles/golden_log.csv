@@ -1,0 +1,4 @@
+2025-08-07 10:00:01,S1F13,Host -> Equip,"Establish Comm Request",
+2025-08-07 10:00:02,S1F14,Equip -> Host,"Establish Comm Ack",
+2025-08-07 10:00:03,S1F17,Host -> Equip,"Request ON-LINE",
+2025-08-07 10:00:04,S1F18,Equip -> Host,"ON-LINE Ack",
