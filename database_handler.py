@@ -4,7 +4,6 @@ from datetime import datetime
 DB_FILE = "test_history.db"
 
 def initialize_database():
-    """Creates the results table if it doesn't exist."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -21,7 +20,6 @@ def initialize_database():
     conn.close()
 
 def save_test_result(report):
-    """Saves a report dictionary to the database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("""
@@ -38,10 +36,28 @@ def save_test_result(report):
     conn.close()
 
 def get_all_results():
-    """Retrieves all results from the database, newest first."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("SELECT timestamp, scenario_name, result, duration FROM results ORDER BY id DESC")
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+def get_pass_fail_ratio():
+    """Gets the count of Pass vs. Fail results."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT result, COUNT(*) FROM results GROUP BY result")
+    results = cursor.fetchall()
+    conn.close()
+    return results
+
+def get_daily_run_counts():
+    """Gets the number of test runs per day."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # The SUBSTR function extracts the YYYY-MM-DD part of the timestamp
+    cursor.execute("SELECT SUBSTR(timestamp, 1, 10), COUNT(*) FROM results GROUP BY SUBSTR(timestamp, 1, 10) ORDER BY SUBSTR(timestamp, 1, 10)")
     results = cursor.fetchall()
     conn.close()
     return results
