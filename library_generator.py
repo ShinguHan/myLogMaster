@@ -28,9 +28,8 @@ def generate_library_from_log(parsed_secs_log, device_id=""):
         # Start with the base name
         final_msg_name = f"{prefix}{msg_name}"
 
-        # FIX: Check for S2F41 and create a unique name *before* the duplicate check
+        # Handle content variations for S2F41 (RCMD)
         if msg_name == 'S2F41' and body:
-            # This logic assumes the RCMD is the first ASCII item in the body or a nested list
             rcmd = None
             if body[0].type == 'A':
                 rcmd = body[0].value
@@ -38,15 +37,26 @@ def generate_library_from_log(parsed_secs_log, device_id=""):
                  rcmd = body[0].value[0].value
             
             if rcmd:
-                # Sanitize rcmd for use in a name (e.g., remove spaces)
                 sanitized_rcmd = rcmd.replace(" ", "_")
                 final_msg_name = f"{prefix}{msg_name}_{sanitized_rcmd}"
+        
+        # NEW: Handle content variations for S6F11 (CEID)
+        elif msg_name == 'S6F11' and body:
+            ceid = None
+            # S6F11 body is typically L[CEID, L[...reports...]]
+            # We assume the CEID is the first item in the body list.
+            if body[0].type == 'L' and body[0].value:
+                ceid_item = body[0].value[0]
+                # Check for integer types like U1, U2, U4 etc.
+                if 'U' in ceid_item.type:
+                    ceid = ceid_item.value
+
+            if ceid is not None:
+                final_msg_name = f"{prefix}{msg_name}_CEID{ceid}"
 
         # Add to library only if this unique name hasn't been seen before
         if final_msg_name not in library:
             try:
-                # In a real app, we'd need a reverse lookup for stream/function
-                # For now, we'll hardcode for simplicity
                 s, f = int(msg_name[1]), int(msg_name[3:])
                 
                 library[final_msg_name] = {
@@ -66,7 +76,6 @@ def generate_schema_from_json_log(parsed_json_log):
     for log_entry in parsed_json_log:
         event_name = log_entry.get('entry', {}).get('event')
         if event_name and event_name not in schema:
-            # Create a schema by replacing values with their types
             data_schema = {}
             for key, value in log_entry.get('entry', {}).get('data', {}).items():
                 data_schema[key] = str(type(value).__name__)

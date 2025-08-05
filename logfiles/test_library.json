@@ -56,5 +56,51 @@
         ]
       }
     ]
+  },
+  "MyDevice_S6F11_CEID101": {
+    "name": "Generated MyDevice_S6F11_CEID101",
+    "stream": 6,
+    "function": 11,
+    "body_definition": [
+      {
+        "name": "Item_L",
+        "format": "L",
+        "value": [
+          {
+            "name": "Item_U1",
+            "format": "U1",
+            "value": 101
+          },
+          {
+            "name": "Item_L",
+            "format": "L",
+            "value": []
+          }
+        ]
+      }
+    ]
+  },
+  "MyDevice_S6F11_CEID102": {
+    "name": "Generated MyDevice_S6F11_CEID102",
+    "stream": 6,
+    "function": 11,
+    "body_definition": [
+      {
+        "name": "Item_L",
+        "format": "L",
+        "value": [
+          {
+            "name": "Item_U1",
+            "format": "U1",
+            "value": 102
+          },
+          {
+            "name": "Item_L",
+            "format": "L",
+            "value": []
+          }
+        ]
+      }
+    ]
   }
 }
