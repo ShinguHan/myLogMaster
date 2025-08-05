@@ -1,0 +1,4 @@
+2025-08-06 14:00:01,S2F15,Host -> Equip,"New PPID Request",
+2025-08-06 14:00:02,S2F16,Equip -> Host,"New PPID Ack",
+2025-08-06 14:00:03,S6F11,Equip -> Host,"Event Report (State Change to PROCESSING)",
+2025-08-06 14:00:04,S3F17,Host -> Equip,"Carrier Action Request",0102410443313031210101

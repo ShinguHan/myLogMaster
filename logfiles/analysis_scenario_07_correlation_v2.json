@@ -1,0 +1,19 @@
+[
+  {
+    "action": "correlate",
+    "secs_message": "S3F17",
+    "json_event": "CarrierProcessStarted",
+    "key_path_secs": "body[0].value[0].value",
+    "key_path_json": "entry['data']['CarrierID']",
+    "verifications": [
+      {
+        "check": "timing",
+        "max_seconds": 2
+      },
+      {
+        "check": "state",
+        "expected_state": "PROCESSING"
+      }
+    ]
+  }
+]
