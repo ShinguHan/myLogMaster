@@ -1,0 +1,60 @@
+{
+  "MyDevice_S2F41_MOVE": {
+    "name": "Generated MyDevice_S2F41_MOVE",
+    "stream": 2,
+    "function": 41,
+    "body_definition": [
+      {
+        "name": "Item_L",
+        "format": "L",
+        "value": [
+          {
+            "name": "Item_A",
+            "format": "A",
+            "value": "MOVE"
+          },
+          {
+            "name": "Item_A",
+            "format": "A",
+            "value": "P101"
+          }
+        ]
+      }
+    ]
+  },
+  "MyDevice_S2F42": {
+    "name": "Generated MyDevice_S2F42",
+    "stream": 2,
+    "function": 42,
+    "body_definition": [
+      {
+        "name": "Item_U1",
+        "format": "U1",
+        "value": 0
+      }
+    ]
+  },
+  "MyDevice_S2F41_ALIGN": {
+    "name": "Generated MyDevice_S2F41_ALIGN",
+    "stream": 2,
+    "function": 41,
+    "body_definition": [
+      {
+        "name": "Item_L",
+        "format": "L",
+        "value": [
+          {
+            "name": "Item_A",
+            "format": "A",
+            "value": "ALIGN"
+          },
+          {
+            "name": "Item_A",
+            "format": "A",
+            "value": "P102"
+          }
+        ]
+      }
+    ]
+  }
+}
