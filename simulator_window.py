@@ -3,8 +3,8 @@ from PySide6.QtWidgets import (QMainWindow, QTextEdit, QVBoxLayout, QHBoxLayout,
                                QPushButton, QFileDialog, QListWidget, QSplitter,
                                QFormLayout, QComboBox, QSpinBox, QDialog, QDialogButtonBox, QLabel,
                                QAbstractItemView, QLineEdit, QListWidgetItem, QTreeWidget, QTreeWidgetItem)
-from PySide6.QtGui import QAction
-from PySide6.QtCore import Qt, QTimer # Added QTimer for the fix
+from PySide6.QtGui import QAction, QColor
+from PySide6.QtCore import Qt, QTimer
 
 from message_factory import MessageFactory
 from secs_handler import EquipmentHandler, ScenarioExecutor
@@ -90,166 +90,130 @@ class SimulatorWindow(QMainWindow):
         central_layout = QVBoxLayout(); central_layout.addLayout(main_controls_layout); central_layout.addWidget(main_splitter)
         central_widget = QWidget(); central_widget.setLayout(central_layout); self.setCentralWidget(central_widget)
 
-    def populate_step_editor(self, current, previous):
-        while self.step_action_form.rowCount() > 0: self.step_action_form.removeRow(0)
-        self.message_body_tree.clear()
-
-        row = self.steps_list_widget.currentRow()
-        if row == -1 or not current: return
+    def log_message(self, level, message):
+        timestamp = __import__('time').strftime('%H:%M:%S')
         
-        step_data = self.scenario_data['steps'][row]
-        action = step_data.get('action')
+        color_map = {
+            "SENT": "#007acc", "RECV": "#2a9d8f", "ERROR": "#e63946",
+            "UI_UPDATE": "#8d99ae", "SCENARIO": "#e9c46a", "INFO": "#577590"
+        }
+        color = color_map.get(level, "#333333")
 
-        action_combo = QComboBox(); action_combo.addItems(["send", "expect", "if", "loop", "delay", "call", "log"])
-        action_combo.blockSignals(True); action_combo.setCurrentText(action); action_combo.blockSignals(False)
-        action_combo.currentTextChanged.connect(lambda text, r=row, k='action': self.update_step_data(r, k, text))
-        self.step_action_form.addRow("Action:", action_combo)
+        full_log_line = f"[{timestamp}] | {level} | {message}"
+        html_log_line = f'<span style="color: {color};">{full_log_line}</span>'
+        
+        self.all_logs.append(full_log_line)
+        
+        filter_text = self.filter_input.text()
+        if not filter_text or filter_text.lower() in full_log_line.lower():
+            self.log_area.append(html_log_line)
 
-        if action in ['send', 'expect']:
-            msg_name = step_data.get('message')
-            msg_combo = QComboBox(); msg_combo.addItems(self.factory.message_names)
-            msg_combo.blockSignals(True); msg_combo.setCurrentText(msg_name); msg_combo.blockSignals(False)
-            msg_combo.currentTextChanged.connect(lambda text, r=row, k='message': self.update_step_data(r, k, text))
-            self.step_action_form.addRow("Message:", msg_combo)
-            
-            if msg_name in self.factory.library:
-                msg_spec = self.factory.library[msg_name]
-                body_def = msg_spec.get('body_definition', [])
-                self.build_body_tree(self.message_body_tree, body_def)
-
-    def build_body_tree(self, parent_widget, item_definitions):
-        for item_def in item_definitions:
-            tree_item = QTreeWidgetItem()
-            tree_item.setText(0, item_def.get('name', ''))
-            tree_item.setText(1, item_def.get('format', ''))
-
-            if isinstance(parent_widget, QTreeWidget):
-                parent_widget.addTopLevelItem(tree_item)
-            else:
-                parent_widget.addChild(tree_item)
-
-            item_format = item_def.get('format')
-            if item_format == 'L':
-                self.build_body_tree(tree_item, item_def.get('value', []))
-            else:
-                value = item_def.get('value', '')
-                editor = QLineEdit(str(value))
-                self.message_body_tree.setItemWidget(tree_item, 2, editor)
-    
-    def on_steps_reordered(self):
-        new_order_data = [self.steps_list_widget.item(i).data(Qt.UserRole) for i in range(self.steps_list_widget.count())]
-        self.scenario_data['steps'] = new_order_data
-        self.refresh_steps_list()
-        self.log_message("UI_UPDATE | Scenario steps reordered.")
-    
-    def refresh_steps_list(self):
-        self.steps_list_widget.model().rowsMoved.disconnect(self.on_steps_reordered)
-        self.steps_list_widget.currentItemChanged.disconnect(self.populate_step_editor)
-        self.steps_list_widget.clear()
-        for i, step in enumerate(self.scenario_data['steps']):
-            action = step.get('action', 'N/A').upper()
-            details = ""
-            if action in ["SEND", "EXPECT"]:
-                details = step.get('message', '')
-            item = QListWidgetItem(f"{i+1}: {action} - {details}")
-            item.setData(Qt.UserRole, step)
-            self.steps_list_widget.addItem(item)
-        self.steps_list_widget.model().rowsMoved.connect(self.on_steps_reordered)
-        self.steps_list_widget.currentItemChanged.connect(self.populate_step_editor)
-    
-    def add_step(self):
-        dialog = AddStepDialog(self)
-        if dialog.exec():
-            action = dialog.get_selected_action()
-            new_step = {"action": action}
-            if action in ["send", "expect"]:
-                new_step["message"] = "S1F13"
-            else:
-                new_step.update({"seconds": 1})
-            self.scenario_data['steps'].append(new_step)
-            self.refresh_steps_list()
-            self.steps_list_widget.setCurrentRow(len(self.scenario_data['steps']) - 1)
-    
-    def remove_step(self):
-        if (current_row := self.steps_list_widget.currentRow()) > -1:
-            del self.scenario_data['steps'][current_row]
-            self.refresh_steps_list()
-    
     def update_step_data(self, row, key, value):
         if row < len(self.scenario_data['steps']):
             is_major_change = key == 'action' or key == 'message'
             self.scenario_data['steps'][row][key] = value
             self.update_list_item_text(row)
-            self.log_message(f"UI_UPDATE | Step {row + 1}: Set '{key}' to '{value}'")
+            self.log_message("UI_UPDATE", f"Step {row + 1}: Set '{key}' to '{value}'")
             if is_major_change:
-                # FIX: Use a zero-delay timer to defer the refresh, preventing the crash.
                 QTimer.singleShot(0, lambda: self.populate_step_editor(self.steps_list_widget.currentItem(), None))
 
+    def populate_step_editor(self, current, previous):
+        while self.step_action_form.rowCount() > 0: self.step_action_form.removeRow(0)
+        self.message_body_tree.clear()
+        row = self.steps_list_widget.currentRow()
+        if row == -1 or not current: return
+        step_data = self.scenario_data['steps'][row]; action = step_data.get('action')
+        action_combo = QComboBox(); action_combo.addItems(["send", "expect", "if", "loop", "delay", "call", "log"])
+        action_combo.blockSignals(True); action_combo.setCurrentText(action); action_combo.blockSignals(False)
+        action_combo.currentTextChanged.connect(lambda text, r=row, k='action': self.update_step_data(r, k, text)); self.step_action_form.addRow("Action:", action_combo)
+        if action in ['send', 'expect']:
+            msg_name = step_data.get('message'); msg_combo = QComboBox(); msg_combo.addItems(self.factory.message_names)
+            msg_combo.blockSignals(True); msg_combo.setCurrentText(msg_name); msg_combo.blockSignals(False)
+            msg_combo.currentTextChanged.connect(lambda text, r=row, k='message': self.update_step_data(r, k, text)); self.step_action_form.addRow("Message:", msg_combo)
+            if msg_name in self.factory.library:
+                msg_spec = self.factory.library[msg_name]; body_def = msg_spec.get('body_definition', [])
+                self.build_body_tree(self.message_body_tree, body_def)
+    
+    def build_body_tree(self, parent_widget, item_definitions):
+        for item_def in item_definitions:
+            tree_item = QTreeWidgetItem()
+            tree_item.setText(0, item_def.get('name', '')); tree_item.setText(1, item_def.get('format', ''))
+            if isinstance(parent_widget, QTreeWidget): parent_widget.addTopLevelItem(tree_item)
+            else: parent_widget.addChild(tree_item)
+            item_format = item_def.get('format')
+            if item_format == 'L': self.build_body_tree(tree_item, item_def.get('value', []))
+            else:
+                value = item_def.get('value', ''); editor = QLineEdit(str(value))
+                self.message_body_tree.setItemWidget(tree_item, 2, editor)
+    
+    def on_steps_reordered(self):
+        new_order_data = [self.steps_list_widget.item(i).data(Qt.UserRole) for i in range(self.steps_list_widget.count())]
+        self.scenario_data['steps'] = new_order_data; self.refresh_steps_list(); self.log_message("UI_UPDATE", "Scenario steps reordered.")
+    
+    def refresh_steps_list(self):
+        self.steps_list_widget.model().rowsMoved.disconnect(self.on_steps_reordered); self.steps_list_widget.currentItemChanged.disconnect(self.populate_step_editor)
+        self.steps_list_widget.clear()
+        for i, step in enumerate(self.scenario_data['steps']):
+            action = step.get('action', 'N/A').upper(); details = ""
+            if action in ["SEND", "EXPECT"]: details = step.get('message', '')
+            item = QListWidgetItem(f"{i+1}: {action} - {details}"); item.setData(Qt.UserRole, step); self.steps_list_widget.addItem(item)
+        self.steps_list_widget.model().rowsMoved.connect(self.on_steps_reordered); self.steps_list_widget.currentItemChanged.connect(self.populate_step_editor)
+    
+    def add_step(self):
+        dialog = AddStepDialog(self)
+        if dialog.exec():
+            action = dialog.get_selected_action(); new_step = {"action": action}
+            if action in ["send", "expect"]: new_step["message"] = "S1F13"
+            else: new_step.update({"seconds": 1})
+            self.scenario_data['steps'].append(new_step); self.refresh_steps_list(); self.steps_list_widget.setCurrentRow(len(self.scenario_data['steps']) - 1)
+    
+    def remove_step(self):
+        if (current_row := self.steps_list_widget.currentRow()) > -1: del self.scenario_data['steps'][current_row]; self.refresh_steps_list()
+    
     def update_list_item_text(self, row):
         item = self.steps_list_widget.item(row)
         if not item: return
-        step = self.scenario_data['steps'][row]
-        action = step.get('action', 'N/A').upper()
-        details = ""
-        if action in ["SEND", "EXPECT"]:
-            details = step.get('message', '')
+        step = self.scenario_data['steps'][row]; action = step.get('action', 'N/A').upper(); details = ""
+        if action in ["SEND", "EXPECT"]: details = step.get('message', '')
         item.setText(f"{row+1}: {action} - {details}")
     
     def start_equipment(self):
-        handler = EquipmentHandler(self.factory, self.conn_details)
-        handler.log_signal.connect(self.log_message)
-        handler.start()
-        self.btn_start_equip.setEnabled(False)
+        handler = EquipmentHandler(self.factory, self.conn_details); handler.log_signal.connect(self.log_message); handler.start(); self.btn_start_equip.setEnabled(False)
     
     def run_scenario(self):
-        if not self.scenario_data['steps']:
-            self.log_message("[ERROR] Scenario has no steps.")
-            return
-        self.btn_run_scenario.setEnabled(False)
-        executor = ScenarioExecutor(self.factory, self.scenario_data, self.conn_details)
-        executor.log_signal.connect(self.log_message)
-        executor.scenario_finished.connect(self.show_report)
-        executor.start()
+        if not self.scenario_data['steps']: self.log_message("ERROR", "Scenario has no steps."); return
+        self.btn_run_scenario.setEnabled(False); executor = ScenarioExecutor(self.factory, self.scenario_data, self.conn_details)
+        executor.log_signal.connect(self.log_message); executor.scenario_finished.connect(self.show_report); executor.start()
     
     def show_report(self, report):
-        self.btn_run_scenario.setEnabled(True)
-        dialog = ReportDialog(report, self)
-        dialog.exec()
-    
-    def log_message(self, message):
-        full_log_line = f"[{__import__('time').strftime('%H:%M:%S')}] | {message}"
-        self.all_logs.append(full_log_line)
-        if not (filter_text := self.filter_input.text()) or filter_text.lower() in full_log_line.lower():
-            self.log_area.append(full_log_line)
+        self.btn_run_scenario.setEnabled(True); dialog = ReportDialog(report, self); dialog.exec()
     
     def filter_logs(self):
-        filter_text = self.filter_input.text().lower()
-        self.log_area.clear()
-        self.log_area.setPlainText("\n".join([log for log in self.all_logs if filter_text in log.lower()]))
+        filter_text = self.filter_input.text().lower(); self.log_area.clear()
+        visible_logs = [log for log in self.all_logs if filter_text in log.lower()]
+        for log_line in visible_logs:
+            parts = log_line.split(" | "); level = parts[1] if len(parts) > 1 else "INFO"
+            color_map = {"SENT": "#007acc", "RECV": "#2a9d8f", "ERROR": "#e63946", "UI_UPDATE": "#8d99ae", "SCENARIO": "#e9c46a", "INFO": "#577590"}
+            color = color_map.get(level, "#333333")
+            self.log_area.append(f'<span style="color: {color};">{log_line}</span>')
         self.log_area.verticalScrollBar().setValue(self.log_area.verticalScrollBar().maximum())
     
     def save_scenario(self, save_as=False):
         filepath = self.current_scenario_file_path
-        if save_as or not filepath:
-            filepath, _ = QFileDialog.getSaveFileName(self, "Save Scenario As...", "", "JSON Files (*.json)")
+        if save_as or not filepath: filepath, _ = QFileDialog.getSaveFileName(self, "Save Scenario As...", "", "JSON Files (*.json)")
         if filepath:
-            self.current_scenario_file_path = filepath
-            with open(filepath, 'w') as f:
-                json.dump(self.scenario_data, f, indent=2)
-            self.log_message(f"Scenario saved to {filepath}")
+            self.current_scenario_file_path = filepath;
+            with open(filepath, 'w') as f: json.dump(self.scenario_data, f, indent=2); self.log_message("UI_UPDATE", f"Scenario saved to {filepath}")
     
     def load_scenario_from_file(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Load Scenario", "", "JSON Files (*.json)")
         if filepath:
-            self.current_scenario_file_path = filepath
-            with open(filepath, 'r') as f:
-                self.scenario_data = json.load(f)
-            self.log_message(f"Scenario loaded from {filepath}")
-            self.refresh_steps_list()
+            self.current_scenario_file_path = filepath;
+            with open(filepath, 'r') as f: self.scenario_data = json.load(f)
+            self.log_message("UI_UPDATE", f"Scenario loaded from {filepath}"); self.refresh_steps_list()
     
     def import_library(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Import Library", "", "JSON Files (*.json)")
         if filepath:
-            new_messages = self.factory.add_from_file(filepath)
-            self.log_message(f"Imported {len(new_messages)} new messages.")
+            new_messages = self.factory.add_from_file(filepath); self.log_message("UI_UPDATE", f"Imported {len(new_messages)} new messages.")
             self.populate_step_editor(self.steps_list_widget.currentItem(), None)

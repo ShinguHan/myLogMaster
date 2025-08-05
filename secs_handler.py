@@ -8,8 +8,7 @@ from types import SimpleNamespace
 from validator import validate_message
 
 class EquipmentHandler(QObject):
-    log_signal = Signal(str)
-    status_signal = Signal(str) # To update dashboard
+    log_signal = Signal(str, str)  # level, message
 
     def __init__(self, factory, conn_details):
         super().__init__()
@@ -26,35 +25,37 @@ class EquipmentHandler(QObject):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind((self.conn_details['ip'], self.conn_details['port']))
                 s.listen()
-                self.log_signal.emit(f"Equipment listening on port {self.conn_details['port']}...")
+                self.log_signal.emit("INFO", f"Equipment listening on port {self.conn_details['port']}...")
                 conn, _ = s.accept()
                 with conn:
-                    self.log_signal.emit("Equipment connection established.")
+                    self.log_signal.emit("INFO", "Equipment connection established.")
                     while True:
                         raw_len = conn.recv(4)
                         if not raw_len:
-                            self.log_signal.emit("Host disconnected.")
+                            self.log_signal.emit("INFO", "Host disconnected.")
                             break
                         msg_len, = struct.unpack('>I', raw_len)
                         header, body = conn.recv(10), conn.recv(msg_len)
                         s, f = header[2] & 0x7F, header[3]
                         msg_name = f"S{s}F{f}"
-                        self.log_signal.emit(f"RECV | {msg_name}")
+                        self.log_signal.emit("RECV", msg_name)
+                        
                         reply_map = {'S1F13': 'S1F14', 'S1F17': 'S1F18', 'S2F41': 'S2F42', 'S5F1': 'S5F2'}
                         if reply_name := reply_map.get(msg_name):
                             try:
                                 reply_message = self.factory.create(reply_name)
                                 conn.sendall(reply_message)
-                                self.log_signal.emit(f"SENT | {reply_name}")
+                                self.log_signal.emit("SENT", reply_name)
                             except ValueError as e:
-                                self.log_signal.emit(f"[ERROR] Equipment failed to create reply '{reply_name}': {e}")
+                                self.log_signal.emit("ERROR", f"Equipment failed to create reply '{reply_name}': {e}")
+        except ConnectionResetError:
+            self.log_signal.emit("INFO", "Host connection closed.")
         except Exception as e:
-            self.log_signal.emit(f"[ERROR] Listener failed: {e}")
+            self.log_signal.emit("ERROR", f"Listener failed: {e}")
 
 class ScenarioExecutor(QObject):
-    log_signal = Signal(str)
+    log_signal = Signal(str, str)  # level, message
     scenario_finished = Signal(dict)
-    status_signal = Signal(str)
 
     def __init__(self, factory, scenario_data, conn_details):
         super().__init__()
@@ -71,18 +72,18 @@ class ScenarioExecutor(QObject):
 
     def run(self):
         start_time = time.time()
-        self.log_signal.emit(f"Executing Scenario: {self.report['name']}")
+        self.log_signal.emit("INFO", f"Executing Scenario: {self.report['name']}")
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.conn_details['ip'], self.conn_details['port']))
-                self.log_signal.emit("Host connected.")
+                self.log_signal.emit("INFO", "Host connected.")
                 self._execute_steps(self.scenario['steps'], s)
         except Exception as e:
-            self.log_signal.emit(f"[ERROR] Scenario failed: {e}")
+            self.log_signal.emit("ERROR", f"Scenario failed: {e}")
             self.report['result'] = "Fail"
         
         self.report['duration'] = f"{time.time() - start_time:.2f} seconds"
-        self.log_signal.emit("Scenario finished.")
+        self.log_signal.emit("INFO", "Scenario finished.")
         self.scenario_finished.emit(self.report)
     
     def _parse_body_recursive(self, body_io):
@@ -110,14 +111,14 @@ class ScenarioExecutor(QObject):
                     params = step.get('params', {})
                     msg = self.factory.create(step['message'], context=self.context, params=params)
                     sock.sendall(msg)
-                    self.log_signal.emit(f"SENT | {step['message']}")
+                    self.log_signal.emit("SENT", step['message'])
                 elif action == 'expect':
                     raw_len = sock.recv(4)
                     msg_len, = struct.unpack('>I', raw_len)
                     header, body = sock.recv(10), sock.recv(msg_len)
                     s, f = header[2] & 0x7F, header[3]
                     received_msg = f"S{s}F{f}"
-                    self.log_signal.emit(f"RECV | {received_msg}")
+                    self.log_signal.emit("RECV", received_msg)
                     
                     if received_msg in self.factory.library:
                         spec = self.factory.library[received_msg]
@@ -129,27 +130,8 @@ class ScenarioExecutor(QObject):
                     if received_msg != step['message']:
                         step_result = f"Fail: Expected {step['message']}, got {received_msg}"
 
-                    if 'save_to_context' in step:
-                        parsed_body = self._parse_body(body)
-                        key = step['save_to_context']['key']
-                        path = step['save_to_context']['path']
-                        self.context[key] = eval(path, {"body": parsed_body})
-                        self.log_signal.emit(f"Saved to context: {key} = {self.context[key]}")
-
-                elif action == 'if':
-                    condition_met = eval(step['condition'], {"context": self.context})
-                    self._execute_steps(step.get('then' if condition_met else 'else', []), sock)
-                elif action == 'loop':
-                    for i in range(step.get('count', 1)):
-                        self._execute_steps(step.get('steps', []), sock)
-                elif action == 'delay':
-                    time.sleep(step.get('seconds', 1))
                 elif action == 'log':
-                    self.log_signal.emit(f"[SCENARIO LOG] {step['message']}")
-                elif action == 'call':
-                    with open(step['file'], 'r') as f:
-                        sub_scenario = json.load(f)
-                    self._execute_steps(sub_scenario['steps'], sock)
+                    self.log_signal.emit("SCENARIO", step['message'])
 
                 if step_result != "Pass":
                     self.report['result'] = "Fail"
