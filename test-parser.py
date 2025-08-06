@@ -65,29 +65,28 @@ def process_entry_buffer(buffer):
 
     print("\n--- [PARSER LOG] Processing New Buffered Entry ---")
     
-    # Join all lines in the buffer, replacing newlines within the text
     full_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
-    print(f"[PARSER LOG] Combined Buffer Content: {full_line[:5000]}...") # Log first 100 chars
     
     try:
         row = next(csv.reader([full_line]))
-        print(f"[PARSER LOG] CSV parsing successful. Found {len(row)} columns.")
-
+        
         if len(row) < len(headers):
             print("[PARSER LOG] RESULT: SKIPPING - Row has fewer columns than expected.")
             return
 
         log_data = {header: value for header, value in zip(headers, row)}
         
-        print(f"[PARSER LOG] Mapped data for DeviceID: {log_data.get('DeviceID')}")
-        
-        # Special check for the multi-line JSON message
+        print("[PARSER LOG] Mapped Data:")
+        # FIX: Iterate and print all key-value pairs for detailed verification
+        for key, value in log_data.items():
+            # Print truncated value if it's too long
+            display_value = (value[:70] + '...') if len(value) > 73 else value
+            print(f"  - {key:<20}: {display_value}")
+
         if "BR_MHS_REG_EQPT_SCAN_RSLT" in log_data.get('AsciiData', ''):
-            print("[PARSER LOG] Found target keyword 'BR_MHS_REG_EQPT_SCAN_RSLT'.")
             print("[PARSER LOG] RESULT: VERIFIED - Correctly parsed the multi-line JSON entry.")
         else:
-            print("[PARSER LOG] Target keyword not found in this entry.")
-            print(f"[PARSER LOG] RESULT: SUCCESS - Parsed a single-line entry.")
+            print("[PARSER LOG] RESULT: SUCCESS - Parsed a single-line entry.")
 
 
     except Exception as e:
@@ -106,17 +105,12 @@ def run_test():
         if not line.strip():
             continue
 
-        # Rule 2: Check if the line is the start of a new entry
         if line.startswith(log_entry_starters):
-            # Rule 3: Process the previous entry before starting the new one
             process_entry_buffer(entry_buffer)
-            # Start a new buffer for the new entry
             entry_buffer = [line]
         else:
-            # This line is a continuation of the current entry
             entry_buffer.append(line)
     
-    # Process the very last entry in the buffer after the loop finishes
     process_entry_buffer(entry_buffer)
 
 
