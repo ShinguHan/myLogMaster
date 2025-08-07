@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -60,57 +61,69 @@ def parse_log_with_profile(log_filepath, profile):
     
     data_start_index = header_line_index + 2 
 
-    def process_buffer(buffer, buffer_start_line):
+    def process_buffer(buffer):
         if not buffer: return
         full_entry_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
-        debug(f"\n[Line ~{buffer_start_line}] Processing buffered entry...")
         try:
             if full_entry_line.startswith('"') and full_entry_line.endswith('"'):
                 full_entry_line = full_entry_line[1:-1]
             row = full_entry_line.split('","')
 
-            if len(row) != len(headers):
-                debug(f"[Line ~{buffer_start_line}] SKIPPING: Column count mismatch.")
-                return
+            if len(row) != len(headers): return
 
             log_data = {header: value for header, value in zip(headers, row)}
 
             msg_type = None
-            category = log_data.get("Category")
-            debug(f"[Line ~{buffer_start_line}] Found Category: '{category}'")
+            category = log_data.get("Category").replace('"', '')
+            
             for rule in profile.get('type_rules', []):
-                debug(f"[Line ~{buffer_start_line}]   Comparing with rule value: '{rule['value']}'")
                 if category == rule['value']:
                     msg_type = rule['type']
-                    debug(f"[Line ~{buffer_start_line}]   MATCH! Setting type to '{msg_type}'.")
                     break
             
-            if not msg_type:
-                debug(f"[Line ~{buffer_start_line}] SKIPPING: No message type found for this category.")
-                return
+            if not msg_type: return
 
             if msg_type == 'secs':
-                # ... (rest of the logic is the same)
-                pass
-            elif msg_type == 'json':
-                # ... (rest of the logic is the same)
-                pass
-        except Exception as e:
-            debug(f"[Line ~{buffer_start_line}] ERROR during processing: {e}")
+                ascii_data = log_data.get('AsciiData', '')
+                msg = None
+                for rule in profile.get('text_to_message_rules', []):
+                    if rule['text_contains'] in ascii_data:
+                        msg = rule['message_name']
+                        break
+                if msg:
+                    raw_body_hex = log_data.get('BinaryData', '')
+                    body_obj = _parse_body_recursive(__import__('io').BytesIO(bytes.fromhex(raw_body_hex))) if raw_body_hex else []
+                    parsed_log['secs'].append({'msg': msg, 'body': body_obj})
 
-    buffer_start_line = data_start_index
+            elif msg_type == 'json':
+                json_str_raw = log_data.get('AsciiData', '')
+                start_index = json_str_raw.find('{')
+                if start_index != -1:
+                    brace_count = 0; end_index = -1
+                    for char_idx in range(start_index, len(json_str_raw)):
+                        if json_str_raw[char_idx] == '{': brace_count += 1
+                        elif json_str_raw[char_idx] == '}': brace_count -= 1
+                        if brace_count == 0: end_index = char_idx + 1; break
+                    if end_index != -1:
+                        json_str = json_str_raw[start_index:end_index]
+                        # FIX: Clean the string of non-breaking spaces before parsing
+                        cleaned_json_str = json_str.replace('\xa0', ' ')
+                        json_data = json.loads(cleaned_json_str)
+                        parsed_log['json'].append({'entry': json_data})
+        except Exception:
+            pass
+
     for i in range(data_start_index, len(lines)):
         line = lines[i]
         if not line.strip(): continue
 
         if line.startswith(log_entry_starters):
-            process_buffer(entry_buffer, buffer_start_line)
+            process_buffer(entry_buffer)
             entry_buffer = [line]
-            buffer_start_line = i + 1
         elif entry_buffer:
             entry_buffer.append(line)
     
-    process_buffer(entry_buffer, buffer_start_line)
+    process_buffer(entry_buffer)
 
     debug(f"--- Parser Finished: Found {len(parsed_log['secs'])} SECS and {len(parsed_log['json'])} JSON messages. ---")
     return parsed_log
