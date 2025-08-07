@@ -31,24 +31,22 @@ def generate_library_from_log(parsed_secs_log, device_id=""):
         # Handle content variations for S2F41 (RCMD)
         if msg_name == 'S2F41' and body:
             rcmd = None
-            if body[0].type == 'A':
+            if body and body[0].type == 'A':
                 rcmd = body[0].value
-            elif body[0].type == 'L' and body[0].value and body[0].value[0].type == 'A':
+            elif body and body[0].type == 'L' and body[0].value and body[0].value[0].type == 'A':
                  rcmd = body[0].value[0].value
             
             if rcmd:
                 sanitized_rcmd = rcmd.replace(" ", "_")
                 final_msg_name = f"{prefix}{msg_name}_{sanitized_rcmd}"
         
-        # NEW: Handle content variations for S6F11 (CEID)
+        # Handle content variations for S6F11 (CEID)
         elif msg_name == 'S6F11' and body:
             ceid = None
-            # S6F11 body is typically L[CEID, L[...reports...]]
-            # We assume the CEID is the first item in the body list.
-            if body[0].type == 'L' and body[0].value:
-                ceid_item = body[0].value[0]
-                # Check for integer types like U1, U2, U4 etc.
-                if 'U' in ceid_item.type:
+            # The CEID is the SECOND item in the root list (index 1)
+            if body and body[0].type == 'L' and len(body[0].value) > 1:
+                ceid_item = body[0].value[1] # FIX: Changed index from 0 to 1
+                if 'U' in ceid_item.type: # Handles U1, U2, U4, etc.
                     ceid = ceid_item.value
 
             if ceid is not None:
