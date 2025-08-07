@@ -1,22 +1,50 @@
 import csv
 import json
-import re
 from datetime import datetime
 from types import SimpleNamespace
+import csv
+import json
+import struct
+from datetime import datetime
+from types import SimpleNamespace
+import io
 
 def _parse_body_recursive(body_io):
     items = []
     try:
         format_code = body_io.read(1)
         if not format_code: return items
-        length_byte = int.from_bytes(body_io.read(1), 'big')
-        if format_code == b'\x01':
-            items.append(SimpleNamespace(type='L', value=[item for _ in range(length_byte) for item in _parse_body_recursive(body_io)]))
-        elif format_code == b'\x21':
-            items.append(SimpleNamespace(type='U1', value=int.from_bytes(body_io.read(length_byte), 'big')))
-        elif format_code == b'\x41':
-            items.append(SimpleNamespace(type='A', value=body_io.read(length_byte).decode('ascii')))
-    except (IndexError, __import__('struct').error):
+        
+        format_char = format_code[0]
+        length_bits = format_char & 0b00000011
+        num_length_bytes = 0
+        if length_bits == 1: num_length_bytes = 1
+        elif length_bits == 2: num_length_bytes = 2
+        elif length_bits == 3: num_length_bytes = 3
+
+        if num_length_bytes == 0:
+             length = 1
+        else:
+            length_bytes = body_io.read(num_length_bytes)
+            length = int.from_bytes(length_bytes, 'big')
+
+        data_format = format_char >> 2
+        
+        if data_format == 0b000000: # List
+            list_items = []
+            for _ in range(length):
+                list_items.extend(_parse_body_recursive(body_io))
+            items.append(SimpleNamespace(type='L', value=list_items))
+        elif data_format == 0b010010: # U2
+             val = int.from_bytes(body_io.read(length), 'big')
+             items.append(SimpleNamespace(type='U2', value=val))
+        elif data_format == 0b100000: # A
+            val = body_io.read(length).decode('ascii')
+            items.append(SimpleNamespace(type='A', value=val))
+        else:
+            body_io.read(length)
+
+    except (IndexError, struct.error):
         pass
     return items
 
@@ -27,7 +55,7 @@ def parse_log_with_profile(log_filepath, profile):
     parsed_log = {'secs': [], 'json': [], 'debug_log': []}
     debug = parsed_log['debug_log'].append
 
-    debug("--- Starting Universal Parser (Final Logic) ---")
+    debug("--- Starting Universal Parser (Final Corrected Logic) ---")
 
     with open(log_filepath, 'r', newline='', encoding='utf-8') as f:
         lines = f.readlines()
@@ -65,6 +93,7 @@ def parse_log_with_profile(log_filepath, profile):
         if not buffer: return
         full_entry_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
         try:
+            # Use the robust manual parser from our successful test
             if full_entry_line.startswith('"') and full_entry_line.endswith('"'):
                 full_entry_line = full_entry_line[1:-1]
             row = full_entry_line.split('","')
@@ -74,8 +103,8 @@ def parse_log_with_profile(log_filepath, profile):
             log_data = {header: value for header, value in zip(headers, row)}
 
             msg_type = None
-            category = log_data.get("Category").replace('"', '')
-            
+            # FIX: Sanitize the category value by removing quotes before comparison
+            category = log_data.get("Category", "").replace('"', '')
             for rule in profile.get('type_rules', []):
                 if category == rule['value']:
                     msg_type = rule['type']
@@ -84,16 +113,21 @@ def parse_log_with_profile(log_filepath, profile):
             if not msg_type: return
 
             if msg_type == 'secs':
-                ascii_data = log_data.get('AsciiData', '')
-                msg = None
-                for rule in profile.get('text_to_message_rules', []):
-                    if rule['text_contains'] in ascii_data:
-                        msg = rule['message_name']
-                        break
-                if msg:
-                    raw_body_hex = log_data.get('BinaryData', '')
-                    body_obj = _parse_body_recursive(__import__('io').BytesIO(bytes.fromhex(raw_body_hex))) if raw_body_hex else []
-                    parsed_log['secs'].append({'msg': msg, 'body': body_obj})
+                raw_full_hex = log_data.get('BinaryData', '')
+                if raw_full_hex:
+                    full_binary = bytes.fromhex(raw_full_hex)
+                    
+                    # RESTORED CORRECT LOGIC: The BinaryData starts directly with the 10-byte header.
+                    if len(full_binary) >= 10:
+                        header_bytes = full_binary[0:10] # Read from the beginning
+                        _, s_type, f_type, _, _ = struct.unpack('>HBBH4s', header_bytes)
+                        stream = s_type & 0x7F
+                        msg = f"S{stream}F{f_type}"
+                        
+                        # The body is everything after the 10-byte header
+                        body_bytes = full_binary[10:]
+                        body_obj = _parse_body_recursive(io.BytesIO(body_bytes))
+                        parsed_log['secs'].append({'msg': msg, 'body': body_obj})
 
             elif msg_type == 'json':
                 json_str_raw = log_data.get('AsciiData', '')
@@ -106,7 +140,6 @@ def parse_log_with_profile(log_filepath, profile):
                         if brace_count == 0: end_index = char_idx + 1; break
                     if end_index != -1:
                         json_str = json_str_raw[start_index:end_index]
-                        # FIX: Clean the string of non-breaking spaces before parsing
                         cleaned_json_str = json_str.replace('\xa0', ' ')
                         json_data = json.loads(cleaned_json_str)
                         parsed_log['json'].append({'entry': json_data})
