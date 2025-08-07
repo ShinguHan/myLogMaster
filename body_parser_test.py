@@ -103,7 +103,7 @@ def run_test():
         found_id = False
         try:
             # FIX: This is the new, correct, and deeply nested path to the CarrierID
-            carrier_id = result_dict[0]['value'][2]['value'][0]['value'][0]['value'][0]['value'][1]['value']
+            carrier_id = result_dict[0]['value'][2]['value'][0]['value'][1]['value'][0]['value'][1]['value']
             if carrier_id == 'LHAE000336':
                 found_id = True
         except (IndexError, KeyError):

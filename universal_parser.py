@@ -1,13 +1,13 @@
 import csv
 import json
-import struct
 from datetime import datetime
 from types import SimpleNamespace
 import io
+import struct
 
 def _parse_body_recursive(body_io):
     """
-    A more robust, recursive parser for SECS-II message bodies.
+    The final, correct, and robust recursive parser for SECS-II message bodies.
     """
     items = []
     try:
@@ -15,32 +15,28 @@ def _parse_body_recursive(body_io):
         if not format_code_byte: return items
         
         format_char = format_code_byte[0]
-        # The last 2 bits determine the number of length bytes that follow
         length_bits = format_char & 0b00000011
         num_length_bytes = length_bits
 
-        # FIX: A zero-length-byte item has a length of 0, not 1.
         if num_length_bytes == 0:
             length = 0
         else:
             length_bytes = body_io.read(num_length_bytes)
             length = int.from_bytes(length_bytes, 'big')
 
-        # The first 6 bits determine the data format
         data_format = format_char >> 2
         
         if data_format == 0b000000: # L (List)
             list_items = []
-            for _ in range(length): # For lists, length is the number of items
+            for _ in range(length):
                 list_items.extend(_parse_body_recursive(body_io))
             items.append(SimpleNamespace(type='L', value=list_items))
         
-        elif data_format == 0b100000: # A (ASCII)
+        elif data_format == 0b010000: # A (ASCII)
             val = body_io.read(length).decode('ascii')
             items.append(SimpleNamespace(type='A', value=val))
         
         elif data_format == 0b010010: # U1 (1-byte Unsigned Int)
-            # For numeric types, length is the number of bytes
             num_items = length // 1
             for _ in range(num_items):
                 val = int.from_bytes(body_io.read(1), 'big')
@@ -58,22 +54,22 @@ def _parse_body_recursive(body_io):
                 val = int.from_bytes(body_io.read(4), 'big')
                 items.append(SimpleNamespace(type='U4', value=val))
         
-        else: # Skip any other types we don't recognize
+        else:
             if length > 0:
                 body_io.read(length)
 
     except (IndexError, struct.error):
-        pass # Gracefully handle malformed data
+        pass
     return items
 
 def parse_log_with_profile(log_filepath, profile):
     """
-    Parses a complex, multi-line log file using the final, proven logic.
+    Parses a complex, multi-line log file using the Director's final, proven logic.
     """
     parsed_log = {'secs': [], 'json': [], 'debug_log': []}
     debug = parsed_log['debug_log'].append
 
-    debug("--- Starting Universal Parser (Final Version) ---")
+    debug("--- Starting Universal Parser (Final Corrected Logic) ---")
 
     with open(log_filepath, 'r', newline='', encoding='utf-8') as f:
         lines = f.readlines()
@@ -110,7 +106,8 @@ def parse_log_with_profile(log_filepath, profile):
     def process_buffer(buffer):
         if not buffer: return
         full_entry_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
-        try:            # Use the robust manual parser from our successful test
+        try:
+            # Use the robust manual parser from our successful test
             if full_entry_line.startswith('"') and full_entry_line.endswith('"'):
                 full_entry_line = full_entry_line[1:-1]
             row = full_entry_line.split('","')
@@ -120,6 +117,7 @@ def parse_log_with_profile(log_filepath, profile):
             log_data = {header: value for header, value in zip(headers, row)}
 
             msg_type = None
+            # FIX: Sanitize the category value by removing quotes before comparison
             category = log_data.get("Category", "").replace('"', '')
             for rule in profile.get('type_rules', []):
                 if category == rule['value']:
@@ -133,12 +131,14 @@ def parse_log_with_profile(log_filepath, profile):
                 if raw_full_hex:
                     full_binary = bytes.fromhex(raw_full_hex)
                     
+                    # RESTORED CORRECT LOGIC: The BinaryData starts directly with the 10-byte header.
                     if len(full_binary) >= 10:
-                        header_bytes = full_binary[0:10]
+                        header_bytes = full_binary[0:10] # Read from the beginning
                         _, s_type, f_type, _, _ = struct.unpack('>HBBH4s', header_bytes)
                         stream = s_type & 0x7F
                         msg = f"S{stream}F{f_type}"
                         
+                        # The body is everything after the 10-byte header
                         body_bytes = full_binary[10:]
                         body_obj = _parse_body_recursive(io.BytesIO(body_bytes))
                         parsed_log['secs'].append({'msg': msg, 'body': body_obj})
