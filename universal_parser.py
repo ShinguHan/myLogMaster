@@ -15,25 +15,23 @@ def _parse_body_recursive(body_io):
         if not format_code_byte: return items
         
         format_char = format_code_byte[0]
+        # The last 2 bits determine the number of length bytes that follow
         length_bits = format_char & 0b00000011
-        
-        num_length_bytes = 0
-        if length_bits == 1: num_length_bytes = 1
-        elif length_bits == 2: num_length_bytes = 2
-        elif length_bits == 3: num_length_bytes = 3
+        num_length_bytes = length_bits
 
-        length = 0
-        if num_length_bytes > 0:
+        # FIX: A zero-length-byte item has a length of 0, not 1.
+        if num_length_bytes == 0:
+            length = 0
+        else:
             length_bytes = body_io.read(num_length_bytes)
             length = int.from_bytes(length_bytes, 'big')
 
+        # The first 6 bits determine the data format
         data_format = format_char >> 2
         
-        # Expanded data type handling
         if data_format == 0b000000: # L (List)
             list_items = []
-            # For lists, length is the number of items
-            for _ in range(length):
+            for _ in range(length): # For lists, length is the number of items
                 list_items.extend(_parse_body_recursive(body_io))
             items.append(SimpleNamespace(type='L', value=list_items))
         
@@ -42,11 +40,13 @@ def _parse_body_recursive(body_io):
             items.append(SimpleNamespace(type='A', value=val))
         
         elif data_format == 0b010010: # U1 (1-byte Unsigned Int)
-            val = int.from_bytes(body_io.read(length), 'big')
-            items.append(SimpleNamespace(type='U1', value=val))
+            # For numeric types, length is the number of bytes
+            num_items = length // 1
+            for _ in range(num_items):
+                val = int.from_bytes(body_io.read(1), 'big')
+                items.append(SimpleNamespace(type='U1', value=val))
 
         elif data_format == 0b101010: # U2 (2-byte Unsigned Int)
-            # Length is number of bytes, so number of items is length / 2
             num_items = length // 2
             for _ in range(num_items):
                 val = int.from_bytes(body_io.read(2), 'big')
