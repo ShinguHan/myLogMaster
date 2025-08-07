@@ -39,7 +39,7 @@ def _parse_body_recursive(body_io):
                 list_items.extend(_parse_body_recursive(body_io))
             items.append(SimpleNamespace(type='L', value=list_items))
         
-        elif data_format == 0b010000: # A (ASCII) - FIX: Corrected format code
+        elif data_format == 0b010000: # A (ASCII)
             val = body_io.read(length).decode('ascii')
             items.append(SimpleNamespace(type='A', value=val))
         
@@ -100,11 +100,10 @@ def run_test():
         print(json.dumps(result_dict, indent=2))
         
         print("\n--- Test Result ---")
-        # A more specific test to find the CarrierID
         found_id = False
         try:
-            # Navigate the complex structure to find the expected ID
-            carrier_id = result_dict[0]['value'][2]['value'][0]['value'][1]['value'][1]['value']
+            # FIX: This is the new, correct, and deeply nested path to the CarrierID
+            carrier_id = result_dict[0]['value'][2]['value'][0]['value'][0]['value'][0]['value'][1]['value']
             if carrier_id == 'LHAE000336':
                 found_id = True
         except (IndexError, KeyError):
