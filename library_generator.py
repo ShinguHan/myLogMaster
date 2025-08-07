@@ -5,7 +5,6 @@ def _parsed_body_to_def(parsed_items):
     """Recursively converts a parsed body object back into a library definition list."""
     def_list = []
     for item in parsed_items:
-        # For this generator, we'll create generic names
         item_def = {"name": f"Item_{item.type}", "format": item.type}
         if item.type == 'L':
             item_def["value"] = _parsed_body_to_def(item.value)
@@ -25,10 +24,8 @@ def generate_library_from_log(parsed_secs_log, device_id=""):
         msg_name = log_entry.get('msg')
         body = log_entry.get('body')
         
-        # Start with the base name
         final_msg_name = f"{prefix}{msg_name}"
 
-        # Handle content variations for S2F41 (RCMD)
         if msg_name == 'S2F41' and body:
             rcmd = None
             if body and body[0].type == 'A':
@@ -40,19 +37,16 @@ def generate_library_from_log(parsed_secs_log, device_id=""):
                 sanitized_rcmd = rcmd.replace(" ", "_")
                 final_msg_name = f"{prefix}{msg_name}_{sanitized_rcmd}"
         
-        # Handle content variations for S6F11 (CEID)
         elif msg_name == 'S6F11' and body:
             ceid = None
-            # The CEID is the SECOND item in the root list (index 1)
             if body and body[0].type == 'L' and len(body[0].value) > 1:
-                ceid_item = body[0].value[1] # FIX: Changed index from 0 to 1
-                if 'U' in ceid_item.type: # Handles U1, U2, U4, etc.
+                ceid_item = body[0].value[1]
+                if 'U' in ceid_item.type:
                     ceid = ceid_item.value
 
             if ceid is not None:
                 final_msg_name = f"{prefix}{msg_name}_CEID{ceid}"
 
-        # Add to library only if this unique name hasn't been seen before
         if final_msg_name not in library:
             try:
                 s, f = int(msg_name[1]), int(msg_name[3:])
@@ -72,10 +66,33 @@ def generate_schema_from_json_log(parsed_json_log):
     """Analyzes a parsed JSON log and generates a schema of unique events."""
     schema = {}
     for log_entry in parsed_json_log:
-        event_name = log_entry.get('entry', {}).get('event')
+        entry_data = log_entry.get('entry', {})
+        # The event name is under the 'actID' key
+        event_name = entry_data.get('actID')
+        
         if event_name and event_name not in schema:
             data_schema = {}
-            for key, value in log_entry.get('entry', {}).get('data', {}).items():
-                data_schema[key] = str(type(value).__name__)
+            # The data payload is under the 'refDS' key
+            payload = entry_data.get('refDS', {})
+            
+            for key, value in payload.items():
+                # Recursively determine the schema for the payload
+                data_schema[key] = _get_json_schema(value)
+            
             schema[event_name] = data_schema
+            
     return schema
+
+def _get_json_schema(data):
+    """Helper function to recursively generate a schema from JSON data."""
+    if isinstance(data, dict):
+        return {key: _get_json_schema(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        # If the list is not empty, generate schema from the first element
+        if data:
+            return [_get_json_schema(data[0])]
+        else:
+            return []
+    else:
+        # Return the type of the primitive value as a string
+        return str(type(data).__name__)

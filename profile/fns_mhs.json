@@ -1,0 +1,109 @@
+{
+  "BR_MHS_REG_EQPT_SCAN_RSLT": {
+    "IN_SCAN_LIST": [
+      {
+        "DURABLE_ID": "str",
+        "STACK_NO": "str",
+        "SCAN_RSLT": "str",
+        "SCAN_TYPE": "str"
+      }
+    ],
+    "IN_DATA": [
+      {
+        "PORT_ID": "str",
+        "EQUIPMENT_ID": "str"
+      }
+    ]
+  },
+  "BR_MHS_ReportDurableMovingEvent": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "str",
+        "SHELF_ID": "str",
+        "TO_PORT_ID": "str",
+        "EVENT_TYPE_CODE": "str",
+        "FROM_EQUIPMENT_ID": "str",
+        "USER_ID": "str",
+        "FROM_PORT_ID": "str",
+        "DURABLE_STATUS_CODE": "str",
+        "TO_EQUIPMENT_ID": "str",
+        "COMMAND_CODE": "str",
+        "PORT_ID": "str",
+        "TRANSPORT_END_CODE": "str",
+        "MCS_TXN_ID": "str",
+        "LOT_ID": "str",
+        "ERROR_DETAIL": "str",
+        "ERROR_DURABLE_FLAG": "str",
+        "EQUIPMENT_ID": "str"
+      }
+    ]
+  },
+  "BR_MHS_ReportPortEventTypeChange": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "str",
+        "PORT_ID": "str",
+        "TRANSFER_STATE_CODE": "str",
+        "USER_ID": "str",
+        "DURABLE_STATUS_CODE": "str",
+        "EQUIPMENT_ID": "str"
+      }
+    ]
+  },
+  "RequestTransportCommand": {
+    "IN_DURB_LIST": [
+      {
+        "DURABLE_ID": "str",
+        "REPRESENTATIVE_DURABLE_ID": "str",
+        "STACK_NO": "str",
+        "CSTTYPE": "str",
+        "PROCESS_CODE": "str",
+        "LOT_ID": "str",
+        "PROD_MTRL_CODE": "str",
+        "ABNORM_TRF_RSN_CODE": "str",
+        "DURABLE_INDEX": "str",
+        "DURABLE_STATUS_CODE": "str"
+      }
+    ],
+    "IN_DATA": [
+      {
+        "CHANGE_DIRECTION_REINPUT_FLAG": "str",
+        "TO_EQUIPMENT_WINDING_DIRECTION": "str",
+        "USER_ID": "str",
+        "FROM_PORT_ID": "str",
+        "NEXT_EQUIPMENT_ID": "str",
+        "TO_EQUIPMENT_ID": "str",
+        "REPRESENTATIVE_DURABLE_ID": "str",
+        "TRANSFER_CREATE_TYPE": "str",
+        "ROLL_NOT_COATED_SIDE": "str",
+        "LOT_ID": "str",
+        "DURABLE_SIZE_CODE": "str",
+        "TO_EQUIPMENT_NOT_COATED_SIDE": "str",
+        "ROLL_WINDING_DIRECTION": "str",
+        "DURABLE_ID": "str",
+        "PRIORITY_NO": "str",
+        "TO_PORT_ID": "str",
+        "FROM_EQUIPMENT_ID": "str",
+        "DURABLE_INDEX": "str",
+        "DURABLE_STATUS_CODE": "str",
+        "STACK_NO": "str",
+        "REDIRECT_FLAG": "str",
+        "PROCESS_CODE": "str",
+        "PROD_MTRL_CODE": "str",
+        "COMMAND_TEXT": "str",
+        "CMD_TXT": "str",
+        "NEXT_EQPTID": "str"
+      }
+    ]
+  },
+  "BR_MHS_RequestTransportCommandReply": {
+    "REPLY_DATA": [
+      {
+        "DURABLE_ID": "str",
+        "RETURN_CODE": "str",
+        "COMMAND_CODE": "str",
+        "USER_ID": "str"
+      }
+    ]
+  }
+}

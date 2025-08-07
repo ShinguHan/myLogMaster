@@ -45,7 +45,6 @@ class AnalysisWindow(QWidget):
         load_scenario_btn = QPushButton("Load Analysis Scenario"); load_scenario_btn.clicked.connect(self.load_analysis_scenario)
         run_analysis_btn = QPushButton("Run Analysis"); run_analysis_btn.clicked.connect(self.run_analysis)
         
-        # RESTORED "Scribe" Buttons
         self.generate_scenario_btn = QPushButton("Generate Scenario from SECS Log")
         self.generate_scenario_btn.clicked.connect(self.generate_scenario)
         self.generate_scenario_btn.setEnabled(False)
@@ -54,11 +53,17 @@ class AnalysisWindow(QWidget):
         self.generate_secs_lib_btn.clicked.connect(self.generate_secs_library)
         self.generate_secs_lib_btn.setEnabled(False)
 
+        # FIX: Button for MHS Schema Generation
+        self.generate_mhs_schema_btn = QPushButton("Generate MHS Schema")
+        self.generate_mhs_schema_btn.clicked.connect(self.generate_mhs_schema)
+        self.generate_mhs_schema_btn.setEnabled(False)
+
         top_bar = QHBoxLayout(); top_bar.addWidget(self.load_log_btn); top_bar.addWidget(load_scenario_btn); top_bar.addWidget(run_analysis_btn)
         
         generator_bar = QHBoxLayout()
         generator_bar.addWidget(self.generate_scenario_btn)
         generator_bar.addWidget(self.generate_secs_lib_btn)
+        generator_bar.addWidget(self.generate_mhs_schema_btn) # Add button to layout
         
         log_viewers = QHBoxLayout()
         secs_pane = QVBoxLayout(); secs_pane.addWidget(QLabel("Parsed SECS/GEM Log")); secs_pane.addWidget(self.secs_log_display)
@@ -84,6 +89,7 @@ class AnalysisWindow(QWidget):
                 self.results_display.setText("--- PARSING FAILED ---\n\n" + "\n".join(parsed_data['debug_log']))
                 self.generate_scenario_btn.setEnabled(False)
                 self.generate_secs_lib_btn.setEnabled(False)
+                self.generate_mhs_schema_btn.setEnabled(False)
                 return
 
             self.parsed_secs_log = parsed_data['secs']
@@ -93,19 +99,16 @@ class AnalysisWindow(QWidget):
             self.json_log_display.setText(json.dumps(self.parsed_json_log, indent=2, default=str))
             self.results_display.setText("--- PARSING SUCCESS ---\n\n" + "\n".join(parsed_data['debug_log']))
             
-            # Enable buttons if SECS data was found
             self.generate_scenario_btn.setEnabled(bool(self.parsed_secs_log))
             self.generate_secs_lib_btn.setEnabled(bool(self.parsed_secs_log))
+            self.generate_mhs_schema_btn.setEnabled(bool(self.parsed_json_log))
 
         except Exception as e:
             self.results_display.setText(f"An unexpected error occurred: {e}")
 
     def generate_scenario(self):
         if not self.parsed_secs_log: return
-        # This needs a slightly different log format (with direction)
-        # For now, we'll assume the parser provides it.
         # This part of the code needs to be updated if the parser doesn't provide 'direction'.
-        # Let's assume the parser is updated to add direction for this feature.
         self.results_display.setText("Scenario generation from this log type is not yet fully implemented.")
 
     def generate_secs_library(self):
@@ -119,6 +122,14 @@ class AnalysisWindow(QWidget):
                 with open(filepath, 'w') as f: json.dump(library_data, f, indent=2)
                 self.results_display.setText(f"SECS Library successfully generated and saved to:\n{filepath}")
     
+    def generate_mhs_schema(self):
+        if not self.parsed_json_log: return
+        schema_data = generate_schema_from_json_log(self.parsed_json_log)
+        filepath, _ = QFileDialog.getSaveFileName(self, "Save MHS Schema", "", "JSON Files (*.json)")
+        if filepath:
+            with open(filepath, 'w') as f: json.dump(schema_data, f, indent=2)
+            self.results_display.setText(f"MHS Schema successfully generated and saved to:\n{filepath}")
+
     def load_analysis_scenario(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Load Analysis Scenario", "", "JSON Files (*.json)")
         if filepath:
