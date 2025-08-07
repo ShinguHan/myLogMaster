@@ -65,21 +65,27 @@ def process_entry_buffer(buffer):
 
     print("\n--- [PARSER LOG] Processing New Buffered Entry ---")
     
-    full_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
+    full_line = "".join(buffer).replace('\n', '\\n').replace('\r', '')
     
     try:
-        row = next(csv.reader([full_line]))
+        # FIX: Implement a more robust manual parser instead of csv.reader
+        # It splits the line by '","' which is the true delimiter between fields.
+        # First, strip the leading and trailing quote.
+        if full_line.startswith('"') and full_line.endswith('"'):
+            full_line = full_line[1:-1]
         
-        if len(row) < len(headers):
-            print("[PARSER LOG] RESULT: SKIPPING - Row has fewer columns than expected.")
+        row = full_line.split('","')
+
+        print(f"[PARSER LOG] Manual parsing successful. Found {len(row)} columns.")
+
+        if len(row) != len(headers):
+            print(f"[PARSER LOG] RESULT: SKIPPING - Column count mismatch. Expected {len(headers)}, got {len(row)}.")
             return
 
         log_data = {header: value for header, value in zip(headers, row)}
         
         print("[PARSER LOG] Mapped Data:")
-        # FIX: Iterate and print all key-value pairs for detailed verification
         for key, value in log_data.items():
-            # Print truncated value if it's too long
             display_value = (value[:70] + '...') if len(value) > 73 else value
             print(f"  - {key:<20}: {display_value}")
 

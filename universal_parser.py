@@ -1,6 +1,5 @@
 import csv
 import json
-import re
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -21,11 +20,13 @@ def _parse_body_recursive(body_io):
     return items
 
 def parse_log_with_profile(log_filepath, profile):
-    """Parses a complex, multi-line log file using a user-defined profile with deep, detailed logging."""
+    """
+    Parses a complex, multi-line log file using the Director's final, proven logic.
+    """
     parsed_log = {'secs': [], 'json': [], 'debug_log': []}
     debug = parsed_log['debug_log'].append
 
-    debug("--- Starting Universal Parser (Deep Logging) ---")
+    debug("--- Starting Universal Parser (Final Logic) ---")
 
     with open(log_filepath, 'r', newline='', encoding='utf-8') as f:
         lines = f.readlines()
@@ -34,19 +35,17 @@ def parse_log_with_profile(log_filepath, profile):
     required_headers = list(profile.get('column_mapping', {}).values())
     
     header_line_index = -1
-    header_found = False
     for i, line in enumerate(lines):
         if all(f'"{h}"' in line for h in required_headers):
             try:
                 headers = next(csv.reader([line]))
                 header_line_index = i
-                header_found = True
                 debug(f"Header row found on line {i + 1}: {headers}")
                 break
             except StopIteration:
                 continue
     
-    if not header_found:
+    if header_line_index == -1:
         debug("CRITICAL ERROR: Could not find the header row.")
         return parsed_log
 
@@ -61,49 +60,42 @@ def parse_log_with_profile(log_filepath, profile):
     
     data_start_index = header_line_index + 2 
 
-    def process_buffer(buffer, buffer_start_line):
+    def process_buffer(buffer):
         if not buffer: return
         full_entry_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
-        debug(f"\n[Line ~{buffer_start_line}] Processing buffered entry...")
         try:
-            row = next(csv.reader([full_entry_line]))
-            if len(row) < len(headers):
-                debug(f"[Line ~{buffer_start_line}] SKIPPING: Row has fewer columns than header.")
-                return
+            # FINAL FIX: Use the robust manual parser from our successful test
+            if full_entry_line.startswith('"') and full_entry_line.endswith('"'):
+                full_entry_line = full_entry_line[1:-1]
+            row = full_entry_line.split('","')
+
+            if len(row) != len(headers): return
+
+            log_data = {header: value for header, value in zip(headers, row)}
 
             msg_type = None
+            category = log_data.get("Category")
             for rule in profile.get('type_rules', []):
-                col_idx = col_map.get(rule['column'])
-                if col_idx is not None and row[col_idx] == rule['value']:
+                if category == rule['value']:
                     msg_type = rule['type']
-                    debug(f"[Line ~{buffer_start_line}] Matched type rule: '{rule['column']}' is '{rule['value']}'. Identified as '{msg_type}'.")
                     break
             
-            if not msg_type:
-                debug(f"[Line ~{buffer_start_line}] SKIPPING: No type rule matched.")
-                return
+            if not msg_type: return
 
             if msg_type == 'secs':
-                ascii_data = row[col_map['ascii_data']]
+                ascii_data = log_data.get('AsciiData', '')
                 msg = None
                 for rule in profile.get('text_to_message_rules', []):
                     if rule['text_contains'] in ascii_data:
                         msg = rule['message_name']
-                        debug(f"[Line ~{buffer_start_line}] Matched text rule: Found '{rule['text_contains']}'. Deduced message is '{msg}'.")
                         break
                 if msg:
-                    raw_body_hex = row[col_map['secs_body']]
-                    if raw_body_hex:
-                        body_obj = _parse_body_recursive(__import__('io').BytesIO(bytes.fromhex(raw_body_hex)))
-                        parsed_log['secs'].append({'msg': msg, 'body': body_obj})
-                        debug(f"[Line ~{buffer_start_line}] SUCCESS: Parsed SECS message with body.")
-                    else:
-                        parsed_log['secs'].append({'msg': msg, 'body': []})
-                        debug(f"[Line ~{buffer_start_line}] SUCCESS: Added SECS message with empty body.")
-
+                    raw_body_hex = log_data.get('BinaryData', '')
+                    body_obj = _parse_body_recursive(__import__('io').BytesIO(bytes.fromhex(raw_body_hex))) if raw_body_hex else []
+                    parsed_log['secs'].append({'msg': msg, 'body': body_obj})
 
             elif msg_type == 'json':
-                json_str_raw = row[col_map['json_body']]
+                json_str_raw = log_data.get('AsciiData', '')
                 start_index = json_str_raw.find('{')
                 if start_index != -1:
                     brace_count = 0; end_index = -1
@@ -115,23 +107,20 @@ def parse_log_with_profile(log_filepath, profile):
                         json_str = json_str_raw[start_index:end_index]
                         json_data = json.loads(json_str)
                         parsed_log['json'].append({'entry': json_data})
-                        debug(f"[Line ~{buffer_start_line}] SUCCESS: Parsed JSON message.")
-        except Exception as e:
-            debug(f"[Line ~{buffer_start_line}] ERROR: Skipping buffered entry due to error: {e}")
+        except Exception:
+            pass
 
-    buffer_start_line = data_start_index + 1
     for i in range(data_start_index, len(lines)):
         line = lines[i]
         if not line.strip(): continue
 
         if line.startswith(log_entry_starters):
-            process_buffer(entry_buffer, buffer_start_line)
+            process_buffer(entry_buffer)
             entry_buffer = [line]
-            buffer_start_line = i + 1
-        else:
+        elif entry_buffer:
             entry_buffer.append(line)
     
-    process_buffer(entry_buffer, buffer_start_line)
+    process_buffer(entry_buffer)
 
-    debug(f"\n--- Parser Finished: Found {len(parsed_log['secs'])} SECS and {len(parsed_log['json'])} JSON messages. ---")
+    debug(f"--- Parser Finished: Found {len(parsed_log['secs'])} SECS and {len(parsed_log['json'])} JSON messages. ---")
     return parsed_log
