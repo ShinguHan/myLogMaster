@@ -39,7 +39,7 @@ def _parse_body_recursive(body_io):
                 list_items.extend(_parse_body_recursive(body_io))
             items.append(SimpleNamespace(type='L', value=list_items))
         
-        elif data_format == 0b100000: # A (ASCII)
+        elif data_format == 0b010000: # A (ASCII) - FIX: Corrected format code
             val = body_io.read(length).decode('ascii')
             items.append(SimpleNamespace(type='A', value=val))
         
@@ -75,7 +75,6 @@ def run_test():
     """
     print("--- Starting SECS Body Parser Test ---")
     
-    # This is the full BinaryData hex string from the customer's log
     hex_string = '0001860b0000000043ea0103a9020000a90200fb01010102a902001301010109410f4a3146434e5631323330352d313034410a4c484145303030333336a9020000a9020000a902000441000100a9020000a9020000'
     
     print(f"\nInput Hex String:\n{hex_string}\n")
@@ -83,7 +82,6 @@ def run_test():
     try:
         full_binary = bytes.fromhex(hex_string)
         
-        # As per our last deduction, the body starts after the 10-byte header
         header_bytes = full_binary[0:10]
         body_bytes = full_binary[10:]
         
@@ -94,23 +92,28 @@ def run_test():
         print(f"Decoded Header: {msg_name}")
         print(f"Extracted Body (Hex): {body_bytes.hex()}")
 
-        # Use an in-memory binary stream for the parser
         body_io = io.BytesIO(body_bytes)
-        
-        # Run the parser
         parsed_result = _parse_body_recursive(body_io)
-        
-        # Convert to a readable dictionary for printing
         result_dict = _namespace_to_dict(parsed_result)
         
         print("\n--- Parsed Result (Human-Readable) ---")
         print(json.dumps(result_dict, indent=2))
         
         print("\n--- Test Result ---")
-        if result_dict and result_dict[0]['type'] == 'L':
-             print("SUCCESS: The parser correctly identified the root as a List.")
+        # A more specific test to find the CarrierID
+        found_id = False
+        try:
+            # Navigate the complex structure to find the expected ID
+            carrier_id = result_dict[0]['value'][2]['value'][0]['value'][1]['value'][1]['value']
+            if carrier_id == 'LHAE000336':
+                found_id = True
+        except (IndexError, KeyError):
+            pass
+
+        if found_id:
+             print("SUCCESS: The parser correctly identified the CarrierID 'LHAE000336'.")
         else:
-             print("FAILURE: The parser did not correctly identify the root structure.")
+             print("FAILURE: The parser did not find the CarrierID.")
 
     except Exception as e:
         print(f"\n--- Test Result ---")
