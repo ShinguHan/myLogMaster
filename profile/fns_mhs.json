@@ -1,109 +1,139 @@
 {
   "BR_MHS_REG_EQPT_SCAN_RSLT": {
-    "IN_SCAN_LIST": [
-      {
-        "DURABLE_ID": "str",
-        "STACK_NO": "str",
-        "SCAN_RSLT": "str",
-        "SCAN_TYPE": "str"
-      }
-    ],
-    "IN_DATA": [
-      {
-        "PORT_ID": "str",
-        "EQUIPMENT_ID": "str"
-      }
-    ]
+    "TXN_ID": "1754031701839",
+    "inDTName": "IN_DATA,IN_SCAN_LIST",
+    "refDS": {
+      "IN_SCAN_LIST": [
+        {
+          "DURABLE_ID": "LHAE000336",
+          "STACK_NO": "1",
+          "SCAN_RSLT": "OK",
+          "SCAN_TYPE": "FB"
+        }
+      ],
+      "IN_DATA": [
+        {
+          "PORT_ID": "J1FCNV12305-104",
+          "EQUIPMENT_ID": "J1FCNV12305"
+        }
+      ]
+    },
+    "actID": "BR_MHS_REG_EQPT_SCAN_RSLT",
+    "outDTName": ""
   },
   "BR_MHS_ReportDurableMovingEvent": {
-    "IN_DATA": [
-      {
-        "DURABLE_ID": "str",
-        "SHELF_ID": "str",
-        "TO_PORT_ID": "str",
-        "EVENT_TYPE_CODE": "str",
-        "FROM_EQUIPMENT_ID": "str",
-        "USER_ID": "str",
-        "FROM_PORT_ID": "str",
-        "DURABLE_STATUS_CODE": "str",
-        "TO_EQUIPMENT_ID": "str",
-        "COMMAND_CODE": "str",
-        "PORT_ID": "str",
-        "TRANSPORT_END_CODE": "str",
-        "MCS_TXN_ID": "str",
-        "LOT_ID": "str",
-        "ERROR_DETAIL": "str",
-        "ERROR_DURABLE_FLAG": "str",
-        "EQUIPMENT_ID": "str"
-      }
-    ]
+    "TXN_ID": "1754031701873",
+    "inDTName": "IN_DATA",
+    "refDS": {
+      "IN_DATA": [
+        {
+          "DURABLE_ID": "LHAE000336",
+          "SHELF_ID": "",
+          "TO_PORT_ID": "J1FCNV12302-FO0111",
+          "EVENT_TYPE_CODE": "D",
+          "FROM_EQUIPMENT_ID": "J1FCNV12305",
+          "USER_ID": "MCS",
+          "FROM_PORT_ID": "J1FCNV12305-104",
+          "DURABLE_STATUS_CODE": "INUSE",
+          "TO_EQUIPMENT_ID": "J1FCNV12302",
+          "COMMAND_CODE": "HLHAE0003360801030051",
+          "PORT_ID": "J1FCNV12305-104",
+          "TRANSPORT_END_CODE": "2",
+          "MCS_TXN_ID": "1754031701873",
+          "LOT_ID": "LHAE000336F7EGV1",
+          "ERROR_DETAIL": "5",
+          "ERROR_DURABLE_FLAG": "N",
+          "EQUIPMENT_ID": "J1FCNV12305"
+        }
+      ]
+    },
+    "actID": "BR_MHS_ReportDurableMovingEvent",
+    "outDTName": ""
   },
   "BR_MHS_ReportPortEventTypeChange": {
-    "IN_DATA": [
-      {
-        "DURABLE_ID": "str",
-        "PORT_ID": "str",
-        "TRANSFER_STATE_CODE": "str",
-        "USER_ID": "str",
-        "DURABLE_STATUS_CODE": "str",
-        "EQUIPMENT_ID": "str"
-      }
-    ]
+    "TXN_ID": "1754031701913",
+    "inDTName": "IN_DATA",
+    "refDS": {
+      "IN_DATA": [
+        {
+          "DURABLE_ID": "LHAE000336",
+          "PORT_ID": "J1FCNV12305-104",
+          "TRANSFER_STATE_CODE": "UR",
+          "USER_ID": "MCS",
+          "DURABLE_STATUS_CODE": "INUSE",
+          "EQUIPMENT_ID": "J1FCNV12305"
+        }
+      ]
+    },
+    "actID": "BR_MHS_ReportPortEventTypeChange",
+    "outDTName": "OUT_DATA,OUT_STACK_CST"
   },
   "RequestTransportCommand": {
-    "IN_DURB_LIST": [
-      {
-        "DURABLE_ID": "str",
-        "REPRESENTATIVE_DURABLE_ID": "str",
-        "STACK_NO": "str",
-        "CSTTYPE": "str",
-        "PROCESS_CODE": "str",
-        "LOT_ID": "str",
-        "PROD_MTRL_CODE": "str",
-        "ABNORM_TRF_RSN_CODE": "str",
-        "DURABLE_INDEX": "str",
-        "DURABLE_STATUS_CODE": "str"
-      }
-    ],
-    "IN_DATA": [
-      {
-        "CHANGE_DIRECTION_REINPUT_FLAG": "str",
-        "TO_EQUIPMENT_WINDING_DIRECTION": "str",
-        "USER_ID": "str",
-        "FROM_PORT_ID": "str",
-        "NEXT_EQUIPMENT_ID": "str",
-        "TO_EQUIPMENT_ID": "str",
-        "REPRESENTATIVE_DURABLE_ID": "str",
-        "TRANSFER_CREATE_TYPE": "str",
-        "ROLL_NOT_COATED_SIDE": "str",
-        "LOT_ID": "str",
-        "DURABLE_SIZE_CODE": "str",
-        "TO_EQUIPMENT_NOT_COATED_SIDE": "str",
-        "ROLL_WINDING_DIRECTION": "str",
-        "DURABLE_ID": "str",
-        "PRIORITY_NO": "str",
-        "TO_PORT_ID": "str",
-        "FROM_EQUIPMENT_ID": "str",
-        "DURABLE_INDEX": "str",
-        "DURABLE_STATUS_CODE": "str",
-        "STACK_NO": "str",
-        "REDIRECT_FLAG": "str",
-        "PROCESS_CODE": "str",
-        "PROD_MTRL_CODE": "str",
-        "COMMAND_TEXT": "str",
-        "CMD_TXT": "str",
-        "NEXT_EQPTID": "str"
-      }
-    ]
+    "TXN_ID": "1754031701913",
+    "inDTName": "IN_DATA,IN_DURB_LIST",
+    "refDS": {
+      "IN_DURB_LIST": [
+        {
+          "DURABLE_ID": "LHAE000282",
+          "REPRESENTATIVE_DURABLE_ID": "LHAE000336",
+          "STACK_NO": "2",
+          "CSTTYPE": "TRAY",
+          "PROCESS_CODE": "FF1301",
+          "LOT_ID": "LHAE000282F7EGV1",
+          "PROD_MTRL_CODE": "",
+          "ABNORM_TRF_RSN_CODE": "N",
+          "DURABLE_INDEX": "1",
+          "DURABLE_STATUS_CODE": "INUSE"
+        }
+      ],
+      "IN_DATA": [
+        {
+          "CHANGE_DIRECTION_REINPUT_FLAG": "",
+          "TO_EQUIPMENT_WINDING_DIRECTION": "",
+          "USER_ID": "AUTO",
+          "FROM_PORT_ID": "J1FCNV12305-104",
+          "NEXT_EQUIPMENT_ID": "",
+          "TO_EQUIPMENT_ID": "J1FCNV12302",
+          "REPRESENTATIVE_DURABLE_ID": "LHAE000336",
+          "TRANSFER_CREATE_TYPE": "R",
+          "ROLL_NOT_COATED_SIDE": "",
+          "LOT_ID": "LHAE000336F7EGV1",
+          "DURABLE_SIZE_CODE": "",
+          "TO_EQUIPMENT_NOT_COATED_SIDE": "",
+          "ROLL_WINDING_DIRECTION": "",
+          "DURABLE_ID": "LHAE000336",
+          "PRIORITY_NO": "50",
+          "TO_PORT_ID": "J1FCNV12302-FO0111",
+          "FROM_EQUIPMENT_ID": "J1FCNV12305",
+          "DURABLE_INDEX": "1",
+          "DURABLE_STATUS_CODE": "INUSE",
+          "STACK_NO": "0",
+          "REDIRECT_FLAG": "",
+          "PROCESS_CODE": "FF1301",
+          "PROD_MTRL_CODE": "",
+          "COMMAND_TEXT": "",
+          "CMD_TXT": "",
+          "NEXT_EQPTID": ""
+        }
+      ]
+    },
+    "actID": "RequestTransportCommand",
+    "outDTName": ""
   },
   "BR_MHS_RequestTransportCommandReply": {
-    "REPLY_DATA": [
-      {
-        "DURABLE_ID": "str",
-        "RETURN_CODE": "str",
-        "COMMAND_CODE": "str",
-        "USER_ID": "str"
-      }
-    ]
+    "TXN_ID": "1754031701913",
+    "inDTName": "REPLY_DATA",
+    "refDS": {
+      "REPLY_DATA": [
+        {
+          "DURABLE_ID": "LHAE000336",
+          "RETURN_CODE": "0",
+          "COMMAND_CODE": "HLHAE0003360801030141",
+          "USER_ID": "AUTO"
+        }
+      ]
+    },
+    "actID": "BR_MHS_RequestTransportCommandReply",
+    "outDTName": ""
   }
 }

@@ -63,36 +63,32 @@ def generate_library_from_log(parsed_secs_log, device_id=""):
     return library
 
 def generate_schema_from_json_log(parsed_json_log):
-    """Analyzes a parsed JSON log and generates a schema of unique events."""
+    """Analyzes a parsed JSON log and generates a schema of unique events with real values."""
     schema = {}
     for log_entry in parsed_json_log:
         entry_data = log_entry.get('entry', {})
-        # The event name is under the 'actID' key
         event_name = entry_data.get('actID')
         
         if event_name and event_name not in schema:
-            data_schema = {}
-            # The data payload is under the 'refDS' key
-            payload = entry_data.get('refDS', {})
-            
-            for key, value in payload.items():
-                # Recursively determine the schema for the payload
-                data_schema[key] = _get_json_schema(value)
-            
-            schema[event_name] = data_schema
+            # Generate a schema for the ENTIRE message entry, not just the payload.
+            full_schema = _get_json_schema_with_values(entry_data)
+            schema[event_name] = full_schema
             
     return schema
 
-def _get_json_schema(data):
-    """Helper function to recursively generate a schema from JSON data."""
+def _get_json_schema_with_values(data):
+    """
+    Helper function to recursively generate a schema from JSON data,
+    but using the actual values instead of just the types.
+    """
     if isinstance(data, dict):
-        return {key: _get_json_schema(value) for key, value in data.items()}
+        return {key: _get_json_schema_with_values(value) for key, value in data.items()}
     elif isinstance(data, list):
         # If the list is not empty, generate schema from the first element
         if data:
-            return [_get_json_schema(data[0])]
+            return [_get_json_schema_with_values(data[0])]
         else:
             return []
     else:
-        # Return the type of the primitive value as a string
-        return str(type(data).__name__)
+        # Return the actual value itself
+        return data
