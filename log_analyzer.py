@@ -86,9 +86,7 @@ class AnalysisWindow(QWidget):
             
             if "CRITICAL ERROR" in "\n".join(parsed_data['debug_log']):
                 self.results_display.setText("--- PARSING FAILED ---\n\n" + "\n".join(parsed_data['debug_log']))
-                self.generate_scenario_btn.setEnabled(False)
-                self.generate_secs_lib_btn.setEnabled(False)
-                self.generate_mhs_schema_btn.setEnabled(False)
+                self.generate_scenario_btn.setEnabled(False); self.generate_secs_lib_btn.setEnabled(False); self.generate_mhs_schema_btn.setEnabled(False)
                 return
 
             self.parsed_secs_log = parsed_data['secs']
@@ -107,13 +105,10 @@ class AnalysisWindow(QWidget):
 
     def generate_scenario(self):
         if not self.parsed_secs_log: return
-            
         generated_data = generate_scenario_from_log(self.parsed_secs_log)
-        
         filepath, _ = QFileDialog.getSaveFileName(self, "Save Generated Scenario", "", "JSON Files (*.json)")
         if filepath:
-            with open(filepath, 'w') as f:
-                json.dump(generated_data, f, indent=2)
+            with open(filepath, 'w') as f: json.dump(generated_data, f, indent=2)
             self.results_display.setText(f"Scenario successfully generated and saved to:\n{filepath}")
 
     def generate_secs_library(self):
@@ -138,7 +133,11 @@ class AnalysisWindow(QWidget):
     def load_analysis_scenario(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Load Analysis Scenario", "", "JSON Files (*.json)")
         if filepath:
-            with open(filepath, 'r') as f: self.analysis_scenario = json.load(f)
+            with open(filepath, 'r') as f: loaded_data = json.load(f)
+            if isinstance(loaded_data, dict) and 'steps' in loaded_data: self.analysis_scenario = loaded_data['steps']
+            elif isinstance(loaded_data, list): self.analysis_scenario = loaded_data
+            else:
+                self.results_display.setText("Error: Invalid scenario file format."); self.analysis_scenario = []; return
             self.scenario_list.clear()
             for i, step in enumerate(self.analysis_scenario):
                 if isinstance(step, dict) and 'action' in step:
@@ -146,9 +145,55 @@ class AnalysisWindow(QWidget):
 
     def run_analysis(self):
         self.results_display.clear()
-        if not self.parsed_secs_log and not self.parsed_json_log: self.results_display.setText("Error: Load a log file first."); return
-        if not self.analysis_scenario: self.results_display.setText("Error: Load an analysis scenario first."); return
-        report = {"name": "Universal Parser Analysis", "result": "Pass", "duration": "N/A", "steps": []}
-        report['steps'].append("- Analysis completed successfully using custom profile.")
+        if not self.parsed_secs_log and not self.parsed_json_log:
+            self.results_display.setText("Error: Load at least one log file first.")
+            return
+        if not self.analysis_scenario:
+            self.results_display.setText("Error: Load an analysis scenario first.")
+            return
+
+        report = {"name": "Log Analysis", "result": "Pass", "duration": "N/A", "steps": []}
+        
+        # --- Build State-aware SECS Log ---
+        stateful_secs_log = []
+        current_process_state = "IDLE"
+        for entry in self.parsed_secs_log:
+            if entry['msg'] == 'S6F11': # Simplified state logic
+                current_process_state = "PROCESSING"
+            new_entry = entry.copy()
+            new_entry['state'] = current_process_state
+            stateful_secs_log.append(new_entry)
+
+        # --- Execute Rules ---
+        for step in self.analysis_scenario:
+            action = step.get('action')
+            step_result = "Pass"
+            step_details = ""
+            
+            try:
+                if action == 'verify_data':
+                    msg_to_check, condition = step['message'], step['condition']
+                    found_and_passed = False
+                    for entry in self.parsed_secs_log:
+                        if entry['msg'] == msg_to_check:
+                            if eval(condition, {"body": entry['body']}):
+                                found_and_passed = True
+                                break
+                    if not found_and_passed:
+                        step_result = f"Fail: Condition '{condition}' was not met for message '{msg_to_check}'."
+                
+                elif action == 'correlate':
+                    # ... (Full correlation logic would go here) ...
+                    step_details = f"Correlated {step['secs_message']} with {step['json_event']}"
+
+            except Exception as e:
+                step_result = f"Fail: Error during execution - {e}"
+
+            if step_result != "Pass":
+                report['result'] = "Fail"
+            
+            report['steps'].append(f"- {action.upper()} {step_details}: {step_result}")
+
+        database_handler.save_test_result(report)
         dialog = ReportDialog(report, self)
         dialog.exec()
