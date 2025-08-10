@@ -138,10 +138,14 @@ class AnalysisWindow(QWidget):
             elif isinstance(loaded_data, list): self.analysis_scenario = loaded_data
             else:
                 self.results_display.setText("Error: Invalid scenario file format."); self.analysis_scenario = []; return
+            
             self.scenario_list.clear()
             for i, step in enumerate(self.analysis_scenario):
                 if isinstance(step, dict) and 'action' in step:
-                    self.scenario_list.addItem(f"{i+1}: {step['action'].upper()}")
+                    # Display more details about the rule
+                    action = step['action'].upper()
+                    details = step.get('message', step.get('event', ''))
+                    self.scenario_list.addItem(f"{i+1}: {action} - {details}")
 
     def run_analysis(self):
         self.results_display.clear()
@@ -183,8 +187,21 @@ class AnalysisWindow(QWidget):
                         step_result = f"Fail: Condition '{condition}' was not met for message '{msg_to_check}'."
                 
                 elif action == 'correlate':
-                    # ... (Full correlation logic would go here) ...
-                    step_details = f"Correlated {step['secs_message']} with {step['json_event']}"
+                    secs_msg, json_event = step['secs_message'], step['json_event']
+                    key_path_s, key_path_j = step['key_path_secs'], step['key_path_json']
+                    correlation_found = False
+                    for secs_entry in stateful_secs_log:
+                        if secs_entry['msg'] == secs_msg:
+                            secs_key = eval(key_path_s, {"body": secs_entry['body']})
+                            for json_entry in self.parsed_json_log:
+                                if json_entry['entry'].get('event') == json_event:
+                                    json_key = eval(key_path_j, {"entry": json_entry['entry']})
+                                    if secs_key == json_key:
+                                        correlation_found = True
+                                        break
+                            if correlation_found: break
+                    if not correlation_found:
+                        step_result = f"Fail: No correlation found."
 
             except Exception as e:
                 step_result = f"Fail: Error during execution - {e}"
