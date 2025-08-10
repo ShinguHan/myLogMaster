@@ -137,11 +137,26 @@ def parse_log_with_profile(log_filepath, profile):
                         _, s_type, f_type, _, _ = struct.unpack('>HBBH4s', header_bytes)
                         stream = s_type & 0x7F
                         msg = f"S{stream}F{f_type}"
+
+                        ascii_data = log_data.get('AsciiData', '')
+                        direction = "Unknown"
+                        if "-->" in ascii_data:
+                            direction = "Equip -> Host"
+                        elif "<--" in ascii_data: # Hypothetical for completeness
+                            direction = "Host -> Equip"
                         
                         # The body is everything after the 10-byte header
                         body_bytes = full_binary[10:]
                         body_obj = _parse_body_recursive(io.BytesIO(body_bytes))
-                        parsed_log['secs'].append({'msg': msg, 'body': body_obj})
+                        
+                        # parsed_log['secs'].append({'msg': msg, 'body': body_obj})
+                        parsed_log['secs'].append({'msg': msg, 'body': body_obj, 'direction': direction})
+
+
+
+
+
+
 
             elif msg_type == 'json':
                 json_str_raw = log_data.get('AsciiData', '')

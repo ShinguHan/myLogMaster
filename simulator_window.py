@@ -3,15 +3,15 @@ from PySide6.QtWidgets import (QMainWindow, QTextEdit, QVBoxLayout, QHBoxLayout,
                                QPushButton, QFileDialog, QListWidget, QSplitter,
                                QFormLayout, QComboBox, QSpinBox, QDialog, QDialogButtonBox, QLabel,
                                QAbstractItemView, QLineEdit, QListWidgetItem, QTreeWidget, QTreeWidgetItem,
-                               QMenu, QTabWidget) # Added QTabWidget
+                               QMenu, QTabWidget)
 from PySide6.QtGui import QAction
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWebEngineWidgets import QWebEngineView # FIX: Added the missing import
+from PySide6.QtWebEngineWidgets import QWebEngineView
 
 from message_factory import MessageFactory
 from secs_handler import EquipmentHandler, ScenarioExecutor
 from report_dialog import ReportDialog
-from flowchart_generator import generate_flowchart_html
+from sequence_diagram_generator import generate_sequence_html # New Import
 
 class QuickEditDialog(QDialog):
     def __init__(self, step_data, factory, parent=None):
@@ -85,6 +85,8 @@ class SimulatorWindow(QMainWindow):
         menu_bar = self.menuBar(); file_menu = menu_bar.addMenu("&File")
         load_action = QAction("&Load Scenario...", self); load_action.triggered.connect(self.load_scenario_from_file); file_menu.addAction(load_action)
         save_action = QAction("&Save Scenario", self); save_action.triggered.connect(self.save_scenario); file_menu.addAction(save_action)
+
+        # --- Editor Pane ---
         self.steps_list_widget = DraggableListWidget(self)
         self.steps_list_widget.customContextMenuRequested.connect(self.show_step_context_menu)
         self.steps_list_widget.currentItemChanged.connect(self.populate_step_editor)
@@ -98,54 +100,80 @@ class SimulatorWindow(QMainWindow):
         self.message_body_tree.setHeaderLabels(["Name", "Format", "Value"])
         step_editor_main_layout.addLayout(self.step_action_form); step_editor_main_layout.addWidget(QLabel("Message Body:")); step_editor_main_layout.addWidget(self.message_body_tree)
         editor_splitter = QSplitter(Qt.Orientation.Vertical); editor_splitter.addWidget(editor_widget); editor_splitter.addWidget(self.step_editor_widget)
-        self.flowchart_view = QWebEngineView(); self.flowchart_view.setHtml("<h1>Load a scenario to see the visual flow.</h1>")
-        self.editor_tabs = QTabWidget(); self.editor_tabs.addTab(editor_splitter, "Editor"); self.editor_tabs.addTab(self.flowchart_view, "Visual Flow")
+
+        # --- Visual Flow Pane ---
+        self.sequence_view = QWebEngineView()
+        self.sequence_view.setHtml("<h1>Load a scenario to see the sequence diagram.</h1>")
+
+        # --- Tab Widget for Editor and Flowchart ---
+        self.editor_tabs = QTabWidget()
+        self.editor_tabs.addTab(editor_splitter, "Editor")
+        self.editor_tabs.addTab(self.sequence_view, "Sequence Diagram")
+
+        # --- Log Viewer ---
         self.log_area = QTextEdit(); self.log_area.setReadOnly(True)
-        self.filter_input = QLineEdit(); self.filter_input.setPlaceholderText("Filter logs (e.g., 'S1F13' or 'level:ERROR')...")
+        self.filter_input = QLineEdit(); self.filter_input.setPlaceholderText("Filter logs...")
         self.filter_input.textChanged.connect(self.filter_logs)
         log_layout = QVBoxLayout(); log_layout.addWidget(self.filter_input); log_layout.addWidget(self.log_area)
         log_widget = QWidget(); log_widget.setLayout(log_layout)
+        
         self.btn_start_equip = QPushButton(f"Start Listener on Port {self.conn_details['port']}"); self.btn_start_equip.clicked.connect(self.start_equipment)
         self.btn_run_scenario = QPushButton("Run Current Scenario"); self.btn_run_scenario.clicked.connect(self.run_scenario)
         main_controls_layout = QHBoxLayout(); main_controls_layout.addWidget(self.btn_start_equip); main_controls_layout.addWidget(self.btn_run_scenario)
+        
         main_splitter = QSplitter(Qt.Orientation.Horizontal); main_splitter.addWidget(self.editor_tabs); main_splitter.addWidget(log_widget)
         main_splitter.setSizes([500, 700])
+        
         central_layout = QVBoxLayout(); central_layout.addLayout(main_controls_layout); central_layout.addWidget(main_splitter)
         central_widget = QWidget(); central_widget.setLayout(central_layout); self.setCentralWidget(central_widget)
 
-    def log_message(self, level, message):
-        timestamp = __import__('time').strftime('%H:%M:%S')
-        highlight_map = {"S5F1": "#ff4d6d"}
-        level_color_map = {
-            "SENT": "#007acc", "RECV": "#2a9d8f", "ERROR": "#e63946",
-            "UI_UPDATE": "#8d99ae", "SCENARIO": "#e9c46a", "INFO": "#577590"
-        }
-        color = highlight_map.get(message, level_color_map.get(level, "#333333"))
-        full_log_line = f"[{timestamp}] | {level} | {message}"
-        html_log_line = f'<span style="color: {color};">{full_log_line}</span>'
-        self.all_logs.append({'level': level, 'message': message, 'full_text': full_log_line, 'html': html_log_line})
-        self.filter_logs()
+    def update_sequence_view(self):
+        """Generates and displays the sequence diagram for the current scenario."""
+        if self.scenario_data and self.scenario_data.get('steps'):
+            html = generate_sequence_html(self.scenario_data)
+            self.sequence_view.setHtml(html)
+        else:
+            self.sequence_view.setHtml("<h1>No scenario loaded or scenario is empty.</h1>")
 
-    def filter_logs(self):
-        filter_text = self.filter_input.text().lower()
-        self.log_area.clear()
-        for log_entry in self.all_logs:
-            display = False
-            if not filter_text:
-                display = True
-            elif ":" in filter_text:
-                try:
-                    key, value = filter_text.split(":", 1)
-                    if key == 'level' and value == log_entry['level'].lower(): display = True
-                    elif key == 'msg' and value == log_entry['message'].lower(): display = True
-                except ValueError:
-                    if filter_text in log_entry['full_text'].lower(): display = True
-            else:
-                if filter_text in log_entry['full_text'].lower(): display = True
-            if display:
-                self.log_area.append(log_entry['html'])
-        self.log_area.verticalScrollBar().setValue(self.log_area.verticalScrollBar().maximum())
+    def load_scenario_from_file(self):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Load Scenario", "", "JSON Files (*.json)")
+        if filepath:
+            self.current_scenario_file_path = filepath
+            with open(filepath, 'r') as f: self.scenario_data = json.load(f)
+            self.log_message("UI_UPDATE", f"Scenario loaded from {filepath}")
+            self.refresh_steps_list()
+            self.update_sequence_view()
 
+    def refresh_steps_list(self):
+        self.steps_list_widget.model().rowsMoved.disconnect(self.on_steps_reordered)
+        self.steps_list_widget.currentItemChanged.disconnect(self.populate_step_editor)
+        self.steps_list_widget.clear()
+        for i, step in enumerate(self.scenario_data['steps']):
+            action = step.get('action', 'N/A').upper(); details = ""
+            if action in ["SEND", "EXPECT"]: details = step.get('message', '')
+            item = QListWidgetItem(f"{i+1}: {action} - {details}"); item.setData(Qt.UserRole, step); self.steps_list_widget.addItem(item)
+        self.steps_list_widget.model().rowsMoved.connect(self.on_steps_reordered)
+        self.steps_list_widget.currentItemChanged.connect(self.populate_step_editor)
+        self.update_sequence_view()
+
+    def add_step(self):
+        dialog = AddStepDialog(self)
+        if dialog.exec():
+            action = dialog.get_selected_action(); new_step = {"action": action}
+            if action in ["send", "expect"]: new_step["message"] = "S1F13"
+            else: new_step.update({"seconds": 1})
+            self.scenario_data['steps'].append(new_step)
+            self.refresh_steps_list(); self.steps_list_widget.setCurrentRow(len(self.scenario_data['steps']) - 1)
+    
+    def remove_step(self):
+        if (current_row := self.steps_list_widget.currentRow()) > -1:
+            del self.scenario_data['steps'][current_row]; self.refresh_steps_list()
+    
+    def on_steps_reordered(self):
+        new_order_data = [self.steps_list_widget.item(i).data(Qt.UserRole) for i in range(self.steps_list_widget.count())]
+        self.scenario_data['steps'] = new_order_data; self.refresh_steps_list(); self.log_message("UI_UPDATE", "Scenario steps reordered.")
+
+    # ... (rest of the methods are unchanged from the last stable version) ...
     def show_step_context_menu(self, pos):
         item = self.steps_list_widget.itemAt(pos)
         if not item: return
@@ -154,7 +182,6 @@ class SimulatorWindow(QMainWindow):
             menu = QMenu(); quick_edit_action = menu.addAction("Quick Edit Parameters...")
             action = menu.exec(self.steps_list_widget.mapToGlobal(pos))
             if action == quick_edit_action: self.quick_edit_step(row)
-
     def quick_edit_step(self, row):
         step_data = self.scenario_data['steps'][row]; dialog = QuickEditDialog(step_data, self.factory, self)
         if dialog.exec():
@@ -162,18 +189,6 @@ class SimulatorWindow(QMainWindow):
             self.scenario_data['steps'][row]['body_definition_override'] = updated_body_def
             self.log_message("UI_UPDATE", f"Quick edited parameters for step {row + 1}")
             self.populate_step_editor(self.steps_list_widget.currentItem(), None)
-
-    def update_flowchart_view(self):
-        html = generate_flowchart_html(self.scenario_data) if self.scenario_data and self.scenario_data['steps'] else "<h1>No scenario loaded.</h1>"
-        self.flowchart_view.setHtml(html)
-
-    def load_scenario_from_file(self):
-        filepath, _ = QFileDialog.getOpenFileName(self, "Load Scenario", "", "JSON Files (*.json)")
-        if filepath:
-            self.current_scenario_file_path = filepath;
-            with open(filepath, 'r') as f: self.scenario_data = json.load(f)
-            self.log_message("UI_UPDATE", f"Scenario loaded from {filepath}"); self.refresh_steps_list(); self.update_flowchart_view()
-
     def populate_step_editor(self, current, previous):
         while self.step_action_form.rowCount() > 0: self.step_action_form.removeRow(0)
         self.message_body_tree.clear(); row = self.steps_list_widget.currentRow()
@@ -189,10 +204,10 @@ class SimulatorWindow(QMainWindow):
             if msg_name in self.factory.library:
                 msg_spec = self.factory.library[msg_name]; body_def = step_data.get('body_definition_override', msg_spec.get('body_definition', []))
                 self.build_body_tree(self.message_body_tree, body_def)
-
     def build_body_tree(self, parent_widget, item_definitions):
         for item_def in item_definitions:
-            tree_item = QTreeWidgetItem(); tree_item.setText(0, item_def.get('name', '')); tree_item.setText(1, item_def.get('format', ''))
+            tree_item = QTreeWidgetItem()
+            tree_item.setText(0, item_def.get('name', '')); tree_item.setText(1, item_def.get('format', ''))
             if isinstance(parent_widget, QTreeWidget): parent_widget.addTopLevelItem(tree_item)
             else: parent_widget.addChild(tree_item)
             item_format = item_def.get('format')
@@ -200,72 +215,54 @@ class SimulatorWindow(QMainWindow):
             else:
                 value = item_def.get('value', ''); editor = QLineEdit(str(value))
                 self.message_body_tree.setItemWidget(tree_item, 2, editor)
-
-    def on_steps_reordered(self):
-        new_order_data = [self.steps_list_widget.item(i).data(Qt.UserRole) for i in range(self.steps_list_widget.count())]
-        self.scenario_data['steps'] = new_order_data; self.refresh_steps_list(); self.log_message("UI_UPDATE", "Scenario steps reordered."); self.update_flowchart_view()
-
-    def refresh_steps_list(self):
-        self.steps_list_widget.model().rowsMoved.disconnect(self.on_steps_reordered); self.steps_list_widget.currentItemChanged.disconnect(self.populate_step_editor)
-        self.steps_list_widget.clear()
-        for i, step in enumerate(self.scenario_data['steps']):
-            action = step.get('action', 'N/A').upper(); details = ""
-            if action in ["SEND", "EXPECT"]: details = step.get('message', '')
-            item = QListWidgetItem(f"{i+1}: {action} - {details}"); item.setData(Qt.UserRole, step); self.steps_list_widget.addItem(item)
-        self.steps_list_widget.model().rowsMoved.connect(self.on_steps_reordered); self.steps_list_widget.currentItemChanged.connect(self.populate_step_editor)
-        self.update_flowchart_view()
-
-    def add_step(self):
-        dialog = AddStepDialog(self)
-        if dialog.exec():
-            action = dialog.get_selected_action(); new_step = {"action": action}
-            if action in ["send", "expect"]: new_step["message"] = "S1F13"
-            else: new_step.update({"seconds": 1})
-            self.scenario_data['steps'].append(new_step); self.refresh_steps_list(); self.steps_list_widget.setCurrentRow(len(self.scenario_data['steps']) - 1)
-
-    def remove_step(self):
-        if (current_row := self.steps_list_widget.currentRow()) > -1: del self.scenario_data['steps'][current_row]; self.refresh_steps_list()
-
     def update_step_data(self, row, key, value):
         if row < len(self.scenario_data['steps']):
             is_major_change = key == 'action' or key == 'message'
             self.scenario_data['steps'][row][key] = value
             self.update_list_item_text(row); self.log_message("UI_UPDATE", f"Step {row + 1}: Set '{key}' to '{value}'")
             if is_major_change: QTimer.singleShot(0, lambda: self.populate_step_editor(self.steps_list_widget.currentItem(), None))
-            self.update_flowchart_view()
-
+            self.update_sequence_view()
     def update_list_item_text(self, row):
         item = self.steps_list_widget.item(row)
         if not item: return
         step = self.scenario_data['steps'][row]; action = step.get('action', 'N/A').upper(); details = ""
         if action in ["SEND", "EXPECT"]: details = step.get('message', '')
         item.setText(f"{row+1}: {action} - {details}")
-
     def start_equipment(self):
         handler = EquipmentHandler(self.factory, self.conn_details); handler.log_signal.connect(self.log_message); handler.start(); self.btn_start_equip.setEnabled(False)
-
     def run_scenario(self):
         if not self.scenario_data['steps']: self.log_message("ERROR", "Scenario has no steps."); return
         self.btn_run_scenario.setEnabled(False); executor = ScenarioExecutor(self.factory, self.scenario_data, self.conn_details)
         executor.log_signal.connect(self.log_message); executor.scenario_finished.connect(self.show_report); executor.start()
-
     def show_report(self, report):
         self.btn_run_scenario.setEnabled(True); dialog = ReportDialog(report, self); dialog.exec()
-
+    def log_message(self, level, message):
+        timestamp = __import__('time').strftime('%H:%M:%S'); color_map = {"SENT": "#007acc", "RECV": "#2a9d8f", "ERROR": "#e63946", "UI_UPDATE": "#8d99ae", "SCENARIO": "#e9c46a", "INFO": "#577590"}
+        color = color_map.get(level, "#333333"); full_log_line = f"[{timestamp}] | {level} | {message}"; html_log_line = f'<span style="color: {color};">{full_log_line}</span>'
+        self.all_logs.append({'level': level, 'message': message, 'full_text': full_log_line, 'html': html_log_line})
+        self.filter_logs()
+    def filter_logs(self):
+        filter_text = self.filter_input.text().lower(); self.log_area.clear()
+        for log_entry in self.all_logs:
+            display = False
+            if not filter_text: display = True
+            elif ":" in filter_text:
+                try:
+                    key, value = filter_text.split(":", 1)
+                    if key == 'level' and value == log_entry['level'].lower(): display = True
+                    elif key == 'msg' and value == log_entry['message'].lower(): display = True
+                except ValueError:
+                    if filter_text in log_entry['full_text'].lower(): display = True
+            else:
+                if filter_text in log_entry['full_text'].lower(): display = True
+            if display: self.log_area.append(log_entry['html'])
+        self.log_area.verticalScrollBar().setValue(self.log_area.verticalScrollBar().maximum())
     def save_scenario(self, save_as=False):
         filepath = self.current_scenario_file_path
         if save_as or not filepath: filepath, _ = QFileDialog.getSaveFileName(self, "Save Scenario As...", "", "JSON Files (*.json)")
         if filepath:
             self.current_scenario_file_path = filepath;
             with open(filepath, 'w') as f: json.dump(self.scenario_data, f, indent=2); self.log_message("UI_UPDATE", f"Scenario saved to {filepath}")
-
-    def load_scenario_from_file(self):
-        filepath, _ = QFileDialog.getOpenFileName(self, "Load Scenario", "", "JSON Files (*.json)")
-        if filepath:
-            self.current_scenario_file_path = filepath;
-            with open(filepath, 'r') as f: self.scenario_data = json.load(f)
-            self.log_message("UI_UPDATE", f"Scenario loaded from {filepath}"); self.refresh_steps_list()
-
     def import_library(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Import Library", "", "JSON Files (*.json)")
         if filepath:

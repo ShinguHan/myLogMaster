@@ -53,7 +53,6 @@ class AnalysisWindow(QWidget):
         self.generate_secs_lib_btn.clicked.connect(self.generate_secs_library)
         self.generate_secs_lib_btn.setEnabled(False)
 
-        # FIX: Button for MHS Schema Generation
         self.generate_mhs_schema_btn = QPushButton("Generate MHS Schema")
         self.generate_mhs_schema_btn.clicked.connect(self.generate_mhs_schema)
         self.generate_mhs_schema_btn.setEnabled(False)
@@ -63,7 +62,7 @@ class AnalysisWindow(QWidget):
         generator_bar = QHBoxLayout()
         generator_bar.addWidget(self.generate_scenario_btn)
         generator_bar.addWidget(self.generate_secs_lib_btn)
-        generator_bar.addWidget(self.generate_mhs_schema_btn) # Add button to layout
+        generator_bar.addWidget(self.generate_mhs_schema_btn)
         
         log_viewers = QHBoxLayout()
         secs_pane = QVBoxLayout(); secs_pane.addWidget(QLabel("Parsed SECS/GEM Log")); secs_pane.addWidget(self.secs_log_display)
@@ -108,8 +107,14 @@ class AnalysisWindow(QWidget):
 
     def generate_scenario(self):
         if not self.parsed_secs_log: return
-        # This part of the code needs to be updated if the parser doesn't provide 'direction'.
-        self.results_display.setText("Scenario generation from this log type is not yet fully implemented.")
+            
+        generated_data = generate_scenario_from_log(self.parsed_secs_log)
+        
+        filepath, _ = QFileDialog.getSaveFileName(self, "Save Generated Scenario", "", "JSON Files (*.json)")
+        if filepath:
+            with open(filepath, 'w') as f:
+                json.dump(generated_data, f, indent=2)
+            self.results_display.setText(f"Scenario successfully generated and saved to:\n{filepath}")
 
     def generate_secs_library(self):
         if not self.parsed_secs_log: return
