@@ -1,0 +1,15 @@
+{
+    "visible_columns": [
+        "Category",
+        "LevelID",
+        "SystemDate",
+        "DeviceID",
+        "MethodID",
+        "TrackingID",
+        "AsciiData",
+        "SourceID",
+        "MessageName",
+        "LogParserClassName",
+        "ParsedBody"
+    ]
+}
