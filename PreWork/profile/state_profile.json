@@ -10,11 +10,11 @@
         },
         {
           "source_type": "debug",
-          "identity_regex": "CarrierData=\\(id=([^,]+),"
+          "identity_regex": "CarrierData=\\\\(id=([^,]+),"
         }
       ],
       "states": {
-        "initial": "UNKNOWN",
+        "initial": "IDLE",
         "transitions": [
           {
             "trigger_log_contains": "carrier.movement.requested",
@@ -26,7 +26,7 @@
           },
           {
             "trigger_log_contains": "carrier.movement.cancelled",
-            "new_state": "IDLE"
+            "new_state": "CANCELLING" 
           },
           {
             "trigger_log_contains": "moveStatus=NoMove",

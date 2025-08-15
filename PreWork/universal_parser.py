@@ -66,9 +66,11 @@ def parse_log_with_profile(log_filepath, profile):
     """
     Parses a complex, multi-line log file using the Director's final, proven logic.
     """
-    # ⭐️ 변경점: 최종 결과를 하나의 리스트로 통합
-    parsed_entries = []
-    
+    parsed_log = {'secs': [], 'json': [], 'debug_log': []}
+    debug = parsed_log['debug_log'].append
+
+    debug("--- Starting Universal Parser (Final Corrected Logic) ---")
+
     with open(log_filepath, 'r', newline='', encoding='utf-8') as f:
         lines = f.readlines()
 
@@ -81,17 +83,20 @@ def parse_log_with_profile(log_filepath, profile):
             try:
                 headers = next(csv.reader([line]))
                 header_line_index = i
+                debug(f"Header row found on line {i + 1}: {headers}")
                 break
             except StopIteration:
                 continue
     
     if header_line_index == -1:
-        return []
+        debug("CRITICAL ERROR: Could not find the header row.")
+        return parsed_log
 
     try:
         col_map = {name: headers.index(col_name) for name, col_name in profile.get('column_mapping', {}).items()}
     except ValueError as e:
-        return []
+        debug(f"CRITICAL ERROR: Column name from profile not in header: {e}")
+        return parsed_log
 
     log_entry_starters = tuple(f'"{cat}"' for cat in ["Info", "Debug", "Com", "Error"])
     entry_buffer = []
@@ -102,6 +107,7 @@ def parse_log_with_profile(log_filepath, profile):
         if not buffer: return
         full_entry_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
         try:
+            # Use the robust manual parser from our successful test
             if full_entry_line.startswith('"') and full_entry_line.endswith('"'):
                 full_entry_line = full_entry_line[1:-1]
             row = full_entry_line.split('","')
@@ -111,41 +117,61 @@ def parse_log_with_profile(log_filepath, profile):
             log_data = {header: value for header, value in zip(headers, row)}
 
             msg_type = None
+            # FIX: Sanitize the category value by removing quotes before comparison
             category = log_data.get("Category", "").replace('"', '')
             for rule in profile.get('type_rules', []):
                 if category == rule['value']:
                     msg_type = rule['type']
                     break
             
-            if not msg_type: 
-                # ⭐️ 변경점: 타입이 없는 일반 로그도 추가
-                log_data['ParsedType'] = 'Log'
-                parsed_entries.append(log_data)
-                return
+            if not msg_type: return
 
             if msg_type == 'secs':
                 raw_full_hex = log_data.get('BinaryData', '')
-                if raw_full_hex and len(raw_full_hex) >= 20:
+                if raw_full_hex:
                     full_binary = bytes.fromhex(raw_full_hex)
-                    header_bytes = full_binary[0:10]
-                    _, s_type, f_type, _, _ = struct.unpack('>HBBH4s', header_bytes)
-                    stream = s_type & 0x7F
                     
-                    log_data['ParsedType'] = 'SECS'
-                    log_data['ParsedBody'] = f"S{stream}F{f_type}"
-                    parsed_entries.append(log_data)
+                    # RESTORED CORRECT LOGIC: The BinaryData starts directly with the 10-byte header.
+                    if len(full_binary) >= 10:
+                        header_bytes = full_binary[0:10] # Read from the beginning
+                        _, s_type, f_type, _, _ = struct.unpack('>HBBH4s', header_bytes)
+                        stream = s_type & 0x7F
+                        msg = f"S{stream}F{f_type}"
+
+                        ascii_data = log_data.get('AsciiData', '')
+                        direction = "Unknown"
+                        if "-->" in ascii_data:
+                            direction = "Equip -> Host"
+                        elif "<--" in ascii_data: # Hypothetical for completeness
+                            direction = "Host -> Equip"
+                        
+                        # The body is everything after the 10-byte header
+                        body_bytes = full_binary[10:]
+                        body_obj = _parse_body_recursive(io.BytesIO(body_bytes))
+                        
+                        # parsed_log['secs'].append({'msg': msg, 'body': body_obj})
+                        parsed_log['secs'].append({'msg': msg, 'body': body_obj, 'direction': direction})
+
+
+
+
+
+
 
             elif msg_type == 'json':
                 json_str_raw = log_data.get('AsciiData', '')
                 start_index = json_str_raw.find('{')
                 if start_index != -1:
-                    # ... (기존 JSON 파싱 로직) ...
-                    log_data['ParsedType'] = 'JSON'
-                    log_data['ParsedBody'] = json_str_raw[start_index:]
-                    parsed_entries.append(log_data)
-            else:
-                 parsed_entries.append(log_data)
-
+                    brace_count = 0; end_index = -1
+                    for char_idx in range(start_index, len(json_str_raw)):
+                        if json_str_raw[char_idx] == '{': brace_count += 1
+                        elif json_str_raw[char_idx] == '}': brace_count -= 1
+                        if brace_count == 0: end_index = char_idx + 1; break
+                    if end_index != -1:
+                        json_str = json_str_raw[start_index:end_index]
+                        cleaned_json_str = json_str.replace('\xa0', ' ')
+                        json_data = json.loads(cleaned_json_str)
+                        parsed_log['json'].append({'entry': json_data})
         except Exception:
             pass
 
@@ -161,4 +187,5 @@ def parse_log_with_profile(log_filepath, profile):
     
     process_buffer(entry_buffer)
 
-    return parsed_entries
+    debug(f"--- Parser Finished: Found {len(parsed_log['secs'])} SECS and {len(parsed_log['json'])} JSON messages. ---")
+    return parsed_log
