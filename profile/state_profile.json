@@ -1,0 +1,39 @@
+{
+  "tracked_objects": [
+    {
+      "name": "Carrier",
+      "identity_key": "carrierId",
+      "log_sources": [
+        {
+          "source_type": "json",
+          "identity_path": "refDS.IN_DATA[0].DURABLE_ID"
+        },
+        {
+          "source_type": "debug",
+          "identity_regex": "CarrierData=\\(id=([^,]+),"
+        }
+      ],
+      "states": {
+        "initial": "UNKNOWN",
+        "transitions": [
+          {
+            "trigger_log_contains": "carrier.movement.requested",
+            "new_state": "MOVE_REQUESTED"
+          },
+          {
+            "trigger_log_contains": "moveStatus=MovePending",
+            "new_state": "MOVE_PENDING"
+          },
+          {
+            "trigger_log_contains": "carrier.movement.cancelled",
+            "new_state": "IDLE"
+          },
+          {
+            "trigger_log_contains": "moveStatus=NoMove",
+            "new_state": "IDLE"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -13,6 +13,7 @@ from library_generator import generate_library_from_log, generate_schema_from_js
 from sequence_diagram_generator import generate_sequence_html
 import database_handler
 from analysis_engine import AnalysisEngine # New Import
+import os
 
 class DeviceIdDialog(QDialog):
     def __init__(self, parent=None):
@@ -129,12 +130,35 @@ class AnalysisWindow(QWidget):
     def load_analysis_scenario(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Load Analysis Scenario", "", "JSON Files (*.json)")
         if filepath:
-            with open(filepath, 'r') as f: loaded_data = json.load(f)
-            if isinstance(loaded_data, dict) and 'steps' in loaded_data: self.analysis_scenario = loaded_data['steps']
-            elif isinstance(loaded_data, list): self.analysis_scenario = loaded_data
-            else: self.results_display.setText("Error: Invalid scenario file format."); self.analysis_scenario = []; return
+            try: # <-- 오류 처리를 위한 try 블록 추가
+                with open(filepath, 'r') as f:
+                    # 파일이 비어있는지 먼저 확인
+                    if os.path.getsize(filepath) == 0:
+                        self.results_display.setText("Error: Selected scenario file is empty.")
+                        self.analysis_scenario = []
+                        return
+                    loaded_data = json.load(f)
+            except json.JSONDecodeError as e: # <-- JSON 디코딩 오류를 구체적으로 처리
+                self.results_display.setText(f"Error: Invalid JSON format in {os.path.basename(filepath)}\nDetails: {e}")
+                self.analysis_scenario = []
+                return
+            except Exception as e: # <-- 그 외 예외 처리
+                self.results_display.setText(f"An unexpected error occurred: {e}")
+                self.analysis_scenario = []
+                return
+
+            if isinstance(loaded_data, dict) and 'steps' in loaded_data:
+                self.analysis_scenario = loaded_data['steps']
+            elif isinstance(loaded_data, list):
+                self.analysis_scenario = loaded_data
+            else:
+                self.results_display.setText("Error: Invalid scenario file format.")
+                self.analysis_scenario = []
+                return
+                
             self.scenario_list.clear()
             for i, step in enumerate(self.analysis_scenario):
                 if isinstance(step, dict) and 'action' in step:
-                    action = step['action'].upper(); details = step.get('message', step.get('event', ''))
+                    action = step['action'].upper()
+                    details = step.get('message', step.get('event', ''))
                     self.scenario_list.addItem(f"{i+1}: {action} - {details}")
