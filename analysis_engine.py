@@ -1,22 +1,29 @@
 import importlib
 import os
+from types import SimpleNamespace
 
 class AnalysisEngine:
     def __init__(self):
         self.rules = self._discover_rules()
+        print(f"Discovered rules: {list(self.rules.keys())}")
 
     def _discover_rules(self):
         """Dynamically finds and imports all available rule plug-ins."""
         rules = {}
         rules_dir = "rules"
+        # Ensure the rules directory exists
+        if not os.path.isdir(rules_dir):
+            return rules
+            
         for filename in os.listdir(rules_dir):
             if filename.endswith(".py") and not filename.startswith("__"):
-                rule_name = filename[:-3] # Remove .py extension
+                rule_name = filename[:-3]
                 try:
                     module = importlib.import_module(f"{rules_dir}.{rule_name}")
                     if hasattr(module, 'execute'):
                         rules[rule_name] = module.execute
-                except ImportError:
+                except ImportError as e:
+                    print(f"Failed to import rule {rule_name}: {e}")
                     continue
         return rules
 
@@ -26,18 +33,17 @@ class AnalysisEngine:
         """
         report = {"name": "Log Analysis", "result": "Pass", "duration": "N/A", "steps": []}
         
-        # --- Pre-computation Pass (e.g., State Analysis) ---
-        # This can be enhanced later to be a plug-in as well
+        # --- Pre-computation Pass ---
         stateful_secs_log = []
         current_process_state = "IDLE"
         for entry in parsed_log_data.get('secs', []):
-            if entry['msg'] == 'S6F11':
+            # Simplified state logic
+            if entry.get('msg') == 'S6F11':
                 current_process_state = "PROCESSING"
             new_entry = entry.copy()
             new_entry['state'] = current_process_state
             stateful_secs_log.append(new_entry)
         
-        # Add the stateful log to the data bundle passed to rules
         log_data_bundle = {
             "secs": parsed_log_data.get('secs', []),
             "json": parsed_log_data.get('json', []),
