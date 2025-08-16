@@ -25,7 +25,7 @@ class DashboardDialog(QDialog):
             if self.df.empty: return widget
 
             num_logs = len(self.df)
-            num_bins = 100
+            num_bins = 1000
             
             # 데이터가 100개 미만일 경우 처리
             if num_logs < num_bins:

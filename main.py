@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction
 
+# 새로 만든 클래스들 임포트
+from QueryBuilderDialog import QueryBuilderDialog
 from DashboardDialog import DashboardDialog
 from VisualizationDialog import VisualizationDialog
 from TraceDialog import TraceDialog
@@ -68,6 +70,7 @@ class LogAnalyzerApp(QMainWindow):
         
     def _create_menu(self):
         menu_bar = self.menuBar()
+        
         file_menu = menu_bar.addMenu("&File")
         open_action = QAction("&Open Log File...", self)
         open_action.triggered.connect(self.open_log_file)
@@ -81,18 +84,39 @@ class LogAnalyzerApp(QMainWindow):
         select_columns_action = QAction("&Select Columns...", self)
         select_columns_action.triggered.connect(self.open_column_selection_dialog)
         view_menu.addAction(select_columns_action)
-        
         view_menu.addSeparator()
         dashboard_action = QAction("Show Dashboard...", self)
         dashboard_action.triggered.connect(self.show_dashboard)
         view_menu.addAction(dashboard_action)
 
-    def show_dashboard(self):
-        """데이터 대시보드 다이얼로그를 엽니다."""
+        # "Tools" 메뉴 추가
+        tools_menu = menu_bar.addMenu("&Tools")
+        query_builder_action = QAction("Advanced Filter...", self)
+        query_builder_action.triggered.connect(self.open_query_builder)
+        tools_menu.addAction(query_builder_action)
+
+    def open_query_builder(self):
+        """고급 쿼리 빌더 다이얼로그를 엽니다."""
         if self.source_model._data.empty:
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
+            
+        column_names = [self.source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(self.source_model.columnCount())]
         
+        dialog = QueryBuilderDialog(column_names, self)
+        if dialog.exec():
+            query_data = dialog.get_query_data()
+            if query_data:
+                print("--- Query Data to be Processed ---")
+                print(query_data)
+                # TODO: 다음 단계에서 이 데이터를 사용하여 실제 필터링 로직을 구현합니다.
+            else:
+                print("No conditions entered.")
+
+    def show_dashboard(self):
+        if self.source_model._data.empty:
+            QMessageBox.information(self, "Info", "Please load a log file first.")
+            return
         self.dashboard_dialog = DashboardDialog(self.source_model._data, self)
         self.dashboard_dialog.exec()
 
@@ -110,7 +134,6 @@ class LogAnalyzerApp(QMainWindow):
             tracking_id = self.source_model.get_data_by_col_name(source_index.row(), "TrackingID")
             if tracking_id and tracking_id.strip():
                 menu.addSeparator()
-                
                 trace_action = QAction(f"Trace Event Flow: '{tracking_id}'", self)
                 trace_action.triggered.connect(lambda: self.start_event_trace(tracking_id))
                 menu.addAction(trace_action)
@@ -132,8 +155,7 @@ class LogAnalyzerApp(QMainWindow):
         df = self.source_model._data
         mask = df.apply(lambda r: r.astype(str).str.contains(trace_id, case=False, na=False).any(), axis=1)
         scenario_df = df[mask]
-        
-        com_logs = scenario_df[scenario_df['Category'].str.replace('"', '') == 'Com'].sort_values(by='SystemDate')
+        com_logs = scenario_df[scenario_df['Category'].str.replace('"', '', regex=False) == 'Com'].sort_values(by='SystemDate')
 
         if com_logs.empty:
             QMessageBox.information(self, "Info", f"No SECS messages (Com logs) found related to ID: {trace_id}")
@@ -167,7 +189,6 @@ class LogAnalyzerApp(QMainWindow):
     def _display_log_detail(self, source_index):
         try:
             category = self.source_model.get_data_by_col_name(source_index.row(), "Category")
-            
             display_object = self.source_model.get_data_by_col_name(source_index.row(), "ParsedBodyObject")
             
             if display_object is None:
@@ -188,7 +209,6 @@ class LogAnalyzerApp(QMainWindow):
                             else:
                                 lines.append(f"{indent_str}<{item.type} '{item.value}'>")
                         return lines
-                    
                     formatted_text = "\n".join(format_secs_obj(display_object))
                     self.detail_view.setText(formatted_text)
                 else:
