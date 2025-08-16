@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QTableView
 from PySide6.QtCore import QSortFilterProxyModel, Qt
-from LogTableModel import LogTableModel
+from models.LogTableModel import LogTableModel
 
 class TraceDialog(QDialog):
     def __init__(self, trace_data, trace_id, parent=None):
