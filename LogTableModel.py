@@ -40,3 +40,16 @@ class LogTableModel(QAbstractTableModel):
         else:
              self._data = pd.DataFrame()
         self.endResetModel()
+    
+    # ⭐️ 이 함수가 누락되어 에러가 발생했습니다.
+    def get_data_by_col_name(self, row_index, column_name):
+        """행 인덱스와 컬럼 이름으로 특정 셀의 데이터를 가져옵니다."""
+        if self._data.empty:
+            return None
+        try:
+            # get_loc은 컬럼 이름으로 정수 인덱스를 찾아줍니다.
+            col_index = self._data.columns.get_loc(column_name)
+            return self._data.iloc[row_index, col_index]
+        except (KeyError, IndexError):
+            # 해당 컬럼이 없거나 행 인덱스가 범위를 벗어난 경우
+            return None
