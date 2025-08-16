@@ -8,6 +8,7 @@ from models.LogTableModel import LogTableModel
 from analysis_result import AnalysisResult
 
 FILTERS_FILE = 'filters.json'
+SCENARIOS_DIR = 'scenarios' # ⭐️ 시나리오 디렉토리 경로 상수 추가
 
 class AppController(QObject):
     model_updated = Signal(LogTableModel)
@@ -107,63 +108,98 @@ class AppController(QObject):
         com_logs = scenario_df[scenario_df['Category'].str.replace('"', '', regex=False) == 'Com'].sort_values(by='SystemDate')
         return com_logs
 
-    # ⭐️ --- 시나리오 검증 엔진 --- ⭐️
-    def run_scenario_validation(self):
+    # ⭐️ --- 시나리오 검증 엔진 (상태 머신 업그레이드) --- ⭐️
+    # ⭐️ --- 이 메서드 전체를 아래 내용으로 교체합니다 --- ⭐️
+    def run_scenario_validation(self, scenario_to_run=None):
+        """scenarios 폴더를 읽어 정의된 시나리오들을 상태 머신으로 검증합니다."""
         if self.original_data.empty:
             return "오류: 로그 데이터가 없습니다."
 
-        try:
-            with open('scenarios.json', 'r', encoding='utf-8') as f:
-                scenarios = json.load(f)
-        except FileNotFoundError:
-            return "오류: 'scenarios.json' 파일을 찾을 수 없습니다."
-        except json.JSONDecodeError:
-            return "오류: 'scenarios.json' 파일의 형식이 잘못되었습니다."
+        scenarios = self.load_all_scenarios()
+        if "Error" in scenarios:
+            return f"오류: {scenarios['Error']['description']}"
 
         results = ["=== 시나리오 검증 결과 ==="]
-        df = self.original_data.sort_values(by='SystemDate_dt').reset_index(drop=True)
+        df = self.original_data.sort_values(by='SystemDate_dt').reset_index()
 
         for name, scenario in scenarios.items():
-            trigger_rule = scenario['trigger_event']
-            trigger_indices = self._find_event_indices(df, trigger_rule)
-            
-            success_count = 0
-            # ⭐️ 실패 정보를 상세히 기록할 리스트
-            failures = [] 
-
-            if not trigger_indices.any():
-                results.append(f"[{name}]: 시작 이벤트를 찾을 수 없습니다.")
+            if scenario_to_run and name != scenario_to_run:
                 continue
-
-            for idx in trigger_indices:
-                first_step = scenario['steps'][0]
-                time_limit = first_step['max_delay_seconds']
-                trigger_time = df.loc[idx, 'SystemDate_dt']
-                
-                search_df = df.loc[idx + 1:]
-                time_bound = trigger_time + pd.Timedelta(seconds=time_limit)
-                search_df = search_df[search_df['SystemDate_dt'] <= time_bound]
-
-                found_indices = self._find_event_indices(search_df, first_step['event_match'])
-
-                if not found_indices.empty:
-                    success_count += 1
-                else:
-                    # ⭐️ 실패 시, 단순 카운트가 아닌 상세 정보 기록
-                    failures.append({
-                        "trigger_row": idx,
-                        "trigger_time": str(trigger_time),
-                        "expected_step": first_step['name']
-                    })
             
-            # 최종 결과 리포트 생성
-            summary = f"[{name}]: {len(trigger_indices)}회 시작 -> Step 1 성공: {success_count}회, 실패: {len(failures)}회"
-            results.append(summary)
-            if failures:
-                results.append("  [실패 상세 정보 (최대 3건)]")
-                for fail in failures[:3]:
-                    results.append(f"    - Trigger at row {fail['trigger_row']} ({fail['trigger_time']}), Expected: '{fail['expected_step']}'")
+            # --- 상태 머신 초기화 ---
+            active_scenarios = {}  # {key: state}
+            completed_scenarios = [] # {status, events, message}
+            key_columns = scenario.get('key_columns', [])
 
+            # --- 로그 파일 전체 순회 ---
+            for index, row in df.iterrows():
+                current_time = row['SystemDate_dt']
+                
+                # 1. 타임아웃 검사
+                timed_out_keys = []
+                for key, state in active_scenarios.items():
+                    time_limit = scenario['steps'][state['current_step']]['max_delay_seconds']
+                    if current_time > state['last_event_time'] + pd.Timedelta(seconds=time_limit):
+                        state['status'] = 'FAIL'
+                        state['message'] = f"Timeout at Step {state['current_step']+1}: {scenario['steps'][state['current_step']]['name']}"
+                        completed_scenarios.append(state)
+                        timed_out_keys.append(key)
+                for key in timed_out_keys:
+                    del active_scenarios[key]
+
+                # 2. 상태 전이 (다음 단계 진행) 검사
+                progressed_keys = []
+                for key, state in active_scenarios.items():
+                    # 현재 상태에서 다음으로 기대되는 단계를 확인
+                    next_step_rule = scenario['steps'][state['current_step']]['event_match']
+                    if self._match_event(row, next_step_rule):
+                        state['events'].append(row.to_dict())
+                        state['current_step'] += 1
+                        state['last_event_time'] = current_time
+                        
+                        # 시나리오의 모든 단계를 통과했는지 확인
+                        if state['current_step'] >= len(scenario['steps']):
+                            state['status'] = 'SUCCESS'
+                            state['message'] = 'Scenario completed successfully.'
+                            completed_scenarios.append(state)
+                            progressed_keys.append(key)
+                for key in progressed_keys:
+                    del active_scenarios[key]
+
+                # 3. 새로운 트리거 감지 (기존에 진행 중인 시나리오가 아닐 경우에만)
+                trigger_rule = scenario['trigger_event']
+                if self._match_event(row, trigger_rule):
+                    key = tuple(row[k] for k in key_columns) if key_columns else index
+                    if key not in active_scenarios:
+                        active_scenarios[key] = {
+                            'scenario_name': name,
+                            'start_index': index,
+                            'start_time': current_time,
+                            'last_event_time': current_time,
+                            'current_step': 0,
+                            'status': 'IN_PROGRESS',
+                            'message': '',
+                            'events': [row.to_dict()]
+                        }
+
+            # 로그 파일 순회가 끝난 후, 아직 진행 중인 시나리오 처리
+            for key, state in active_scenarios.items():
+                state['status'] = 'INCOMPLETE'
+                state['message'] = f"Scenario did not complete. Stopped at step {state['current_step']+1}."
+                completed_scenarios.append(state)
+
+            # --- 결과 리포트 생성 ---
+            success_count = sum(1 for s in completed_scenarios if s['status'] == 'SUCCESS')
+            fail_count = sum(1 for s in completed_scenarios if s['status'] == 'FAIL')
+            incomplete_count = sum(1 for s in completed_scenarios if s['status'] == 'INCOMPLETE')
+
+            results.append(f"\n[{name}]: 총 {len(completed_scenarios)}건 시도 -> 성공: {success_count}, 실패: {fail_count}, 미완료: {incomplete_count}")
+            if fail_count > 0:
+                results.append("  [실패 상세 정보 (최대 3건)]")
+                fail_cases = [s for s in completed_scenarios if s['status'] == 'FAIL']
+                for fail in fail_cases[:3]:
+                    results.append(f"    - Trigger at row {fail['start_index']} ({fail['start_time']}), Reason: {fail['message']}")
+        
         return "\n".join(results)
 
     def _match_event(self, row, rule):
@@ -184,3 +220,25 @@ class AppController(QObject):
             return pd.Index([])
         mask = df.apply(lambda row: self._match_event(row, rule), axis=1)
         return df[mask].index
+    
+    # ⭐️ scenarios.json을 직접 읽는 대신, 폴더 전체를 읽는 헬퍼 메서드 추가
+    def load_all_scenarios(self):
+        """'scenarios' 폴더 내의 모든 .json 파일을 읽어 하나로 합칩니다."""
+        all_scenarios = {}
+        if not os.path.exists(SCENARIOS_DIR):
+            return {"Error": {"description": f"'{SCENARIOS_DIR}' directory not found."}}
+        
+        for filename in sorted(os.listdir(SCENARIOS_DIR)):
+            if filename.endswith(".json"):
+                filepath = os.path.join(SCENARIOS_DIR, filename)
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    try:
+                        scenarios = json.load(f)
+                        all_scenarios.update(scenarios)
+                    except json.JSONDecodeError:
+                        print(f"Warning: Could not parse {filename}")
+        return all_scenarios
+    
+    # ⭐️ UI가 시나리오 목록을 쉽게 가져갈 수 있도록 메서드 추가
+    def get_scenario_names(self):
+        return list(self.load_all_scenarios().keys())
