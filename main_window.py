@@ -6,7 +6,20 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction
 
-# 변경된 경로로 임포트
+from dialogs.QueryBuilderDialog import QueryBuilderDialog
+from dialogs.DashboardDialog import DashboardDialog
+from dialogs.VisualizationDialog import VisualizationDialog
+from dialogs.TraceDialog import TraceDialog
+from dialogs.ColumnSelectionDialog import ColumnSelectionDialog
+from models.LogTableModel import LogTableModel
+import sys, json, os, re
+from PySide6.QtCore import Qt, QSortFilterProxyModel
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QTableView, QFileDialog, QMessageBox, QMenu,
+    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit
+)
+from PySide6.QtGui import QAction
+
 from dialogs.QueryBuilderDialog import QueryBuilderDialog
 from dialogs.DashboardDialog import DashboardDialog
 from dialogs.VisualizationDialog import VisualizationDialog
@@ -23,37 +36,30 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Log Analyzer")
         self.setGeometry(100, 100, 1200, 800)
 
-        # UI 위젯 설정
         main_widget = QWidget()
         layout = QVBoxLayout(main_widget)
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Filter logs (case-insensitive)...")
         layout.addWidget(self.filter_input)
-
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
-        
         self.tableView = QTableView()
         self.tableView.setSortingEnabled(True)
         self.tableView.setAlternatingRowColors(True)
         self.tableView.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.tableView.setSelectionMode(QTableView.SelectionMode.SingleSelection)
         self.splitter.addWidget(self.tableView)
-
         self.detail_view = QTextEdit()
         self.detail_view.setReadOnly(True)
         self.detail_view.setFontFamily("Courier New") 
         self.detail_view.setVisible(False)
         self.splitter.addWidget(self.detail_view)
-        
         self.splitter.setSizes([1, 0])
         layout.addWidget(self.splitter)
         self.setCentralWidget(main_widget)
         
-        # 모델-뷰 설정
         self.proxy_model = QSortFilterProxyModel()
         self.tableView.setModel(self.proxy_model)
 
-        # 시그널-슬롯 연결
         self._create_menu()
         self.filter_input.textChanged.connect(self.proxy_model.setFilterFixedString)
         self.tableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -61,13 +67,11 @@ class MainWindow(QMainWindow):
         self.tableView.selectionModel().selectionChanged.connect(self.update_detail_view)
 
     def update_table_model(self, source_model):
-        """컨트롤러로부터 받은 새 모델을 프록시 모델에 연결"""
         self.proxy_model.setSourceModel(source_model)
         self.apply_settings()
         
     def _create_menu(self):
         menu_bar = self.menuBar()
-        
         file_menu = menu_bar.addMenu("&File")
         open_action = QAction("&Open Log File...", self)
         open_action.triggered.connect(self.open_log_file)
@@ -76,7 +80,6 @@ class MainWindow(QMainWindow):
         exit_action = QAction("&Exit", self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-
         view_menu = menu_bar.addMenu("&View")
         select_columns_action = QAction("&Select Columns...", self)
         select_columns_action.triggered.connect(self.open_column_selection_dialog)
@@ -85,7 +88,6 @@ class MainWindow(QMainWindow):
         dashboard_action = QAction("Show Dashboard...", self)
         dashboard_action.triggered.connect(self.show_dashboard)
         view_menu.addAction(dashboard_action)
-
         tools_menu = menu_bar.addMenu("&Tools")
         query_builder_action = QAction("Advanced Filter...", self)
         query_builder_action.triggered.connect(self.open_query_builder)
@@ -104,7 +106,7 @@ class MainWindow(QMainWindow):
                 else:
                     print(f"Successfully loaded file: {filepath}")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"An error occurred while opening the file: {e}")
+                QMessageBox.critical(self, "Error", f"An error occurred: {e}")
 
     def open_query_builder(self):
         source_model = self.proxy_model.sourceModel()
@@ -114,18 +116,19 @@ class MainWindow(QMainWindow):
             
         column_names = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
         date_columns = ['SystemDate']
+        saved_filters = self.controller.load_filters()
+
+        dialog = QueryBuilderDialog(column_names, date_columns, saved_filters, self)
         
-        dialog = QueryBuilderDialog(column_names, date_columns, self)
         if dialog.exec():
             query_data = dialog.get_query_data()
-            if query_data:
-                self.controller.apply_advanced_filter(query_data)
-            else:
-                self.controller.clear_advanced_filter()
+            self.controller.apply_advanced_filter(query_data)
+        
+        for name, query in dialog.saved_filters.items():
+            self.controller.save_filter(name, query)
 
     def clear_advanced_filter(self):
         self.controller.clear_advanced_filter()
-        print("Advanced filter cleared.")
 
     def show_dashboard(self):
         source_model = self.proxy_model.sourceModel()
@@ -135,6 +138,29 @@ class MainWindow(QMainWindow):
         
         self.dashboard_dialog = DashboardDialog(source_model._data, self)
         self.dashboard_dialog.exec()
+
+
+
+
+    
+
+    def open_log_file(self):
+        filepath, _ = QFileDialog.getOpenFileName(self, "Open Log File", "", "CSV Files (*.csv);;All Files (*)")
+        if filepath:
+            try:
+                success = self.controller.load_log_file(filepath)
+                if not success:
+                    QMessageBox.warning(self, "Warning", "No data could be parsed from the file.")
+                else:
+                    print(f"Successfully loaded file: {filepath}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"An error occurred while opening the file: {e}")
+
+    
+
+
+
+ 
 
     def show_table_context_menu(self, pos):
         selected_indexes = self.tableView.selectedIndexes()
@@ -215,11 +241,12 @@ class MainWindow(QMainWindow):
                         lines = []
                         indent_str = "    " * indent
                         for item in obj:
-                            if item.type == 'L':
-                                lines.append(f"{indent_str}<L [{len(item.value)}]>")
-                                lines.extend(format_secs_obj(item.value, indent + 1))
-                            else:
-                                lines.append(f"{indent_str}<{item.type} '{item.value}'>")
+                            if hasattr(item, 'type') and hasattr(item, 'value'):
+                                if item.type == 'L':
+                                    lines.append(f"{indent_str}<L [{len(item.value)}]>")
+                                    lines.extend(format_secs_obj(item.value, indent + 1))
+                                else:
+                                    lines.append(f"{indent_str}<{item.type} '{item.value}'>")
                         return lines
                     formatted_text = "\n".join(format_secs_obj(display_object))
                     self.detail_view.setText(formatted_text)
