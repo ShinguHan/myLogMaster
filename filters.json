@@ -1,0 +1,12 @@
+{
+    "tettt": {
+        "logic": "AND",
+        "rules": [
+            {
+                "column": "Category",
+                "operator": "Contains",
+                "value": "Info"
+            }
+        ]
+    }
+}

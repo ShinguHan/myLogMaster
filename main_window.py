@@ -36,6 +36,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Log Analyzer")
         self.setGeometry(100, 100, 1200, 800)
 
+        # ⭐️ 1. 마지막 쿼리 상태를 저장할 변수 추가
+        self.last_query_data = None
+
         main_widget = QWidget()
         layout = QVBoxLayout(main_widget)
         self.filter_input = QLineEdit()
@@ -116,19 +119,27 @@ class MainWindow(QMainWindow):
             
         column_names = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
         date_columns = ['SystemDate']
+        
         saved_filters = self.controller.load_filters()
 
-        dialog = QueryBuilderDialog(column_names, date_columns, saved_filters, self)
+        # ⭐️ 2. 다이얼로그 생성 시, 저장된 필터와 '마지막 쿼리'를 함께 전달
+        dialog = QueryBuilderDialog(column_names, date_columns, saved_filters, self.last_query_data, self)
         
         if dialog.exec():
             query_data = dialog.get_query_data()
             self.controller.apply_advanced_filter(query_data)
+            # ⭐️ 3. 성공적으로 실행된 쿼리를 '마지막 쿼리'로 저장
+            self.last_query_data = query_data
         
+        # 다이얼로그에서 변경된 필터 목록을 컨트롤러를 통해 파일에 최종 저장
         for name, query in dialog.saved_filters.items():
             self.controller.save_filter(name, query)
 
     def clear_advanced_filter(self):
         self.controller.clear_advanced_filter()
+        # ⭐️ 4. 필터가 해제되면 '마지막 쿼리'도 초기화
+        self.last_query_data = None
+        print("Advanced filter cleared.")
 
     def show_dashboard(self):
         source_model = self.proxy_model.sourceModel()

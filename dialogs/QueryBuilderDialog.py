@@ -6,7 +6,7 @@ from PySide6.QtCore import QDateTime, Qt
 from .ConditionWidget import ConditionWidget
 
 class QueryBuilderDialog(QDialog):
-    def __init__(self, column_names, date_columns, saved_filters, parent=None):
+    def __init__(self, column_names, date_columns, saved_filters, last_query=None, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Advanced Query Builder")
         self.setGeometry(150, 150, 800, 500)
@@ -36,6 +36,12 @@ class QueryBuilderDialog(QDialog):
         self.close_button.clicked.connect(self.reject)
         self.save_button.clicked.connect(self.save_filter)
         self.load_button.clicked.connect(self.load_filter)
+
+                # ⭐️ 2. last_query 데이터가 있으면 UI를 복원하고, 없으면 기본 그룹 추가
+        if last_query:
+            self._populate_from_data(self.tree, last_query)
+        else:
+            self._add_group_item(self.tree)
 
         self._add_group_item(self.tree)
 

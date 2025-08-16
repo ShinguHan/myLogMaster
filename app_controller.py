@@ -13,10 +13,12 @@ class AppController(QObject):
 
     def __init__(self):
         super().__init__()
+        # ⭐️ 1. 마스터 원본 데이터를 보관하는 변수
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel()
 
     def load_log_file(self, filepath):
+        # ⭐️ 2. 이 메서드에서만 self.original_data에 쓰기 작업을 수행합니다.
         profile = {
             'column_mapping': {'Category': 'Category', 'AsciiData': 'AsciiData', 'BinaryData': 'BinaryData'},
             'type_rules': [{'value': 'Com', 'type': 'secs'}, {'value': 'Info', 'type': 'json'}]
@@ -25,16 +27,23 @@ class AppController(QObject):
         self.original_data = pd.DataFrame(parsed_data)
         
         if 'SystemDate' in self.original_data.columns:
-            self.original_data['SystemDate_dt'] = pd.to_datetime(self.original_data['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce')
+            # 원본 데이터에 날짜/시간 변환 컬럼을 미리 추가해 둡니다.
+            self.original_data['SystemDate_dt'] = pd.to_datetime(
+                self.original_data['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce'
+            )
         
+        # UI에 원본 데이터 전체를 표시하며 시작
         self.update_model_data(self.original_data)
         return not self.original_data.empty
 
     def update_model_data(self, dataframe):
+        """UI에 표시될 모델의 데이터만 업데이트합니다. 원본은 건드리지 않습니다."""
         self.source_model.update_data(dataframe)
         self.model_updated.emit(self.source_model)
 
     def clear_advanced_filter(self):
+        """UI를 다시 원본 데이터로 되돌립니다."""
+        print("Filter cleared. Restoring original data.")
         self.update_model_data(self.original_data)
 
     def apply_advanced_filter(self, query_data):
@@ -43,11 +52,15 @@ class AppController(QObject):
             return
             
         try:
+            # ⭐️ 3. 필터링을 수행할 때, 항상 self.original_data를 대상으로 합니다.
+            print("Applying advanced filter on original data...")
             final_mask = self._build_mask_recursive(query_data, self.original_data)
+            
+            # 필터링된 '결과(복사본)'를 UI에 업데이트합니다.
             self.update_model_data(self.original_data[final_mask])
         except Exception as e:
             print(f"Error applying filter: {e}")
-            self.update_model_data(self.original_data)
+            self.update_model_data(self.original_data) # 에러 발생 시 원본으로 복원
 
     def _build_mask_recursive(self, query_group, df):
         masks = []
@@ -56,14 +69,14 @@ class AppController(QObject):
                 masks.append(self._build_mask_recursive(rule, df))
             else: 
                 column, op, value = rule['column'], rule['operator'], rule['value']
-                
                 mask = pd.Series(True, index=df.index)
-                if column in ['SystemDate']:
-                    # QDateTime이 아닌 ISO 문자열로 넘어온 값을 처리
+                
+                if column == 'SystemDate':
                     dt_value = pd.to_datetime(value) if not isinstance(value, tuple) else None
                     dt_value_from = pd.to_datetime(value[0]) if isinstance(value, tuple) else None
                     dt_value_to = pd.to_datetime(value[1]) if isinstance(value, tuple) else None
                     
+                    # 미리 변환해 둔 'SystemDate_dt' 컬럼을 사용
                     if op == 'is after': mask = df[f'{column}_dt'] > dt_value
                     elif op == 'is before': mask = df[f'{column}_dt'] < dt_value
                     elif op == 'is between': mask = (df[f'{column}_dt'] >= dt_value_from) & (df[f'{column}_dt'] <= dt_value_to)
@@ -85,20 +98,16 @@ class AppController(QObject):
             return pd.concat(masks, axis=1).any(axis=1)
 
     def load_filters(self):
-        if not os.path.exists(FILTERS_FILE):
-            return {}
+        if not os.path.exists(FILTERS_FILE): return {}
         try:
-            with open(FILTERS_FILE, 'r') as f:
-                return json.load(f)
-        except json.JSONDecodeError:
-            return {}
+            with open(FILTERS_FILE, 'r') as f: return json.load(f)
+        except json.JSONDecodeError: return {}
 
     def save_filter(self, name, query_data):
         filters = self.load_filters()
-        if query_data: # 비어있지 않은 쿼리만 저장
+        if query_data:
             filters[name] = query_data
-            with open(FILTERS_FILE, 'w') as f:
-                json.dump(filters, f, indent=4)
+            with open(FILTERS_FILE, 'w') as f: json.dump(filters, f, indent=4)
 
     def get_trace_data(self, trace_id):
         df = self.original_data
