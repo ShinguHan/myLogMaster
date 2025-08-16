@@ -115,9 +115,14 @@ class LogAnalyzerApp(QMainWindow):
         # TrackingID를 포함하는 모든 로그를 찾음 (광범위한 검색)
         mask = df.apply(lambda r: r.astype(str).str.contains(trace_id, case=False, na=False).any(), axis=1)
         scenario_df = df[mask]
+
+        scenario_df.to_csv('result.csv')
+            # ⭐️ 이 부분을 깊게 봐야 합니다.
+        print("--- 2. 'scenario_df' (1차 필터링 결과) ---") # 디버깅 프린트 2
+        print(scenario_df)
         
         # 그 중에서 Category가 'Com'인 로그만 필터링
-        com_logs = scenario_df[scenario_df['Category'] == 'Com'].sort_values(by='SystemDate')
+        com_logs = scenario_df[scenario_df['Category'] == '"Com'].sort_values(by='SystemDate')
 
         if com_logs.empty:
             QMessageBox.information(self, "Info", f"No SECS messages (Com logs) found related to ID: {trace_id}")
