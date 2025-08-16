@@ -151,33 +151,50 @@ class LogAnalyzerApp(QMainWindow):
         self.trace_dialog = TraceDialog(trace_data, trace_id, self)
         self.trace_dialog.exec()
 
-    def _display_log_detail(self, source_index):
-        # ... (이전과 동일) ...
-        try:
-            category = self.source_model.get_data_by_col_name(source_index.row(), "Category").replace('"','')
-            target_column_name = 'ParsedBody' if category in ["Info", "Com"] else 'AsciiData'
-            cell_data = self.source_model.get_data_by_col_name(source_index.row(), target_column_name)
+# ... (파일 상단부 및 __init__ 등 이전과 동일)
 
-            if cell_data:
-                try:
-                    clean_data = cell_data.strip()
-                    json_start = clean_data.find('{')
-                    json_end = clean_data.rfind('}') + 1
-                    if json_start != -1 and json_end > json_start:
-                        json_str = clean_data[json_start:json_end]
-                        parsed_json = json.loads(json_str)
-                        formatted_text = json.dumps(parsed_json, indent=4, ensure_ascii=False)
-                        self.detail_view.setText(formatted_text)
-                    else:
-                        self.detail_view.setText(cell_data)
-                except json.JSONDecodeError:
-                    self.detail_view.setText(cell_data)
+    # ⭐️ 상세 뷰 표시 로직을 새로운 파서 구조에 맞게 수정
+    def _display_log_detail(self, source_index):
+        """주어진 소스 인덱스의 Category에 따라 다른 정보를 상세 뷰에 표시합니다."""
+        try:
+            category = self.source_model.get_data_by_col_name(source_index.row(), "Category")
+            
+            # 표시할 객체를 먼저 가져옵니다.
+            display_object = self.source_model.get_data_by_col_name(source_index.row(), "ParsedBodyObject")
+            
+            # ParsedBodyObject가 없으면 AsciiData를 대신 사용 (기본값)
+            if display_object is None:
+                 display_object = self.source_model.get_data_by_col_name(source_index.row(), "AsciiData")
+
+            if display_object:
+                # 객체 타입에 따라 포맷팅
+                if isinstance(display_object, dict): # JSON 객체
+                    formatted_text = json.dumps(display_object, indent=4, ensure_ascii=False)
+                    self.detail_view.setText(formatted_text)
+                elif isinstance(display_object, list): # SECS Body 객체 리스트
+                    # SimpleNamespace 객체를 사람이 보기 좋게 변환
+                    def format_secs_obj(obj, indent=0):
+                        lines = []
+                        indent_str = "    " * indent
+                        for item in obj:
+                            if item.type == 'L':
+                                lines.append(f"{indent_str}<L [{len(item.value)}]>")
+                                lines.extend(format_secs_obj(item.value, indent + 1))
+                            else:
+                                lines.append(f"{indent_str}<{item.type} '{item.value}'>")
+                        return lines
+                    
+                    formatted_text = "\n".join(format_secs_obj(display_object))
+                    self.detail_view.setText(formatted_text)
+                else: # 일반 텍스트
+                    self.detail_view.setText(str(display_object))
             else:
                 self.detail_view.setText("")
-        except (KeyError, IndexError) as e:
-             self.detail_view.setText(f"표시할 데이터를 찾을 수 없습니다.\n(컬럼 부재: {e})")
         except Exception as e:
+            self.detail_view.setText(f"상세 정보를 표시하는 중 오류가 발생했습니다:\n{e}")
             print(f"Error displaying detail: {e}")
+
+# ... (나머지 코드는 이전 버전과 동일)
 
     # --- 이하 나머지 메서드들은 이전과 동일 ---
     def show_detail_pane(self):

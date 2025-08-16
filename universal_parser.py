@@ -6,9 +6,7 @@ import io
 import struct
 
 def _parse_body_recursive(body_io):
-    """
-    The final, correct, and robust recursive parser for SECS-II message bodies.
-    """
+    # 이 함수는 원본과 동일하게 유지됩니다.
     items = []
     try:
         format_code_byte = body_io.read(1)
@@ -63,10 +61,6 @@ def _parse_body_recursive(body_io):
     return items
 
 def parse_log_with_profile(log_filepath, profile):
-    """
-    Parses a complex, multi-line log file using the Director's final, proven logic.
-    """
-    # ⭐️ 변경점: 최종 결과를 하나의 리스트로 통합
     parsed_entries = []
     
     with open(log_filepath, 'r', newline='', encoding='utf-8') as f:
@@ -88,14 +82,8 @@ def parse_log_with_profile(log_filepath, profile):
     if header_line_index == -1:
         return []
 
-    try:
-        col_map = {name: headers.index(col_name) for name, col_name in profile.get('column_mapping', {}).items()}
-    except ValueError as e:
-        return []
-
     log_entry_starters = tuple(f'"{cat}"' for cat in ["Info", "Debug", "Com", "Error"])
     entry_buffer = []
-    
     data_start_index = header_line_index + 2 
 
     def process_buffer(buffer):
@@ -109,6 +97,8 @@ def parse_log_with_profile(log_filepath, profile):
             if len(row) != len(headers): return
 
             log_data = {header: value for header, value in zip(headers, row)}
+            log_data['ParsedBody'] = None
+            log_data['ParsedBodyObject'] = None
 
             msg_type = None
             category = log_data.get("Category", "").replace('"', '')
@@ -117,34 +107,51 @@ def parse_log_with_profile(log_filepath, profile):
                     msg_type = rule['type']
                     break
             
-            if not msg_type: 
-                # ⭐️ 변경점: 타입이 없는 일반 로그도 추가
+            if not msg_type:
                 log_data['ParsedType'] = 'Log'
                 parsed_entries.append(log_data)
                 return
 
+            # ⭐️ 원본의 상세 파싱 로직을 복원하여 적용
             if msg_type == 'secs':
+                log_data['ParsedType'] = 'SECS'
                 raw_full_hex = log_data.get('BinaryData', '')
                 if raw_full_hex and len(raw_full_hex) >= 20:
                     full_binary = bytes.fromhex(raw_full_hex)
                     header_bytes = full_binary[0:10]
                     _, s_type, f_type, _, _ = struct.unpack('>HBBH4s', header_bytes)
                     stream = s_type & 0x7F
-                    
-                    log_data['ParsedType'] = 'SECS'
-                    log_data['ParsedBody'] = f"S{stream}F{f_type}"
-                    parsed_entries.append(log_data)
+                    msg = f"S{stream}F{f_type}"
+                    log_data['ParsedBody'] = msg # 테이블 표시용
+
+                    body_bytes = full_binary[10:]
+                    body_obj = _parse_body_recursive(io.BytesIO(body_bytes))
+                    log_data['ParsedBodyObject'] = body_obj # 상세 뷰 용
 
             elif msg_type == 'json':
+                log_data['ParsedType'] = 'JSON'
                 json_str_raw = log_data.get('AsciiData', '')
                 start_index = json_str_raw.find('{')
                 if start_index != -1:
-                    # ... (기존 JSON 파싱 로직) ...
-                    log_data['ParsedType'] = 'JSON'
-                    log_data['ParsedBody'] = json_str_raw[start_index:]
-                    parsed_entries.append(log_data)
-            else:
-                 parsed_entries.append(log_data)
+                    brace_count = 0; end_index = -1
+                    for char_idx in range(start_index, len(json_str_raw)):
+                        if json_str_raw[char_idx] == '{': brace_count += 1
+                        elif json_str_raw[char_idx] == '}': brace_count -= 1
+                        if brace_count == 0:
+                            end_index = char_idx + 1
+                            break
+                    if end_index != -1:
+                        json_str = json_str_raw[start_index:end_index]
+                        cleaned_json_str = json_str.replace('\xa0', ' ')
+                        try:
+                            json_data = json.loads(cleaned_json_str)
+                            log_data['ParsedBody'] = "JSON Data" # 테이블 표시용
+                            log_data['ParsedBodyObject'] = json_data # 상세 뷰 용
+                        except json.JSONDecodeError:
+                            log_data['ParsedBody'] = "Invalid JSON"
+                            log_data['ParsedBodyObject'] = cleaned_json_str
+            
+            parsed_entries.append(log_data)
 
         except Exception:
             pass
@@ -160,5 +167,4 @@ def parse_log_with_profile(log_filepath, profile):
             entry_buffer.append(line)
     
     process_buffer(entry_buffer)
-
     return parsed_entries
