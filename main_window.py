@@ -26,6 +26,7 @@ from dialogs.VisualizationDialog import VisualizationDialog
 from dialogs.TraceDialog import TraceDialog
 from dialogs.ColumnSelectionDialog import ColumnSelectionDialog
 from models.LogTableModel import LogTableModel
+from dialogs.ScriptEditorDialog import ScriptEditorDialog
 
 CONFIG_FILE = 'config.json'
 
@@ -98,6 +99,11 @@ class MainWindow(QMainWindow):
         clear_filter_action = QAction("Clear Advanced Filter", self)
         clear_filter_action.triggered.connect(self.clear_advanced_filter)
         tools_menu.addAction(clear_filter_action)
+                # ⭐️ 1. 스크립트 편집기 메뉴 추가
+        tools_menu.addSeparator()
+        script_editor_action = QAction("Analysis Script Editor...", self)
+        script_editor_action.triggered.connect(self.open_script_editor)
+        tools_menu.addAction(script_editor_action)
 
     def open_log_file(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Log File", "", "CSV Files (*.csv);;All Files (*)")
@@ -335,3 +341,46 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.save_settings()
         event.accept()
+
+        # ⭐️ 2. 스크립트 편집기를 열고 컨트롤러와 연결하는 메서드
+    # ... (다른 import 구문)
+# ... (MainWindow 클래스 선언 및 다른 메서드)
+
+    def open_script_editor(self):
+        source_model = self.proxy_model.sourceModel()
+        if source_model is None or source_model._data.empty:
+            QMessageBox.information(self, "Info", "Please load a log file first.")
+            return
+
+        current_view_df = source_model._data.iloc[
+            [self.proxy_model.mapToSource(self.proxy_model.index(r,0)).row() for r in range(self.proxy_model.rowCount())]
+        ]
+
+        dialog = ScriptEditorDialog(self)
+        
+        # ⭐️ 스크립트 실행 결과를 처리하는 핸들러 함수 수정
+        def handle_run_request(script_code):
+            # 컨트롤러는 이제 AnalysisResult 객체를 반환
+            result_obj = self.controller.run_analysis_script(script_code, current_view_df)
+            
+            # 최종 결과 텍스트 조합
+            final_output = ""
+            if result_obj.captured_output:
+                final_output += f"--- Captured Output ---\n{result_obj.captured_output}\n"
+            if result_obj.summary:
+                final_output += f"--- Summary ---\n{result_obj.summary}"
+            
+            dialog.set_result(final_output.strip())
+
+            # ⭐️ result.show_dataframe()이 호출되었다면, 새 창으로 결과 표시
+            if result_obj.new_dataframe is not None:
+                # TraceDialog를 재활용하여 결과 데이터프레임 표시
+                df_dialog = TraceDialog(result_obj.new_dataframe, result_obj.new_df_title, self)
+                df_dialog.exec()
+            
+            # TODO: 다음 단계에서 result.add_marker()로 추가된 마커들을 테이블에 하이라이트
+
+        dialog.run_script_requested.connect(handle_run_request)
+        dialog.exec()
+
+    # ... (나머지 모든 메서드는 이전과 동일)

@@ -2,9 +2,13 @@ import pandas as pd
 import json
 import os
 from PySide6.QtCore import QObject, Signal, QDateTime
+import io
+import sys
+from contextlib import redirect_stdout
 
 from universal_parser import parse_log_with_profile
 from models.LogTableModel import LogTableModel
+from analysis_result import AnalysisResult # ⭐️ 새로 만든 클래스 임포트
 
 FILTERS_FILE = 'filters.json'
 
@@ -118,3 +122,37 @@ class AppController(QObject):
         scenario_df = self.get_trace_data(trace_id)
         com_logs = scenario_df[scenario_df['Category'].str.replace('"', '', regex=False) == 'Com'].sort_values(by='SystemDate')
         return com_logs
+    
+    def run_analysis_script(self, script_code, logs_df):
+        stdout_capture = io.StringIO()
+        result = AnalysisResult() # ⭐️ AnalysisResult 객체 생성
+
+        try:
+            script_namespace = {}
+            with redirect_stdout(stdout_capture):
+                exec(script_code, globals(), script_namespace)
+
+            analyze_func = script_namespace.get('analyze')
+
+            if not callable(analyze_func):
+                result.set_summary("Error: 'analyze(logs, result)' function not found in the script.")
+                return result
+            
+            # ⭐️ 이제 result 객체를 함께 전달
+            return_value = analyze_func(logs_df, result)
+            
+            # 스크립트의 return 값이 있으면 요약에 추가
+            if return_value:
+                summary = f"--- Return Value ---\n{return_value}"
+                if result.summary:
+                    result.summary = f"{result.summary}\n{summary}"
+                else:
+                    result.set_summary(summary)
+
+        except Exception as e:
+            result.set_summary(f"--- SCRIPT ERROR ---\n{type(e).__name__}: {e}")
+        
+        finally:
+            # 캡처된 print 출력을 result 객체에 저장
+            result.captured_output = stdout_capture.getvalue()
+            return result
