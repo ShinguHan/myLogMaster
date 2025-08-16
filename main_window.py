@@ -109,13 +109,18 @@ class MainWindow(QMainWindow):
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Log File", "", "CSV Files (*.csv);;All Files (*)")
         if filepath:
             try:
+                # ⭐️ 하이라이트 초기화
+                source_model = self.proxy_model.sourceModel()
+                if source_model:
+                    source_model.clear_highlights()
+                
                 success = self.controller.load_log_file(filepath)
                 if not success:
                     QMessageBox.warning(self, "Warning", "No data could be parsed from the file.")
                 else:
                     print(f"Successfully loaded file: {filepath}")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"An error occurred: {e}")
+                QMessageBox.critical(self, "Error", f"An error occurred while opening the file: {e}")
 
     def open_query_builder(self):
         source_model = self.proxy_model.sourceModel()
@@ -142,9 +147,11 @@ class MainWindow(QMainWindow):
             self.controller.save_filter(name, query)
 
     def clear_advanced_filter(self):
+        # ⭐️ 필터 해제 시 하이라이트도 함께 초기화
+        source_model = self.proxy_model.sourceModel()
+        if source_model:
+            source_model.clear_highlights()
         self.controller.clear_advanced_filter()
-        # ⭐️ 4. 필터가 해제되면 '마지막 쿼리'도 초기화
-        self.last_query_data = None
         print("Advanced filter cleared.")
 
     def show_dashboard(self):
@@ -358,27 +365,24 @@ class MainWindow(QMainWindow):
 
         dialog = ScriptEditorDialog(self)
         
-        # ⭐️ 스크립트 실행 결과를 처리하는 핸들러 함수 수정
         def handle_run_request(script_code):
-            # 컨트롤러는 이제 AnalysisResult 객체를 반환
             result_obj = self.controller.run_analysis_script(script_code, current_view_df)
             
-            # 최종 결과 텍스트 조합
             final_output = ""
             if result_obj.captured_output:
                 final_output += f"--- Captured Output ---\n{result_obj.captured_output}\n"
             if result_obj.summary:
                 final_output += f"--- Summary ---\n{result_obj.summary}"
-            
             dialog.set_result(final_output.strip())
 
-            # ⭐️ result.show_dataframe()이 호출되었다면, 새 창으로 결과 표시
             if result_obj.new_dataframe is not None:
-                # TraceDialog를 재활용하여 결과 데이터프레임 표시
                 df_dialog = TraceDialog(result_obj.new_dataframe, result_obj.new_df_title, self)
                 df_dialog.exec()
             
-            # TODO: 다음 단계에서 result.add_marker()로 추가된 마커들을 테이블에 하이라이트
+            # ⭐️ 스크립트가 반환한 마커 정보를 모델에 전달
+            source_model = self.proxy_model.sourceModel()
+            if source_model:
+                source_model.set_highlights(result_obj.markers)
 
         dialog.run_script_requested.connect(handle_run_request)
         dialog.exec()
