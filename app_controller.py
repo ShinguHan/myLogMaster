@@ -2,13 +2,10 @@ import pandas as pd
 import json
 import os
 from PySide6.QtCore import QObject, Signal, QDateTime
-import io
-import sys
-from contextlib import redirect_stdout
 
 from universal_parser import parse_log_with_profile
 from models.LogTableModel import LogTableModel
-from analysis_result import AnalysisResult # ⭐️ 새로 만든 클래스 임포트
+from analysis_result import AnalysisResult
 
 FILTERS_FILE = 'filters.json'
 
@@ -17,12 +14,10 @@ class AppController(QObject):
 
     def __init__(self):
         super().__init__()
-        # ⭐️ 1. 마스터 원본 데이터를 보관하는 변수
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel()
 
     def load_log_file(self, filepath):
-        # ⭐️ 2. 이 메서드에서만 self.original_data에 쓰기 작업을 수행합니다.
         profile = {
             'column_mapping': {'Category': 'Category', 'AsciiData': 'AsciiData', 'BinaryData': 'BinaryData'},
             'type_rules': [{'value': 'Com', 'type': 'secs'}, {'value': 'Info', 'type': 'json'}]
@@ -30,24 +25,18 @@ class AppController(QObject):
         parsed_data = parse_log_with_profile(filepath, profile)
         self.original_data = pd.DataFrame(parsed_data)
         
+        # ⭐️ 시나리오 검증 시 시간 비교 성능을 위해 datetime 객체 컬럼을 미리 생성합니다.
         if 'SystemDate' in self.original_data.columns:
-            # 원본 데이터에 날짜/시간 변환 컬럼을 미리 추가해 둡니다.
-            self.original_data['SystemDate_dt'] = pd.to_datetime(
-                self.original_data['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce'
-            )
+            self.original_data['SystemDate_dt'] = pd.to_datetime(self.original_data['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce')
         
-        # UI에 원본 데이터 전체를 표시하며 시작
         self.update_model_data(self.original_data)
         return not self.original_data.empty
 
     def update_model_data(self, dataframe):
-        """UI에 표시될 모델의 데이터만 업데이트합니다. 원본은 건드리지 않습니다."""
         self.source_model.update_data(dataframe)
         self.model_updated.emit(self.source_model)
 
     def clear_advanced_filter(self):
-        """UI를 다시 원본 데이터로 되돌립니다."""
-        print("Filter cleared. Restoring original data.")
         self.update_model_data(self.original_data)
 
     def apply_advanced_filter(self, query_data):
@@ -56,15 +45,11 @@ class AppController(QObject):
             return
             
         try:
-            # ⭐️ 3. 필터링을 수행할 때, 항상 self.original_data를 대상으로 합니다.
-            print("Applying advanced filter on original data...")
             final_mask = self._build_mask_recursive(query_data, self.original_data)
-            
-            # 필터링된 '결과(복사본)'를 UI에 업데이트합니다.
             self.update_model_data(self.original_data[final_mask])
         except Exception as e:
             print(f"Error applying filter: {e}")
-            self.update_model_data(self.original_data) # 에러 발생 시 원본으로 복원
+            self.update_model_data(self.original_data)
 
     def _build_mask_recursive(self, query_group, df):
         masks = []
@@ -80,7 +65,6 @@ class AppController(QObject):
                     dt_value_from = pd.to_datetime(value[0]) if isinstance(value, tuple) else None
                     dt_value_to = pd.to_datetime(value[1]) if isinstance(value, tuple) else None
                     
-                    # 미리 변환해 둔 'SystemDate_dt' 컬럼을 사용
                     if op == 'is after': mask = df[f'{column}_dt'] > dt_value
                     elif op == 'is before': mask = df[f'{column}_dt'] < dt_value
                     elif op == 'is between': mask = (df[f'{column}_dt'] >= dt_value_from) & (df[f'{column}_dt'] <= dt_value_to)
@@ -104,14 +88,14 @@ class AppController(QObject):
     def load_filters(self):
         if not os.path.exists(FILTERS_FILE): return {}
         try:
-            with open(FILTERS_FILE, 'r') as f: return json.load(f)
+            with open(FILTERS_FILE, 'r', encoding='utf-8') as f: return json.load(f)
         except json.JSONDecodeError: return {}
 
     def save_filter(self, name, query_data):
         filters = self.load_filters()
         if query_data:
             filters[name] = query_data
-            with open(FILTERS_FILE, 'w') as f: json.dump(filters, f, indent=4)
+            with open(FILTERS_FILE, 'w', encoding='utf-8') as f: json.dump(filters, f, indent=4)
 
     def get_trace_data(self, trace_id):
         df = self.original_data
@@ -122,37 +106,81 @@ class AppController(QObject):
         scenario_df = self.get_trace_data(trace_id)
         com_logs = scenario_df[scenario_df['Category'].str.replace('"', '', regex=False) == 'Com'].sort_values(by='SystemDate')
         return com_logs
-    
-    def run_analysis_script(self, script_code, logs_df):
-        stdout_capture = io.StringIO()
-        result = AnalysisResult() # ⭐️ AnalysisResult 객체 생성
+
+    # ⭐️ --- 시나리오 검증 엔진 --- ⭐️
+    def run_scenario_validation(self):
+        if self.original_data.empty:
+            return "오류: 로그 데이터가 없습니다."
 
         try:
-            script_namespace = {}
-            with redirect_stdout(stdout_capture):
-                exec(script_code, globals(), script_namespace)
+            with open('scenarios.json', 'r', encoding='utf-8') as f:
+                scenarios = json.load(f)
+        except FileNotFoundError:
+            return "오류: 'scenarios.json' 파일을 찾을 수 없습니다."
+        except json.JSONDecodeError:
+            return "오류: 'scenarios.json' 파일의 형식이 잘못되었습니다."
 
-            analyze_func = script_namespace.get('analyze')
+        results = ["=== 시나리오 검증 결과 ==="]
+        df = self.original_data.sort_values(by='SystemDate_dt').reset_index(drop=True)
 
-            if not callable(analyze_func):
-                result.set_summary("Error: 'analyze(logs, result)' function not found in the script.")
-                return result
+        for name, scenario in scenarios.items():
+            trigger_rule = scenario['trigger_event']
+            trigger_indices = self._find_event_indices(df, trigger_rule)
             
-            # ⭐️ 이제 result 객체를 함께 전달
-            return_value = analyze_func(logs_df, result)
-            
-            # 스크립트의 return 값이 있으면 요약에 추가
-            if return_value:
-                summary = f"--- Return Value ---\n{return_value}"
-                if result.summary:
-                    result.summary = f"{result.summary}\n{summary}"
+            success_count = 0
+            # ⭐️ 실패 정보를 상세히 기록할 리스트
+            failures = [] 
+
+            if not trigger_indices.any():
+                results.append(f"[{name}]: 시작 이벤트를 찾을 수 없습니다.")
+                continue
+
+            for idx in trigger_indices:
+                first_step = scenario['steps'][0]
+                time_limit = first_step['max_delay_seconds']
+                trigger_time = df.loc[idx, 'SystemDate_dt']
+                
+                search_df = df.loc[idx + 1:]
+                time_bound = trigger_time + pd.Timedelta(seconds=time_limit)
+                search_df = search_df[search_df['SystemDate_dt'] <= time_bound]
+
+                found_indices = self._find_event_indices(search_df, first_step['event_match'])
+
+                if not found_indices.empty:
+                    success_count += 1
                 else:
-                    result.set_summary(summary)
+                    # ⭐️ 실패 시, 단순 카운트가 아닌 상세 정보 기록
+                    failures.append({
+                        "trigger_row": idx,
+                        "trigger_time": str(trigger_time),
+                        "expected_step": first_step['name']
+                    })
+            
+            # 최종 결과 리포트 생성
+            summary = f"[{name}]: {len(trigger_indices)}회 시작 -> Step 1 성공: {success_count}회, 실패: {len(failures)}회"
+            results.append(summary)
+            if failures:
+                results.append("  [실패 상세 정보 (최대 3건)]")
+                for fail in failures[:3]:
+                    results.append(f"    - Trigger at row {fail['trigger_row']} ({fail['trigger_time']}), Expected: '{fail['expected_step']}'")
 
-        except Exception as e:
-            result.set_summary(f"--- SCRIPT ERROR ---\n{type(e).__name__}: {e}")
+        return "\n".join(results)
+
+    def _match_event(self, row, rule):
+        col = rule.get('column')
+        if not col or col not in row or pd.isna(row[col]):
+            return False
         
-        finally:
-            # 캡처된 print 출력을 result 객체에 저장
-            result.captured_output = stdout_capture.getvalue()
-            return result
+        row_val = str(row[col]).replace('"', '')
+        
+        if 'contains' in rule:
+            return rule['contains'] in row_val
+        if 'equals' in rule:
+            return rule['equals'] == row_val
+        return False
+
+    def _find_event_indices(self, df, rule):
+        if df.empty:
+            return pd.Index([])
+        mask = df.apply(lambda row: self._match_event(row, rule), axis=1)
+        return df[mask].index

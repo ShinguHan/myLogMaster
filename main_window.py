@@ -2,7 +2,7 @@ import sys, json, os, re
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTableView, QFileDialog, QMessageBox, QMenu,
-    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit
+    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser
 )
 from PySide6.QtGui import QAction
 
@@ -62,6 +62,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(main_widget)
         
         self.proxy_model = QSortFilterProxyModel()
+        
+        # ⭐️ --- 이 두 줄이 누락되었습니다 --- ⭐️
+        self.proxy_model.setFilterKeyColumn(-1) # 모든 컬럼을 대상으로 검색
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive) # 대소문자 구분 안 함
         self.tableView.setModel(self.proxy_model)
 
         self._create_menu()
@@ -99,6 +103,14 @@ class MainWindow(QMainWindow):
         clear_filter_action = QAction("Clear Advanced Filter", self)
         clear_filter_action.triggered.connect(self.clear_advanced_filter)
         tools_menu.addAction(clear_filter_action)
+
+                # ⭐️ --- 이 부분이 추가됩니다 --- ⭐️
+        tools_menu.addSeparator()
+        scenario_action = QAction("Run Scenario Validation", self)
+        scenario_action.triggered.connect(self.run_scenario_validation)
+        tools_menu.addAction(scenario_action)
+        # ⭐️ --- 여기까지 --- ⭐️
+
                 # ⭐️ 1. 스크립트 편집기 메뉴 추가
         tools_menu.addSeparator()
         script_editor_action = QAction("Analysis Script Editor...", self)
@@ -388,3 +400,22 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     # ... (나머지 모든 메서드는 이전과 동일)
+
+        # ⭐️ --- 이 메서드가 새로 추가됩니다 --- ⭐️
+    def run_scenario_validation(self):
+        source_model = self.proxy_model.sourceModel()
+        if source_model is None or source_model._data.empty:
+            QMessageBox.information(self, "Info", "Please load a log file first.")
+            return
+        
+        result_text = self.controller.run_scenario_validation()
+
+        result_dialog = QDialog(self)
+        result_dialog.setWindowTitle("Scenario Validation Result")
+        layout = QVBoxLayout(result_dialog)
+        text_browser = QTextBrowser()
+        text_browser.setText(result_text)
+        text_browser.setFontFamily("Courier New")
+        layout.addWidget(text_browser)
+        result_dialog.resize(700, 350) 
+        result_dialog.exec()

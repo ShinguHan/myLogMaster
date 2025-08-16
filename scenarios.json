@@ -1,0 +1,53 @@
+{
+  "Stocker_Normal_Store": {
+    "description": "스토커에 Carrier를 정상 입고하는 시나리오",
+    "trigger_event": {
+      "column": "MethodID",
+      "contains": "requestCarrierStore"
+    },
+    "steps": [
+      {
+        "name": "Host_Transfer_Request",
+        "event_match": {
+          "column": "ParsedBody",
+          "equals": "S2F49"
+        },
+        "max_delay_seconds": 10
+      }
+    ]
+  },
+    "JUSTCEID": {
+    "description": "JUSTCEID",
+    "trigger_event": {
+      "column": "AsciiData",
+      "contains": "CEID:251"
+    },
+    "steps": [
+      {
+        "name": "Host_Transfer_Request",
+        "event_match": {
+          "column": "ParsedBody",
+          "equals": "S2F49"
+        },
+        "max_delay_seconds": 10
+      }
+    ]
+  },
+  "Communication_Establish": {
+    "description": "Host와 설비가 정상적으로 통신을 개시하는 시나리오",
+    "trigger_event": {
+      "column": "ParsedBody",
+      "equals": "S1F13"
+    },
+    "steps": [
+      {
+        "name": "Communication_Acknowledge",
+        "event_match": {
+          "column": "ParsedBody",
+          "equals": "S1F14"
+        },
+        "max_delay_seconds": 5
+      }
+    ]
+  }
+}
