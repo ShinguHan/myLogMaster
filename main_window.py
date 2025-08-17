@@ -1,10 +1,10 @@
 import sys, json, os, re
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QTableView, QFileDialog, QMessageBox, QMenu,
+    QApplication, QMainWindow, QTableView, QFileDialog, QMessageBox, QMenu, QStatusBar,
     QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser
 )
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QCursor
 
 from dialogs.ScenarioBrowserDialog import ScenarioBrowserDialog
 from dialogs.QueryBuilderDialog import QueryBuilderDialog
@@ -47,6 +47,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.splitter)
         self.setCentralWidget(main_widget)
         
+        # ⭐️ 1. 상태 표시줄(Status Bar)을 생성하고 UI에 추가합니다.
+        self.setStatusBar(QStatusBar())
+        self.statusBar().showMessage("Ready. Please open a log file.")
+
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setFilterKeyColumn(-1)
         self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -61,10 +65,13 @@ class MainWindow(QMainWindow):
     def update_table_model(self, source_model):
         self.proxy_model.setSourceModel(source_model)
         self.apply_settings(source_model)
+        # ⭐️ 2. 모델이 업데이트될 때마다 상태 표시줄 메시지도 업데이트합니다.
+        total_rows = source_model.rowCount()
+        self.statusBar().showMessage(f"Loaded {total_rows:,} logs.")
         
     def _create_menu(self):
+        # ... (이전과 동일)
         menu_bar = self.menuBar()
-        
         file_menu = menu_bar.addMenu("&File")
         open_action = QAction("&Open Log File...", self)
         open_action.triggered.connect(self.open_log_file)
@@ -73,7 +80,6 @@ class MainWindow(QMainWindow):
         exit_action = QAction("&Exit", self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-
         view_menu = menu_bar.addMenu("&View")
         select_columns_action = QAction("&Select Columns...", self)
         select_columns_action.triggered.connect(self.open_column_selection_dialog)
@@ -82,7 +88,6 @@ class MainWindow(QMainWindow):
         dashboard_action = QAction("Show Dashboard...", self)
         dashboard_action.triggered.connect(self.show_dashboard)
         view_menu.addAction(dashboard_action)
-
         tools_menu = menu_bar.addMenu("&Tools")
         query_builder_action = QAction("Advanced Filter...", self)
         query_builder_action.triggered.connect(self.open_query_builder)
@@ -108,6 +113,7 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(script_editor_action)
 
     def populate_scenario_menu(self):
+        # ... (이전과 동일)
         self.scenario_menu.clear()
         run_all_action = QAction("Run All Scenarios", self)
         run_all_action.triggered.connect(lambda: self.run_scenario_validation(None))
@@ -128,47 +134,58 @@ class MainWindow(QMainWindow):
             action = QAction(f"Error loading scenarios: {e}", self)
             action.setEnabled(False)
             self.scenario_menu.addAction(action)
-
+    
     def run_scenario_validation(self, scenario_name=None):
         source_model = self.proxy_model.sourceModel()
         if source_model is None or source_model._data.empty:
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
         
-        result_text = self.controller.run_scenario_validation(scenario_name)
-        result_dialog = QDialog(self)
-        result_dialog.setWindowTitle("Scenario Validation Result")
-        layout = QVBoxLayout(result_dialog)
-        text_browser = QTextBrowser()
-        text_browser.setText(result_text)
-        text_browser.setFontFamily("Courier New")
-        layout.addWidget(text_browser)
-        result_dialog.resize(700, 350)
-        result_dialog.exec()
-        
+        # ⭐️ 3. 바쁜 커서(Busy Cursor) 적용
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            result_text = self.controller.run_scenario_validation(scenario_name)
+            
+            result_dialog = QDialog(self)
+            result_dialog.setWindowTitle("Scenario Validation Result")
+            layout = QVBoxLayout(result_dialog)
+            text_browser = QTextBrowser()
+            text_browser.setText(result_text)
+            text_browser.setFontFamily("Courier New")
+            layout.addWidget(text_browser)
+            result_dialog.resize(700, 350)
+            result_dialog.exec()
+        finally:
+            QApplication.restoreOverrideCursor() # 작업 완료 후 커서 복원
     # ⭐️ --- 이 메서드가 누락되었습니다 --- ⭐️
     def open_scenario_browser(self):
         """시나리오 브라우저 다이얼로그를 엽니다."""
         all_scenarios = self.controller.load_all_scenarios()
         dialog = ScenarioBrowserDialog(all_scenarios, self)
         dialog.exec()
-
     def open_log_file(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Log File", "", "CSV Files (*.csv);;All Files (*)")
         if filepath:
             source_model = self.proxy_model.sourceModel()
             if source_model:
                 source_model.clear_highlights()
+            
+            # ⭐️ 3. 바쁜 커서(Busy Cursor) 적용
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            self.statusBar().showMessage(f"Loading {os.path.basename(filepath)}...")
             try:
                 success = self.controller.load_log_file(filepath)
                 if not success:
-                    QMessageBox.warning(self, "Warning", "No data could be parsed from the file.")
+                    # ⭐️ 4. 일관성 있는 알림 문구로 수정
+                    QMessageBox.warning(self, "Load Failed", "No data could be parsed from the selected file.")
                 else:
                     print(f"Successfully loaded file: {filepath}")
                     self.populate_scenario_menu()
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"An error occurred while opening the file: {e}")
-    
+                QMessageBox.critical(self, "Load Error", f"An error occurred while opening the file:\n{e}")
+            finally:
+                QApplication.restoreOverrideCursor() # 작업 완료 후 커서 복원
+
     def open_query_builder(self):
         source_model = self.proxy_model.sourceModel()
         if source_model is None or source_model._data.empty:
@@ -182,8 +199,16 @@ class MainWindow(QMainWindow):
         
         if dialog.exec():
             query_data = dialog.get_query_data()
-            self.controller.apply_advanced_filter(query_data)
-            self.last_query_data = query_data
+            
+            # ⭐️ 3. 바쁜 커서(Busy Cursor) 적용
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            try:
+                self.controller.apply_advanced_filter(query_data)
+                self.last_query_data = query_data
+                # ⭐️ 2. 상태 표시줄 메시지 업데이트
+                self.statusBar().showMessage(f"Filter applied. Showing {self.proxy_model.rowCount():,} of {self.proxy_model.sourceModel().rowCount():,} rows.")
+            finally:
+                QApplication.restoreOverrideCursor()
         
         for name, query in dialog.saved_filters.items():
             self.controller.save_filter(name, query)
@@ -194,6 +219,9 @@ class MainWindow(QMainWindow):
             source_model.clear_highlights()
         self.controller.clear_advanced_filter()
         self.last_query_data = None
+        # ⭐️ 2. 상태 표시줄 메시지 업데이트
+        if source_model:
+            self.statusBar().showMessage(f"Filter cleared. Showing {source_model.rowCount():,} rows.")
         print("Advanced filter cleared.")
         
     def show_dashboard(self):
