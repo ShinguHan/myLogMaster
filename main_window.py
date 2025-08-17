@@ -112,6 +112,12 @@ class MainWindow(QMainWindow):
         script_editor_action.triggered.connect(self.open_script_editor)
         tools_menu.addAction(script_editor_action)
 
+                # ⭐️ 1. Help 메뉴 추가
+        help_menu = menu_bar.addMenu("&Help")
+        about_action = QAction("&About...", self)
+        about_action.triggered.connect(self.show_about_dialog)
+        help_menu.addAction(about_action)
+
     def populate_scenario_menu(self):
         # ... (이전과 동일)
         self.scenario_menu.clear()
@@ -424,3 +430,15 @@ class MainWindow(QMainWindow):
 
         dialog.run_script_requested.connect(handle_run_request)
         dialog.exec()
+
+    def show_about_dialog(self):
+        """프로그램 정보 대화상자를 표시합니다."""
+        QMessageBox.about(self,
+            "About Advanced Log Analyzer",
+            """
+            <b>Advanced Log Analyzer v1.0</b>
+            <p>A professional tool for analyzing complex manufacturing logs.</p>
+            <p>Developed in partnership with a brilliant analyst.</p>
+            <p>Powered by Python and PySide6.</p>
+            """
+        )
