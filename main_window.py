@@ -92,8 +92,12 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(clear_filter_action)
         tools_menu.addSeparator()
         
+        # ⭐️ 1. 여기서는 빈 하위 메뉴만 생성합니다.
         self.scenario_menu = tools_menu.addMenu("Run Scenario Validation")
-        self.populate_scenario_menu()
+
+        # ⭐️ 2. `populate_scenario_menu` 직접 호출을 삭제하고,
+        #         메뉴가 열리기 직전에 호출되도록 시그널에 연결합니다.
+        tools_menu.aboutToShow.connect(self.populate_scenario_menu)
 
         browse_scenarios_action = QAction("Browse Scenarios...", self)
         browse_scenarios_action.triggered.connect(self.open_scenario_browser)
