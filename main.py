@@ -32,11 +32,19 @@ if __name__ == "__main__":
             controller.window.show()
             sys.exit(app.exec())
         
+        # 실시간 모드 선택 시
         elif app_mode == 'realtime':
-            # ... (DB 연결 관리자 로직은 동일) ...
-            if conn_name and conn_info:
-                # ⭐️ 컨트롤러만 생성합니다.
-                controller = AppController(app_mode=app_mode, connection_name=conn_name, connection_info=conn_info)
-                # ⭐️ 컨트롤러가 관리하는 윈도우를 보여줍니다.
-                controller.window.show()
-                sys.exit(app.exec())
+            conn_manager = ConnectionManagerDialog()
+            if conn_manager.exec():
+                conn_name, conn_info = conn_manager.get_selected_connection()
+                
+                if conn_name and conn_info:
+                    print(f"Connecting to '{conn_name}'...")
+                    controller = AppController(app_mode=app_mode, connection_name=conn_name, connection_info=conn_info)
+                    # launch_main_window(controller) # 컨트롤러가 직접 윈도우를 생성하므로 주석 처리
+                    controller.window.show()
+                    sys.exit(app.exec())
+                else:
+                    print("연결이 선택되지 않았습니다. 프로그램을 종료합니다.")
+            else:
+                print("연결이 취소되었습니다. 프로그램을 종료합니다.")
