@@ -2,7 +2,7 @@ import sys, json, os, re
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTableView, QFileDialog, QMessageBox, QMenu, QStatusBar,
-    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser
+    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser, QPushButton
 )
 from PySide6.QtGui import QAction, QCursor
 
@@ -28,6 +28,12 @@ class MainWindow(QMainWindow):
 
         main_widget = QWidget()
         layout = QVBoxLayout(main_widget)
+
+        # ⭐️ 1. DB 접속 버튼을 생성하고 레이아웃에 추가합니다.
+        self.db_connect_button = QPushButton("📡 데이터베이스에 연결하여 로그 조회")
+        self.db_connect_button.clicked.connect(self.start_db_connection)
+        layout.addWidget(self.db_connect_button)
+        
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Filter logs (case-insensitive)...")
         layout.addWidget(self.filter_input)
@@ -57,10 +63,18 @@ class MainWindow(QMainWindow):
         self.tableView.setModel(self.proxy_model)
 
         self._create_menu()
+        
+        # ⭐️ 2. 컨트롤러의 신호를 UI의 슬롯에 연결합니다.
+        self.controller.fetch_completed.connect(self.on_fetch_complete)
+        self.controller.fetch_progress.connect(self.on_fetch_progress)
+
         self.filter_input.textChanged.connect(self.proxy_model.setFilterFixedString)
         self.tableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tableView.customContextMenuRequested.connect(self.show_table_context_menu)
         self.tableView.selectionModel().selectionChanged.connect(self.update_detail_view)
+
+        # ⭐️ 모드에 따라 UI를 초기화합니다.
+        self.setup_ui_for_mode()
 
     def update_table_model(self, source_model):
         self.proxy_model.setSourceModel(source_model)
@@ -442,3 +456,36 @@ class MainWindow(QMainWindow):
             <p>Powered by Python and PySide6.</p>
             """
         )
+    
+    def setup_ui_for_mode(self):
+        """앱 모드에 따라 UI 요소를 설정합니다."""
+        if self.controller.mode == 'realtime':
+            self.db_connect_button.setVisible(True)
+            self.filter_input.setVisible(False)
+            self.setWindowTitle(f"Log Analyzer - [DB: {self.controller.connection_name}]")
+            self.statusBar().showMessage("Ready to connect to the database.")
+        else: # file mode
+            self.db_connect_button.setVisible(False)
+            self.filter_input.setVisible(True)
+            self.setWindowTitle("Log Analyzer - [File Mode]")
+            self.statusBar().showMessage("Ready. Please open a log file.")
+
+    def start_db_connection(self):
+        """사전 필터 UI를 열고 DB 조회를 시작합니다."""
+        # TODO: Step 5에서 구현 - 사전 필터 다이얼로그 열기
+        query_conditions = {} # 지금은 빈 조건으로 테스트
+        
+        self.controller.start_db_fetch(query_conditions)
+        self.db_connect_button.setEnabled(False)
+        self.db_connect_button.setText("⏳ Loading...")
+
+    def on_fetch_progress(self, message):
+        """Worker가 보내는 진행 상황을 상태 표시줄에 표시합니다."""
+        self.statusBar().showMessage(message)
+
+    def on_fetch_complete(self):
+        """Worker의 작업 완료 신호를 받아 버튼 상태를 복원합니다."""
+        self.db_connect_button.setEnabled(True)
+        self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
+        total_rows = self.proxy_model.sourceModel().rowCount()
+        self.statusBar().showMessage(f"Local cache contains {total_rows:,} logs.")

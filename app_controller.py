@@ -6,17 +6,61 @@ from PySide6.QtCore import QObject, Signal, QDateTime
 from universal_parser import parse_log_with_profile
 from models.LogTableModel import LogTableModel
 from analysis_result import AnalysisResult
+ # ⭐️ DatabaseManager를 임포트합니다.
+from database_manager import DatabaseManager
+from oracle_fetcher import OracleFetcherThread
 
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios' # ⭐️ 시나리오 디렉토리 경로 상수 추가
 
 class AppController(QObject):
     model_updated = Signal(LogTableModel)
+        # ⭐️ 1. 이 두 줄을 추가하여, UI와 통신할 신호들을 정의합니다.
+    fetch_completed = Signal()
+    fetch_progress = Signal(str)
 
-    def __init__(self):
+    def __init__(self, app_mode, connection_name=None, connection_info=None):
         super().__init__()
+        self.mode = app_mode
+        self.connection_name = connection_name
+        self.connection_info = connection_info
+        
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel()
+        self.fetch_thread = None # Worker 스레드를 담을 변수
+
+        # ⭐️ UI와 통신할 새로운 신호들을 추가합니다.
+        self.fetch_completed = Signal()
+        self.fetch_progress = Signal(str)
+        
+        # ⭐️ 실시간 모드일 경우, 해당 DB 전용 DatabaseManager를 생성하고 캐시를 로드합니다.
+        if self.mode == 'realtime':
+            if self.connection_name:
+                self.db_manager = DatabaseManager(self.connection_name)
+                # 앱 시작 시, 로컬 캐시에 데이터가 있으면 바로 불러옵니다.
+                self.load_data_from_cache()
+            else:
+                print("Error: Realtime mode requires a connection name.")
+                self.db_manager = None
+        else: # 파일 모드
+            self.db_manager = None
+
+    def load_data_from_cache(self):
+        """(실시간 모드 전용) 로컬 캐시에서 데이터를 불러와 original_data를 업데이트합니다."""
+        if not self.db_manager: 
+            return
+        
+        print("Loading initial data from local cache...")
+        cached_data = self.db_manager.read_all_logs_from_cache()
+        if not cached_data.empty:
+            self.original_data = cached_data
+            # 캐시에서 불러온 데이터도 datetime 객체 변환이 필요할 수 있습니다.
+            if 'SystemDate' in self.original_data.columns and 'SystemDate_dt' not in self.original_data.columns:
+                 self.original_data['SystemDate_dt'] = pd.to_datetime(self.original_data['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce')
+            self.update_model_data(self.original_data)
+            print(f"Loaded {len(cached_data)} rows from cache.")
+        else:
+            print("Local cache is empty.")
 
     def load_log_file(self, filepath):
         try:
@@ -129,10 +173,6 @@ class AppController(QObject):
                     json.dump(filters, f, indent=4)
         except Exception as e:
             print(f"Error saving filter '{name}': {e}")
-    
-    
-    
-    
     
     
     def get_trace_data(self, trace_id):
@@ -279,3 +319,32 @@ class AppController(QObject):
     # ⭐️ UI가 시나리오 목록을 쉽게 가져갈 수 있도록 메서드 추가
     def get_scenario_names(self):
         return list(self.load_all_scenarios().keys())
+    
+    def start_db_fetch(self, query_conditions):
+        """Worker 스레드를 생성하고 데이터 조회를 시작합니다."""
+        if self.fetch_thread and self.fetch_thread.isRunning():
+            print("Fetch is already in progress.")
+            return
+
+        self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions)
+        
+        self.fetch_thread.data_fetched.connect(self.on_data_chunk_received)
+        self.fetch_thread.finished.connect(self.on_fetch_finished)
+        self.fetch_thread.progress.connect(self.fetch_progress.emit)
+        self.fetch_thread.error.connect(lambda e: self.fetch_progress.emit(f"Error: {e}"))
+
+        self.fetch_thread.start()
+
+    def on_data_chunk_received(self, df_chunk):
+        """Worker로부터 받은 데이터 Chunk를 처리합니다."""
+        print(f"Received a chunk of {len(df_chunk)} logs.")
+        # Step 6에서 구현될 ETL 파이프라인
+        if self.db_manager:
+            self.db_manager.upsert_logs_to_local_cache(df_chunk)
+        # Step 7에서 구현될 점진적 로딩
+        self.load_data_from_cache() # 임시로 전체 재조회
+
+    def on_fetch_finished(self):
+        """Worker의 작업 완료를 처리합니다."""
+        print("Fetch thread finished.")
+        self.fetch_completed.emit()

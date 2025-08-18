@@ -1,0 +1,20 @@
+{
+    "\uac00\ub78c": {
+        "type": "oracle",
+        "user": "",
+        "password": "",
+        "dsn": ""
+    },
+    "\u3147\u3134": {
+        "type": "oracle",
+        "user": "d",
+        "password": "aa",
+        "dsn": "245"
+    },
+    "aaa": {
+        "type": "oracle",
+        "user": "gg",
+        "password": "ddd",
+        "dsn": "asd"
+    }
+}
