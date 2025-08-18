@@ -10,7 +10,7 @@ from analysis_result import AnalysisResult
 from database_manager import DatabaseManager
 from oracle_fetcher import OracleFetcherThread
 # app_controller.py 상단에 MainWindow 임포트
-from main_window import MainWindow
+# from main_window import MainWindow
 
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios' # ⭐️ 시나리오 디렉토리 경로 상수 추가
@@ -28,7 +28,7 @@ class AppController(QObject):
         self.connection_info = connection_info
         
         # ⭐️ UI 윈도우를 컨트롤러의 속성으로 직접 생성하고 관리합니다.
-        self.window = MainWindow(self)
+        # self.window = MainWindow(self)
         
         # ⭐️ 컨트롤러가 자신의 신호를 윈도우의 슬롯에 직접 연결합니다.
         self.model_updated.connect(self.window.update_table_model)

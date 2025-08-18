@@ -6,7 +6,11 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction, QCursor
 
+# app_controller를 import 해야 합니다.
+from app_controller import AppController
 from dialogs.ScenarioBrowserDialog import ScenarioBrowserDialog
+# QueryConditionsDialog를 import 해야 start_db_connection에서 사용할 수 있습니다.
+from dialogs.QueryConditionsDialog import QueryConditionsDialog
 from dialogs.QueryBuilderDialog import QueryBuilderDialog
 from dialogs.DashboardDialog import DashboardDialog
 from dialogs.VisualizationDialog import VisualizationDialog
@@ -19,7 +23,7 @@ from dialogs.ScriptEditorDialog import ScriptEditorDialog
 CONFIG_FILE = 'config.json'
 
 class MainWindow(QMainWindow):
-    def __init__(self, controller):
+    def __init__(self, controller: AppController):
         super().__init__()
         self.controller = controller
         self.last_query_data = None
@@ -29,7 +33,6 @@ class MainWindow(QMainWindow):
         main_widget = QWidget()
         layout = QVBoxLayout(main_widget)
 
-        # ⭐️ 1. DB 접속 버튼을 생성하고 레이아웃에 추가합니다.
         self.db_connect_button = QPushButton("📡 데이터베이스에 연결하여 로그 조회")
         self.db_connect_button.clicked.connect(self.start_db_connection)
         layout.addWidget(self.db_connect_button)
@@ -53,7 +56,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.splitter)
         self.setCentralWidget(main_widget)
         
-        # ⭐️ 1. 상태 표시줄(Status Bar)을 생성하고 UI에 추가합니다.
         self.setStatusBar(QStatusBar())
         self.statusBar().showMessage("Ready. Please open a log file.")
 
@@ -69,18 +71,29 @@ class MainWindow(QMainWindow):
         self.tableView.customContextMenuRequested.connect(self.show_table_context_menu)
         self.tableView.selectionModel().selectionChanged.connect(self.update_detail_view)
 
-        # ⭐️ 모드에 따라 UI를 초기화합니다.
+        # ⭐️ 1. 컨트롤러의 시그널과 UI의 슬롯을 연결하는 함수를 호출합니다.
+        self.connect_signals()
+        
+        # 모드에 따라 UI를 초기화합니다.
         self.setup_ui_for_mode()
+
+    # ⭐️ 2. 시그널-슬롯 연결을 위한 메서드를 추가합니다.
+    def connect_signals(self):
+        """컨트롤러의 시그널을 MainWindow의 메서드(슬롯)에 연결합니다."""
+        # 모델이 업데이트 되었다는 신호가 오면, update_table_model 메서드를 실행
+        self.controller.model_updated.connect(self.update_table_model)
+        # 작업 진행률 신호가 오면, on_fetch_progress 메서드를 실행
+        self.controller.fetch_progress.connect(self.on_fetch_progress)
+        # 작업 완료 신호가 오면, on_fetch_complete 메서드를 실행
+        self.controller.fetch_completed.connect(self.on_fetch_complete)
 
     def update_table_model(self, source_model):
         self.proxy_model.setSourceModel(source_model)
         self.apply_settings(source_model)
-        # ⭐️ 2. 모델이 업데이트될 때마다 상태 표시줄 메시지도 업데이트합니다.
         total_rows = source_model.rowCount()
         self.statusBar().showMessage(f"Loaded {total_rows:,} logs.")
         
     def _create_menu(self):
-        # ... (이전과 동일)
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("&File")
         open_action = QAction("&Open Log File...", self)
@@ -107,11 +120,7 @@ class MainWindow(QMainWindow):
         tools_menu.addAction(clear_filter_action)
         tools_menu.addSeparator()
         
-        # ⭐️ 1. 여기서는 빈 하위 메뉴만 생성합니다.
         self.scenario_menu = tools_menu.addMenu("Run Scenario Validation")
-
-        # ⭐️ 2. `populate_scenario_menu` 직접 호출을 삭제하고,
-        #         메뉴가 열리기 직전에 호출되도록 시그널에 연결합니다.
         tools_menu.aboutToShow.connect(self.populate_scenario_menu)
 
         browse_scenarios_action = QAction("Browse Scenarios...", self)
@@ -122,14 +131,12 @@ class MainWindow(QMainWindow):
         script_editor_action.triggered.connect(self.open_script_editor)
         tools_menu.addAction(script_editor_action)
 
-                # ⭐️ 1. Help 메뉴 추가
         help_menu = menu_bar.addMenu("&Help")
         about_action = QAction("&About...", self)
         about_action.triggered.connect(self.show_about_dialog)
         help_menu.addAction(about_action)
 
     def populate_scenario_menu(self):
-        # ... (이전과 동일)
         self.scenario_menu.clear()
         run_all_action = QAction("Run All Scenarios", self)
         run_all_action.triggered.connect(lambda: self.run_scenario_validation(None))
@@ -157,7 +164,6 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
         
-        # ⭐️ 3. 바쁜 커서(Busy Cursor) 적용
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             result_text = self.controller.run_scenario_validation(scenario_name)
@@ -172,13 +178,13 @@ class MainWindow(QMainWindow):
             result_dialog.resize(700, 350)
             result_dialog.exec()
         finally:
-            QApplication.restoreOverrideCursor() # 작업 완료 후 커서 복원
-    # ⭐️ --- 이 메서드가 누락되었습니다 --- ⭐️
+            QApplication.restoreOverrideCursor()
+
     def open_scenario_browser(self):
-        """시나리오 브라우저 다이얼로그를 엽니다."""
         all_scenarios = self.controller.load_all_scenarios()
         dialog = ScenarioBrowserDialog(all_scenarios, self)
         dialog.exec()
+
     def open_log_file(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Log File", "", "CSV Files (*.csv);;All Files (*)")
         if filepath:
@@ -186,13 +192,11 @@ class MainWindow(QMainWindow):
             if source_model:
                 source_model.clear_highlights()
             
-            # ⭐️ 3. 바쁜 커서(Busy Cursor) 적용
             QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
             self.statusBar().showMessage(f"Loading {os.path.basename(filepath)}...")
             try:
                 success = self.controller.load_log_file(filepath)
                 if not success:
-                    # ⭐️ 4. 일관성 있는 알림 문구로 수정
                     QMessageBox.warning(self, "Load Failed", "No data could be parsed from the selected file.")
                 else:
                     print(f"Successfully loaded file: {filepath}")
@@ -200,7 +204,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Load Error", f"An error occurred while opening the file:\n{e}")
             finally:
-                QApplication.restoreOverrideCursor() # 작업 완료 후 커서 복원
+                QApplication.restoreOverrideCursor()
 
     def open_query_builder(self):
         source_model = self.proxy_model.sourceModel()
@@ -216,12 +220,10 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             query_data = dialog.get_query_data()
             
-            # ⭐️ 3. 바쁜 커서(Busy Cursor) 적용
             QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
             try:
                 self.controller.apply_advanced_filter(query_data)
                 self.last_query_data = query_data
-                # ⭐️ 2. 상태 표시줄 메시지 업데이트
                 self.statusBar().showMessage(f"Filter applied. Showing {self.proxy_model.rowCount():,} of {self.proxy_model.sourceModel().rowCount():,} rows.")
             finally:
                 QApplication.restoreOverrideCursor()
@@ -235,7 +237,6 @@ class MainWindow(QMainWindow):
             source_model.clear_highlights()
         self.controller.clear_advanced_filter()
         self.last_query_data = None
-        # ⭐️ 2. 상태 표시줄 메시지 업데이트
         if source_model:
             self.statusBar().showMessage(f"Filter cleared. Showing {source_model.rowCount():,} rows.")
         print("Advanced filter cleared.")
@@ -442,7 +443,6 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def show_about_dialog(self):
-        """프로그램 정보 대화상자를 표시합니다."""
         QMessageBox.about(self,
             "About Advanced Log Analyzer",
             """
@@ -454,7 +454,6 @@ class MainWindow(QMainWindow):
         )
     
     def setup_ui_for_mode(self):
-        """앱 모드에 따라 UI 요소를 설정합니다."""
         if self.controller.mode == 'realtime':
             self.db_connect_button.setVisible(True)
             self.filter_input.setVisible(False)
@@ -468,12 +467,13 @@ class MainWindow(QMainWindow):
 
     def start_db_connection(self):
         """사전 필터 UI를 열고 DB 조회를 시작합니다."""
-        # TODO: Step 5에서 구현 - 사전 필터 다이얼로그 열기
-        query_conditions = {} # 지금은 빈 조건으로 테스트
-        
-        self.controller.start_db_fetch(query_conditions)
-        self.db_connect_button.setEnabled(False)
-        self.db_connect_button.setText("⏳ Loading...")
+        # QueryConditionsDialog를 사용하여 사용자로부터 조회 조건을 받습니다.
+        dialog = QueryConditionsDialog(self)
+        if dialog.exec():
+            query_conditions = dialog.get_conditions()
+            self.controller.start_db_fetch(query_conditions)
+            self.db_connect_button.setEnabled(False)
+            self.db_connect_button.setText("⏳ Loading...")
 
     def on_fetch_progress(self, message):
         """Worker가 보내는 진행 상황을 상태 표시줄에 표시합니다."""
@@ -483,5 +483,9 @@ class MainWindow(QMainWindow):
         """Worker의 작업 완료 신호를 받아 버튼 상태를 복원합니다."""
         self.db_connect_button.setEnabled(True)
         self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
-        total_rows = self.proxy_model.sourceModel().rowCount()
-        self.statusBar().showMessage(f"Local cache contains {total_rows:,} logs.")
+        
+        source_model = self.proxy_model.sourceModel()
+        if source_model:
+            total_rows = source_model.rowCount()
+            self.statusBar().showMessage(f"Local cache contains {total_rows:,} logs.")
+
