@@ -1,8 +1,0 @@
-[
-  {
-    "action": "expect_within_time",
-    "message_a": "S1F13",
-    "message_b": "S1F14",
-    "timeout": 2
-  }
-]

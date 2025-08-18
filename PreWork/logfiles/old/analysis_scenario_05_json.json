@@ -1,7 +1,0 @@
-[
-  {
-    "action": "verify_json_value",
-    "event": "CarrierArrived",
-    "condition": "entry['data']['CarrierID'] == 'C101'"
-  }
-]

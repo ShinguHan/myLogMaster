@@ -1,7 +1,0 @@
-[
-  {
-    "action": "verify_data",
-    "message": "S2F42",
-    "condition": "body[0].value == 0"
-  }
-]

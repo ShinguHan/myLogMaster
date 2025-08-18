@@ -64,10 +64,6 @@ class MainWindow(QMainWindow):
 
         self._create_menu()
         
-        # ⭐️ 2. 컨트롤러의 신호를 UI의 슬롯에 연결합니다.
-        self.controller.fetch_completed.connect(self.on_fetch_complete)
-        self.controller.fetch_progress.connect(self.on_fetch_progress)
-
         self.filter_input.textChanged.connect(self.proxy_model.setFilterFixedString)
         self.tableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tableView.customContextMenuRequested.connect(self.show_table_context_menu)
