@@ -6,10 +6,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction, QCursor
 
-# app_controller를 import 해야 합니다.
+# ✅ app_controller는 MainWindow의 생성자(__init__)에서 타입 힌팅을 위해 필요합니다.
 from app_controller import AppController
 from dialogs.ScenarioBrowserDialog import ScenarioBrowserDialog
-# QueryConditionsDialog를 import 해야 start_db_connection에서 사용할 수 있습니다.
 from dialogs.QueryConditionsDialog import QueryConditionsDialog
 from dialogs.QueryBuilderDialog import QueryBuilderDialog
 from dialogs.DashboardDialog import DashboardDialog
@@ -19,7 +18,8 @@ from dialogs.ColumnSelectionDialog import ColumnSelectionDialog
 from models.LogTableModel import LogTableModel
 from analysis_result import AnalysisResult
 from dialogs.ScriptEditorDialog import ScriptEditorDialog
-from PySide6.QtCore import QObject, Signal
+# ⛔️ MainWindow는 시그널을 직접 정의하지 않으므로 이 import는 삭제합니다.
+# from PySide6.QtCore import QObject, Signal 
 
 CONFIG_FILE = 'config.json'
 
@@ -72,20 +72,12 @@ class MainWindow(QMainWindow):
         self.tableView.customContextMenuRequested.connect(self.show_table_context_menu)
         self.tableView.selectionModel().selectionChanged.connect(self.update_detail_view)
 
-        # ⭐️ 1. 컨트롤러의 시그널과 UI의 슬롯을 연결하는 함수를 호출합니다.
         self.connect_signals()
-        
-        # 모드에 따라 UI를 초기화합니다.
         self.setup_ui_for_mode()
 
-    # ⭐️ 2. 시그널-슬롯 연결을 위한 메서드를 추가합니다.
     def connect_signals(self):
-        """컨트롤러의 시그널을 MainWindow의 메서드(슬롯)에 연결합니다."""
-        # 모델이 업데이트 되었다는 신호가 오면, update_table_model 메서드를 실행
         self.controller.model_updated.connect(self.update_table_model)
-        # 작업 진행률 신호가 오면, on_fetch_progress 메서드를 실행
         self.controller.fetch_progress.connect(self.on_fetch_progress)
-        # 작업 완료 신호가 오면, on_fetch_complete 메서드를 실행
         self.controller.fetch_completed.connect(self.on_fetch_complete)
 
     def update_table_model(self, source_model):
@@ -467,8 +459,6 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Ready. Please open a log file.")
 
     def start_db_connection(self):
-        """사전 필터 UI를 열고 DB 조회를 시작합니다."""
-        # QueryConditionsDialog를 사용하여 사용자로부터 조회 조건을 받습니다.
         dialog = QueryConditionsDialog(self)
         if dialog.exec():
             query_conditions = dialog.get_conditions()
@@ -477,11 +467,9 @@ class MainWindow(QMainWindow):
             self.db_connect_button.setText("⏳ Loading...")
 
     def on_fetch_progress(self, message):
-        """Worker가 보내는 진행 상황을 상태 표시줄에 표시합니다."""
         self.statusBar().showMessage(message)
 
     def on_fetch_complete(self):
-        """Worker의 작업 완료 신호를 받아 버튼 상태를 복원합니다."""
         self.db_connect_button.setEnabled(True)
         self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
         
@@ -489,4 +477,3 @@ class MainWindow(QMainWindow):
         if source_model:
             total_rows = source_model.rowCount()
             self.statusBar().showMessage(f"Local cache contains {total_rows:,} logs.")
-

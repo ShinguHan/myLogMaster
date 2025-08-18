@@ -6,64 +6,40 @@ from PySide6.QtCore import QObject, Signal, QDateTime
 from universal_parser import parse_log_with_profile
 from models.LogTableModel import LogTableModel
 from analysis_result import AnalysisResult
- # ⭐️ DatabaseManager를 임포트합니다.
 from database_manager import DatabaseManager
 from oracle_fetcher import OracleFetcherThread
-# app_controller.py 상단에 MainWindow 임포트
-# from main_window import MainWindow
-
 
 FILTERS_FILE = 'filters.json'
-SCENARIOS_DIR = 'scenarios' # ⭐️ 시나리오 디렉토리 경로 상수 추가
+SCENARIOS_DIR = 'scenarios'
 
 class AppController(QObject):
-    # model_updated = Signal(LogTableModel)
-    #     # ⭐️ 1. 이 두 줄을 추가하여, UI와 통신할 신호들을 정의합니다.
-    # fetch_completed = Signal()
-    # fetch_progress = Signal(str)
+    # ✅ Signal을 클래스 변수로 정의
+    model_updated = Signal(LogTableModel)
+    fetch_completed = Signal()
+    fetch_progress = Signal(str)
 
     def __init__(self, app_mode, connection_name=None, connection_info=None):
         super().__init__()
-
-                # ✅ 모든 시그널을 __init__ 안에서 인스턴스 변수로 선언합니다.
-        self.model_updated = Signal(LogTableModel)
-        self.fetch_completed = Signal()
-        self.fetch_progress = Signal(str)
 
         self.mode = app_mode
         self.connection_name = connection_name
         self.connection_info = connection_info
         
-        # ⭐️ UI 윈도우를 컨트롤러의 속성으로 직접 생성하고 관리합니다.
-        # self.window = MainWindow(self)
-        
-        # ⭐️ 컨트롤러가 자신의 신호를 윈도우의 슬롯에 직접 연결합니다.
-        # self.model_updated.connect(self.window.update_table_model)
-        # self.fetch_completed.connect(self.window.on_fetch_complete)
-        # self.fetch_progress.connect(self.window.on_fetch_progress)
-
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel()
-        self.fetch_thread = None # Worker 스레드를 담을 변수
+        self.fetch_thread = None
 
-        # ⭐️ UI와 통신할 새로운 신호들을 추가합니다.
-        self.fetch_completed = Signal()
-        self.fetch_progress = Signal(str)
-        
-        # ⭐️ 실시간 모드일 경우, 해당 DB 전용 DatabaseManager를 생성하고 캐시를 로드합니다.
         if self.mode == 'realtime':
             if self.connection_name:
                 self.db_manager = DatabaseManager(self.connection_name)
-                # 앱 시작 시, 로컬 캐시에 데이터가 있으면 바로 불러옵니다.
                 self.load_data_from_cache()
             else:
                 print("Error: Realtime mode requires a connection name.")
                 self.db_manager = None
-        else: # 파일 모드
+        else:
             self.db_manager = None
 
     def load_data_from_cache(self):
-        """(실시간 모드 전용) 로컬 캐시에서 데이터를 불러와 original_data를 업데이트합니다."""
         if not self.db_manager: 
             return
         
@@ -71,7 +47,6 @@ class AppController(QObject):
         cached_data = self.db_manager.read_all_logs_from_cache()
         if not cached_data.empty:
             self.original_data = cached_data
-            # 캐시에서 불러온 데이터도 datetime 객체 변환이 필요할 수 있습니다.
             if 'SystemDate' in self.original_data.columns and 'SystemDate_dt' not in self.original_data.columns:
                  self.original_data['SystemDate_dt'] = pd.to_datetime(self.original_data['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce')
             self.update_model_data(self.original_data)
@@ -92,14 +67,12 @@ class AppController(QObject):
             self.update_model_data(self.original_data)
             return not self.original_data.empty
         except Exception as e:
-            # 파일 로딩/파싱 중 발생하는 모든 에러는 여기서 처리
             print(f"Error loading or parsing file: {e}")
-            self.original_data = pd.DataFrame() # 데이터 초기화
+            self.original_data = pd.DataFrame()
             self.update_model_data(self.original_data)
             return False
 
     def _get_profile(self):
-        """파싱을 위한 프로파일을 반환합니다."""
         return {
             'column_mapping': {'Category': 'Category', 'AsciiData': 'AsciiData', 'BinaryData': 'BinaryData'},
             'type_rules': [{'value': 'Com', 'type': 'secs'}, {'value': 'Info', 'type': 'json'}]
@@ -107,8 +80,46 @@ class AppController(QObject):
 
     def update_model_data(self, dataframe):
         self.source_model.update_data(dataframe)
-        self.model_updated(self.source_model)
+        self.model_updated.emit(self.source_model)  # emit() 사용
 
+    def start_db_fetch(self, query_conditions):
+        if self.fetch_thread and self.fetch_thread.isRunning():
+            print("Fetch is already in progress.")
+            return
+
+        self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions)
+        
+        self.fetch_thread.data_fetched.connect(self.on_data_chunk_received)
+        self.fetch_thread.finished.connect(self.on_fetch_finished)
+        self.fetch_thread.progress.connect(self.fetch_progress)
+        self.fetch_thread.error.connect(lambda e: self.fetch_progress.emit(f"Error: {e}"))
+
+        self.fetch_thread.start()
+
+    def on_data_chunk_received(self, df_chunk):
+        print(f"Received a chunk of {len(df_chunk)} logs.")
+        if self.db_manager:
+            self.db_manager.upsert_logs_to_local_cache(df_chunk)
+        self.load_data_from_cache()
+
+    def on_fetch_finished(self):
+        print("Fetch thread finished.")
+        self.fetch_completed.emit()
+
+    # 누락된 메서드 추가
+    def run_analysis_script(self, script_code, dataframe):
+        """
+        스크립트 실행을 위한 메서드 (구현 필요)
+        """
+        try:
+            # 여기에 스크립트 실행 로직을 구현하세요
+            # 임시로 기본 AnalysisResult 반환
+            return AnalysisResult()
+        except Exception as e:
+            print(f"Script execution error: {e}")
+            return AnalysisResult()
+
+    # 나머지 메서드들은 그대로 유지...
     def clear_advanced_filter(self):
         self.update_model_data(self.original_data)
 
@@ -117,7 +128,6 @@ class AppController(QObject):
             self.clear_advanced_filter()
             return
             
-        # ⭐️ 엣지 케이스 방어: 필터링할 원본 데이터가 없으면 실행하지 않음
         if self.original_data.empty:
             return
 
@@ -135,7 +145,6 @@ class AppController(QObject):
                 masks.append(self._build_mask_recursive(rule, df))
             else: 
                 column, op, value = rule['column'], rule['operator'], rule['value']
-                # ⭐️ 엣지 케이스 방어: 룰에 필요한 키가 없으면 건너뜀
                 if not all([column, op]): continue
 
                 mask = pd.Series(True, index=df.index)
@@ -168,12 +177,12 @@ class AppController(QObject):
         else:
             return pd.concat(masks, axis=1).any(axis=1)
 
+    # 나머지 메서드들도 동일하게 유지...
     def load_filters(self):
         try:
             if not os.path.exists(FILTERS_FILE): return {}
             with open(FILTERS_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        # ⭐️ 구체적인 예외 처리
         except json.JSONDecodeError:
             print(f"Warning: Could not parse '{FILTERS_FILE}'. It may be corrupted.")
             return {}
@@ -191,7 +200,6 @@ class AppController(QObject):
         except Exception as e:
             print(f"Error saving filter '{name}': {e}")
     
-    
     def get_trace_data(self, trace_id):
         df = self.original_data
         mask = df.apply(lambda r: r.astype(str).str.contains(trace_id, case=False, na=False).any(), axis=1)
@@ -202,10 +210,7 @@ class AppController(QObject):
         com_logs = scenario_df[scenario_df['Category'].str.replace('"', '', regex=False) == 'Com'].sort_values(by='SystemDate')
         return com_logs
 
-    # ⭐️ --- 시나리오 검증 엔진 (상태 머신 업그레이드) --- ⭐️
-    # ⭐️ --- 이 메서드 전체를 아래 내용으로 교체합니다 --- ⭐️
     def run_scenario_validation(self, scenario_to_run=None):
-        """scenarios 폴더를 읽어 정의된 시나리오들을 상태 머신으로 검증합니다."""
         if self.original_data.empty:
             return "오류: 로그 데이터가 없습니다."
 
@@ -220,16 +225,13 @@ class AppController(QObject):
             if scenario_to_run and name != scenario_to_run:
                 continue
             
-            # --- 상태 머신 초기화 ---
-            active_scenarios = {}  # {key: state}
-            completed_scenarios = [] # {status, events, message}
+            active_scenarios = {}
+            completed_scenarios = []
             key_columns = scenario.get('key_columns', [])
 
-            # --- 로그 파일 전체 순회 ---
             for index, row in df.iterrows():
                 current_time = row['SystemDate_dt']
                 
-                # 1. 타임아웃 검사
                 timed_out_keys = []
                 for key, state in active_scenarios.items():
                     time_limit = scenario['steps'][state['current_step']]['max_delay_seconds']
@@ -241,17 +243,14 @@ class AppController(QObject):
                 for key in timed_out_keys:
                     del active_scenarios[key]
 
-                # 2. 상태 전이 (다음 단계 진행) 검사
                 progressed_keys = []
                 for key, state in active_scenarios.items():
-                    # 현재 상태에서 다음으로 기대되는 단계를 확인
                     next_step_rule = scenario['steps'][state['current_step']]['event_match']
                     if self._match_event(row, next_step_rule):
                         state['events'].append(row.to_dict())
                         state['current_step'] += 1
                         state['last_event_time'] = current_time
                         
-                        # 시나리오의 모든 단계를 통과했는지 확인
                         if state['current_step'] >= len(scenario['steps']):
                             state['status'] = 'SUCCESS'
                             state['message'] = 'Scenario completed successfully.'
@@ -260,7 +259,6 @@ class AppController(QObject):
                 for key in progressed_keys:
                     del active_scenarios[key]
 
-                # 3. 새로운 트리거 감지 (기존에 진행 중인 시나리오가 아닐 경우에만)
                 trigger_rule = scenario['trigger_event']
                 if self._match_event(row, trigger_rule):
                     key = tuple(row[k] for k in key_columns) if key_columns else index
@@ -276,13 +274,11 @@ class AppController(QObject):
                             'events': [row.to_dict()]
                         }
 
-            # 로그 파일 순회가 끝난 후, 아직 진행 중인 시나리오 처리
             for key, state in active_scenarios.items():
                 state['status'] = 'INCOMPLETE'
                 state['message'] = f"Scenario did not complete. Stopped at step {state['current_step']+1}."
                 completed_scenarios.append(state)
 
-            # --- 결과 리포트 생성 ---
             success_count = sum(1 for s in completed_scenarios if s['status'] == 'SUCCESS')
             fail_count = sum(1 for s in completed_scenarios if s['status'] == 'FAIL')
             incomplete_count = sum(1 for s in completed_scenarios if s['status'] == 'INCOMPLETE')
@@ -309,15 +305,7 @@ class AppController(QObject):
             return rule['equals'] == row_val
         return False
 
-    def _find_event_indices(self, df, rule):
-        if df.empty:
-            return pd.Index([])
-        mask = df.apply(lambda row: self._match_event(row, rule), axis=1)
-        return df[mask].index
-    
-    # ⭐️ scenarios.json을 직접 읽는 대신, 폴더 전체를 읽는 헬퍼 메서드 추가
     def load_all_scenarios(self):
-        """'scenarios' 폴더 내의 모든 .json 파일을 읽어 하나로 합칩니다."""
         all_scenarios = {}
         if not os.path.exists(SCENARIOS_DIR):
             return {"Error": {"description": f"'{SCENARIOS_DIR}' directory not found."}}
@@ -333,35 +321,5 @@ class AppController(QObject):
                         print(f"Warning: Could not parse {filename}")
         return all_scenarios
     
-    # ⭐️ UI가 시나리오 목록을 쉽게 가져갈 수 있도록 메서드 추가
     def get_scenario_names(self):
         return list(self.load_all_scenarios().keys())
-    
-    def start_db_fetch(self, query_conditions):
-        """Worker 스레드를 생성하고 데이터 조회를 시작합니다."""
-        if self.fetch_thread and self.fetch_thread.isRunning():
-            print("Fetch is already in progress.")
-            return
-
-        self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions)
-        
-        self.fetch_thread.data_fetched.connect(self.on_data_chunk_received)
-        self.fetch_thread.finished.connect(self.on_fetch_finished)
-        self.fetch_thread.progress.connect(self.fetch_progress)
-        self.fetch_thread.error.connect(lambda e: self.fetch_progress(f"Error: {e}"))
-
-        self.fetch_thread.start()
-
-    def on_data_chunk_received(self, df_chunk):
-        """Worker로부터 받은 데이터 Chunk를 처리합니다."""
-        print(f"Received a chunk of {len(df_chunk)} logs.")
-        # Step 6에서 구현될 ETL 파이프라인
-        if self.db_manager:
-            self.db_manager.upsert_logs_to_local_cache(df_chunk)
-        # Step 7에서 구현될 점진적 로딩
-        self.load_data_from_cache() # 임시로 전체 재조회
-
-    def on_fetch_finished(self):
-        """Worker의 작업 완료를 처리합니다."""
-        print("Fetch thread finished.")
-        self.fetch_completed()
