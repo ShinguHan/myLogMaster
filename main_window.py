@@ -19,6 +19,7 @@ from dialogs.ColumnSelectionDialog import ColumnSelectionDialog
 from models.LogTableModel import LogTableModel
 from analysis_result import AnalysisResult
 from dialogs.ScriptEditorDialog import ScriptEditorDialog
+from PySide6.QtCore import QObject, Signal
 
 CONFIG_FILE = 'config.json'
 

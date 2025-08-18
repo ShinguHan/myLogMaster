@@ -12,17 +12,24 @@ from oracle_fetcher import OracleFetcherThread
 # app_controller.py 상단에 MainWindow 임포트
 # from main_window import MainWindow
 
+
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios' # ⭐️ 시나리오 디렉토리 경로 상수 추가
 
 class AppController(QObject):
-    model_updated = Signal(LogTableModel)
-        # ⭐️ 1. 이 두 줄을 추가하여, UI와 통신할 신호들을 정의합니다.
-    fetch_completed = Signal()
-    fetch_progress = Signal(str)
+    # model_updated = Signal(LogTableModel)
+    #     # ⭐️ 1. 이 두 줄을 추가하여, UI와 통신할 신호들을 정의합니다.
+    # fetch_completed = Signal()
+    # fetch_progress = Signal(str)
 
     def __init__(self, app_mode, connection_name=None, connection_info=None):
         super().__init__()
+
+                # ✅ 모든 시그널을 __init__ 안에서 인스턴스 변수로 선언합니다.
+        self.model_updated = Signal(LogTableModel)
+        self.fetch_completed = Signal()
+        self.fetch_progress = Signal(str)
+
         self.mode = app_mode
         self.connection_name = connection_name
         self.connection_info = connection_info
@@ -31,9 +38,9 @@ class AppController(QObject):
         # self.window = MainWindow(self)
         
         # ⭐️ 컨트롤러가 자신의 신호를 윈도우의 슬롯에 직접 연결합니다.
-        self.model_updated.connect(self.window.update_table_model)
-        self.fetch_completed.connect(self.window.on_fetch_complete)
-        self.fetch_progress.connect(self.window.on_fetch_progress)
+        # self.model_updated.connect(self.window.update_table_model)
+        # self.fetch_completed.connect(self.window.on_fetch_complete)
+        # self.fetch_progress.connect(self.window.on_fetch_progress)
 
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel()
@@ -100,7 +107,7 @@ class AppController(QObject):
 
     def update_model_data(self, dataframe):
         self.source_model.update_data(dataframe)
-        self.model_updated.emit(self.source_model)
+        self.model_updated(self.source_model)
 
     def clear_advanced_filter(self):
         self.update_model_data(self.original_data)
@@ -340,8 +347,8 @@ class AppController(QObject):
         
         self.fetch_thread.data_fetched.connect(self.on_data_chunk_received)
         self.fetch_thread.finished.connect(self.on_fetch_finished)
-        self.fetch_thread.progress.connect(self.fetch_progress.emit)
-        self.fetch_thread.error.connect(lambda e: self.fetch_progress.emit(f"Error: {e}"))
+        self.fetch_thread.progress.connect(self.fetch_progress)
+        self.fetch_thread.error.connect(lambda e: self.fetch_progress(f"Error: {e}"))
 
         self.fetch_thread.start()
 
@@ -357,4 +364,4 @@ class AppController(QObject):
     def on_fetch_finished(self):
         """Worker의 작업 완료를 처리합니다."""
         print("Fetch thread finished.")
-        self.fetch_completed.emit()
+        self.fetch_completed()
