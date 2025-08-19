@@ -1,0 +1,65 @@
+/* Solarized Light Theme */
+* {
+    font-family: "Malgun Gothic", sans-serif;
+}
+QWidget {
+    background-color: #fdf6e3; /* base3 */
+    color: #657b83; /* base00 */
+    border: none;
+}
+QMainWindow, QDialog {
+    background-color: #fdf6e3;
+}
+QTableView {
+    background-color: #eee8d5; /* base2 */
+    border: 1px solid #93a1a1;
+    gridline-color: #eee8d5;
+    alternate-background-color: #fdf6e3;
+    selection-background-color: #268bd2;
+    selection-color: #ffffff;
+}
+QHeaderView::section {
+    background-color: #eee8d5;
+    color: #586e75;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid #93a1a1;
+}
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #eee8d5;
+    border: 1px solid #93a1a1;
+    border-radius: 5px;
+    padding: 5px;
+}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #268bd2;
+}
+QPushButton {
+    background-color: #eee8d5;
+    color: #657b83;
+    border: 1px solid #93a1a1;
+    padding: 8px 12px;
+    border-radius: 5px;
+}
+QPushButton:hover {
+    background-color: #93a1a1;
+    color: #fdf6e3;
+}
+QPushButton:pressed {
+    background-color: #839496;
+}
+QMenuBar {
+    background-color: #fdf6e3;
+    border-bottom: 1px solid #eee8d5;
+}
+QMenuBar::item:selected {
+    background-color: #eee8d5;
+}
+QMenu {
+    background-color: #eee8d5;
+    border: 1px solid #93a1a1;
+}
+QMenu::item:selected {
+    background-color: #268bd2;
+    color: #ffffff;
+}

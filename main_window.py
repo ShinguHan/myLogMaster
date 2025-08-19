@@ -126,7 +126,8 @@ class MainWindow(QMainWindow):
         theme_menu = self.view_menu.addMenu("Theme")
         theme_group = QActionGroup(self)
 
-        themes = ["light", "dark"] 
+        # ✅ 4가지 테마 이름으로 수정
+        themes = ["light", "dark", "dracula", "solarized"] 
         for theme in themes:
             action = QAction(theme.capitalize(), self, checkable=True)
             action.triggered.connect(lambda checked, t=theme: self._apply_theme(t))

@@ -1,0 +1,65 @@
+/* Dracula Theme */
+* {
+    font-family: "Consolas", "Malgun Gothic", sans-serif;
+}
+QWidget {
+    background-color: #282a36;
+    color: #f8f8f2;
+    border: none;
+}
+QMainWindow, QDialog {
+    background-color: #282a36;
+}
+QTableView {
+    background-color: #282a36;
+    border: 1px solid #44475a;
+    gridline-color: #44475a;
+    alternate-background-color: #2d2f3b;
+    selection-background-color: #44475a;
+    selection-color: #f8f8f2;
+}
+QHeaderView::section {
+    background-color: #44475a;
+    color: #f8f8f2;
+    padding: 6px;
+    border: none;
+    border-bottom: 1px solid #6272a4;
+}
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #21222c;
+    border: 1px solid #6272a4;
+    border-radius: 5px;
+    padding: 5px;
+}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #bd93f9;
+}
+QPushButton {
+    background-color: #44475a;
+    color: #f8f8f2;
+    border: 1px solid #6272a4;
+    padding: 8px 12px;
+    border-radius: 5px;
+}
+QPushButton:hover {
+    background-color: #50fa7b;
+    color: #282a36;
+}
+QPushButton:pressed {
+    background-color: #6272a4;
+}
+QMenuBar {
+    background-color: #282a36;
+    border-bottom: 1px solid #44475a;
+}
+QMenuBar::item:selected {
+    background-color: #44475a;
+}
+QMenu {
+    background-color: #21222c;
+    border: 1px solid #44475a;
+}
+QMenu::item:selected {
+    background-color: #bd93f9;
+    color: #f8f8f2;
+}

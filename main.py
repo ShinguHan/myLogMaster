@@ -14,7 +14,7 @@ def apply_theme(app, theme_name):
     theme_path = os.path.join("themes", f"{theme_name}.qss")
     try:
         if os.path.exists(theme_path):
-            with open(theme_path, "r") as f:
+            with open(theme_path, "r", encoding="utf-8") as f:
                 app.setStyleSheet(f.read())
             return True
     except Exception as e:
