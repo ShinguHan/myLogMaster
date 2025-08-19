@@ -2,7 +2,8 @@ import sys, json, os, re
 from PySide6.QtCore import Qt, QSortFilterProxyModel
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTableView, QFileDialog, QMessageBox, QMenu, QStatusBar,
-    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser, QPushButton
+    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser, QPushButton,
+    QHBoxLayout, QCheckBox
 )
 from PySide6.QtGui import QAction, QCursor
 
@@ -38,6 +39,17 @@ class MainWindow(QMainWindow):
         self.db_connect_button.clicked.connect(self.start_db_connection)
         layout.addWidget(self.db_connect_button)
         
+                # ✅ 1. 필터 입력창과 자동 스크롤 체크박스를 가로로 배치
+        filter_layout = QHBoxLayout()
+        self.filter_input = QLineEdit()
+        self.filter_input.setPlaceholderText("Filter logs (case-insensitive)...")
+        filter_layout.addWidget(self.filter_input)
+        
+        self.auto_scroll_checkbox = QCheckBox("Auto Scroll to Bottom")
+        self.auto_scroll_checkbox.setChecked(True) # 기본으로 체크
+        filter_layout.addWidget(self.auto_scroll_checkbox)
+        layout.addLayout(filter_layout) # QVBoxLayout에 QHBoxLayout을 추가
+
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Filter logs (case-insensitive)...")
         layout.addWidget(self.filter_input)
@@ -79,10 +91,19 @@ class MainWindow(QMainWindow):
         self.controller.model_updated.connect(self.update_table_model)
         self.controller.fetch_progress.connect(self.on_fetch_progress)
         self.controller.fetch_completed.connect(self.on_fetch_complete)
+        # ✅ 2. 새로운 신호-슬롯 연결
+        self.controller.row_count_updated.connect(self._update_row_count_status)
 
     def update_table_model(self, source_model):
         self.proxy_model.setSourceModel(source_model)
         self.apply_settings(source_model)
+
+                # ✅ 3. 모델이 변경될 때 자동 스크롤 실행
+        if self.auto_scroll_checkbox.isChecked():
+            # QTimer.singleShot을 사용해 다른 UI 이벤트가 처리된 후 스크롤 실행
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(0, self.tableView.scrollToBottom)
+
         total_rows = source_model.rowCount()
         self.statusBar().showMessage(f"Loaded {total_rows:,} logs.")
         
@@ -477,3 +498,10 @@ class MainWindow(QMainWindow):
         if source_model:
             total_rows = source_model.rowCount()
             self.statusBar().showMessage(f"Local cache contains {total_rows:,} logs.")
+
+        # ✅ 4. 행 개수 업데이트를 위한 새로운 슬롯
+    def _update_row_count_status(self, row_count):
+        """상태바에 현재 행 개수를 표시하고 자동 스크롤을 처리합니다."""
+        self.statusBar().showMessage(f"Receiving... {row_count:,} rows")
+        if self.auto_scroll_checkbox.isChecked():
+            self.tableView.scrollToBottom()
