@@ -1,3 +1,5 @@
+# shinguhan/mylogmaster/myLogMaster-main/app_controller.py
+
 import pandas as pd
 import json
 import os
@@ -13,18 +15,15 @@ FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios'
 
 class AppController(QObject):
-    # ✅ Signal을 클래스 변수로 정의
     model_updated = Signal(LogTableModel)
     fetch_completed = Signal()
     fetch_progress = Signal(str)
 
     def __init__(self, app_mode, connection_name=None, connection_info=None):
         super().__init__()
-
         self.mode = app_mode
         self.connection_name = connection_name
         self.connection_info = connection_info
-        
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel()
         self.fetch_thread = None
@@ -40,20 +39,27 @@ class AppController(QObject):
             self.db_manager = None
 
     def load_data_from_cache(self):
+        """로컬 캐시에서 데이터를 로드하고, 데이터 유무와 상관없이 항상 UI에 모델을 업데이트하도록 신호를 보냅니다."""
         if not self.db_manager: 
+            self.update_model_data(pd.DataFrame()) # DB 매니저가 없을 때도 초기 모델 전송
             return
         
         print("Loading initial data from local cache...")
         cached_data = self.db_manager.read_all_logs_from_cache()
+        
         if not cached_data.empty:
             self.original_data = cached_data
             if 'SystemDate' in self.original_data.columns and 'SystemDate_dt' not in self.original_data.columns:
                  self.original_data['SystemDate_dt'] = pd.to_datetime(self.original_data['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce')
-            self.update_model_data(self.original_data)
             print(f"Loaded {len(cached_data)} rows from cache.")
         else:
+            self.original_data = pd.DataFrame() # 캐시가 비었으면 빈 데이터프레임으로 초기화
             print("Local cache is empty.")
+        
+        # ✅ 데이터가 있든 없든, 무조건 UI에 모델을 설정하라는 신호를 보냅니다.
+        self.update_model_data(self.original_data)
 
+    
     def load_log_file(self, filepath):
         try:
             parsed_data = parse_log_with_profile(filepath, self._get_profile())
@@ -77,40 +83,57 @@ class AppController(QObject):
             'column_mapping': {'Category': 'Category', 'AsciiData': 'AsciiData', 'BinaryData': 'BinaryData'},
             'type_rules': [{'value': 'Com', 'type': 'secs'}, {'value': 'Info', 'type': 'json'}]
         }
-
     def update_model_data(self, dataframe):
         self.source_model.update_data(dataframe)
-        self.model_updated.emit(self.source_model)  # emit() 사용
+        self.model_updated.emit(self.source_model)
 
     def start_db_fetch(self, query_conditions):
         if self.fetch_thread and self.fetch_thread.isRunning():
             print("Fetch is already in progress.")
             return
 
+        # 💡 1. 데이터 가져오기를 시작하기 전, 기존 모델의 데이터를 초기화합니다.
+        self.source_model.update_data(pd.DataFrame())
+        self.original_data = pd.DataFrame() # 원본 데이터도 초기화
+
         self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions)
         
-        self.fetch_thread.data_fetched.connect(self.on_data_chunk_received)
+        # 💡 2. data_fetched 신호를 append_data_chunk 슬롯에 연결합니다.
+        self.fetch_thread.data_fetched.connect(self.append_data_chunk)
         self.fetch_thread.finished.connect(self.on_fetch_finished)
         self.fetch_thread.progress.connect(self.fetch_progress)
         self.fetch_thread.error.connect(lambda e: self.fetch_progress.emit(f"Error: {e}"))
 
         self.fetch_thread.start()
 
-    def on_data_chunk_received(self, df_chunk):
-        print(f"Received a chunk of {len(df_chunk)} logs.")
+    # 💡 3. 데이터를 점진적으로 추가하는 새로운 메소드
+    def append_data_chunk(self, df_chunk):
+        """받은 데이터 조각을 기존 모델에 추가하고 UI를 업데이트합니다."""
+        print(f"Received and appending a chunk of {len(df_chunk)} logs.")
+        
+        if df_chunk.empty: return
+
+        if 'SystemDate' in df_chunk.columns and 'SystemDate_dt' not in df_chunk.columns:
+            df_chunk['SystemDate_dt'] = pd.to_datetime(df_chunk['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce')
+
+        # 원본 데이터에도 추가
+        self.original_data = pd.concat([self.original_data, df_chunk], ignore_index=True)
+        
+        # 모델에 데이터 추가 (UI 업데이트 신호는 모델 내부에서 발생)
+        self.source_model.append_data(df_chunk)
+        
+        # 로컬 캐시에 저장
         if self.db_manager:
             self.db_manager.upsert_logs_to_local_cache(df_chunk)
-        self.load_data_from_cache()
 
     def on_fetch_finished(self):
         print("Fetch thread finished.")
         self.fetch_completed.emit()
-
-    # 누락된 메서드 추가
+        # 전체 데이터가 로드된 후 필터링이나 다른 작업을 수행할 수 있습니다.
+        # 예: self.apply_advanced_filter(self.last_query_data)
+        
+    # ... (load_log_file, run_analysis_script 등 나머지 코드는 동일)     
     def run_analysis_script(self, script_code, dataframe):
-        """
-        스크립트 실행을 위한 메서드 (구현 필요)
-        """
         try:
             # 여기에 스크립트 실행 로직을 구현하세요
             # 임시로 기본 AnalysisResult 반환
@@ -119,7 +142,6 @@ class AppController(QObject):
             print(f"Script execution error: {e}")
             return AnalysisResult()
 
-    # 나머지 메서드들은 그대로 유지...
     def clear_advanced_filter(self):
         self.update_model_data(self.original_data)
 
@@ -177,7 +199,6 @@ class AppController(QObject):
         else:
             return pd.concat(masks, axis=1).any(axis=1)
 
-    # 나머지 메서드들도 동일하게 유지...
     def load_filters(self):
         try:
             if not os.path.exists(FILTERS_FILE): return {}

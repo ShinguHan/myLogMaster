@@ -10,6 +10,11 @@
         "SourceID",
         "MessageName",
         "LogParserClassName",
-        "ParsedBody"
+        "BinaryData",
+        "NumericalTimeStamp",
+        "ParsedBody",
+        "ParsedBodyObject",
+        "ParsedType",
+        "SystemDate_dt"
     ]
 }

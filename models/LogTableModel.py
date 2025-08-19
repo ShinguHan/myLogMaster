@@ -1,83 +1,78 @@
-from PySide6.QtCore import QAbstractTableModel, Qt
-from PySide6.QtGui import QColor # ⭐️ QColor 임포트
+# shinguhan/mylogmaster/myLogMaster-main/models/LogTableModel.py
+
 import pandas as pd
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 
 class LogTableModel(QAbstractTableModel):
     def __init__(self, data=None):
         super().__init__()
         self._data = data if data is not None else pd.DataFrame()
-        # ⭐️ 하이라이트 정보를 저장할 딕셔너리
-        self.highlights = {} # {row_index: (message, color_str)}
+        self._highlighted_rows = set()
 
-    def rowCount(self, parent=None):
+    def rowCount(self, parent=QModelIndex()):
         return self._data.shape[0]
 
-    def columnCount(self, parent=None):
+    def columnCount(self, parent=QModelIndex()):
         return self._data.shape[1]
 
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
-
-        row = index.row()
-
-        # ⭐️ 1. 배경색 역할(BackgroundRole) 처리
-        if role == Qt.ItemDataRole.BackgroundRole:
-            if row in self.highlights:
-                color_str = self.highlights[row][1]
-                return QColor(color_str)
-        
-        # ⭐️ 2. 툴팁 역할(ToolTipRole) 처리 (마우스 호버 시 메시지 표시)
-        if role == Qt.ItemDataRole.ToolTipRole:
-            if row in self.highlights:
-                message = self.highlights[row][0]
-                return message
-
         if role == Qt.ItemDataRole.DisplayRole:
             try:
-                value = self._data.iloc[row, index.column()]
-                return str(value)
+                return str(self._data.iloc[index.row(), index.column()])
             except IndexError:
                 return None
+        elif role == Qt.ItemDataRole.BackgroundRole:
+            if index.row() in self._highlighted_rows:
+                from PySide6.QtGui import QColor
+                return QColor(Qt.GlobalColor.yellow)
         return None
 
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):
-        if role == Qt.ItemDataRole.DisplayRole and orientation == Qt.Orientation.Horizontal:
-            return str(self._data.columns[section])
+        if role == Qt.ItemDataRole.DisplayRole:
+            if orientation == Qt.Orientation.Horizontal:
+                return str(self._data.columns[section])
+            if orientation == Qt.Orientation.Vertical:
+                return str(self._data.index[section])
         return None
 
-    def update_data(self, new_data):
+    def update_data(self, data):
+        """모델의 데이터를 새로운 데이터프레임으로 완전히 교체합니다."""
         self.beginResetModel()
-        if isinstance(new_data, list):
-            self._data = pd.DataFrame(new_data)
-        elif isinstance(new_data, pd.DataFrame):
-             self._data = new_data
-        else:
-             self._data = pd.DataFrame()
+        self._data = data.copy() if data is not None else pd.DataFrame()
         self.endResetModel()
-    
-    def get_data_by_col_name(self, row_index, column_name):
-        if self._data.empty: return None
-        try:
-            col_index = self._data.columns.get_loc(column_name)
-            return self._data.iloc[row_index, col_index]
-        except (KeyError, IndexError):
-            return None
 
-    # ⭐️ 3. 하이라이트 정보를 설정하고 뷰를 갱신하는 메서드
+    # ✅ 이 부분이 추가되어야 합니다.
+    def append_data(self, df_chunk):
+        """모델의 끝에 새로운 데이터프레임 조각을 추가합니다."""
+        if df_chunk is None or df_chunk.empty:
+            return
+            
+        start_row = self.rowCount()
+        end_row = start_row + len(df_chunk) - 1
+
+        self.beginInsertRows(QModelIndex(), start_row, end_row)
+        
+        self._data = pd.concat([self._data, df_chunk], ignore_index=True)
+        
+        self.endInsertRows()
+
+    def get_data_by_col_name(self, row_index, col_name):
+        if col_name in self._data.columns and 0 <= row_index < len(self._data):
+            return self._data.at[row_index, col_name]
+        return None
+
     def set_highlights(self, markers):
-        self.beginResetModel() # 데이터 변경 시작을 알림
-        self.highlights.clear()
-        for row_index, message, color in markers:
-            # 원본 DataFrame의 인덱스를 사용하여 저장
-            if row_index in self._data.index:
-                # 실제 모델의 행 번호로 변환
-                model_row = self._data.index.get_loc(row_index)
-                self.highlights[model_row] = (message, color)
-        self.endResetModel() # 데이터 변경 완료를 알림
-
-    # ⭐️ 4. 하이라이트 정보를 초기화하는 메서드
-    def clear_highlights(self):
         self.beginResetModel()
-        self.highlights.clear()
+        self._highlighted_rows.clear()
+        for marker in markers:
+            if 0 <= marker.row_index < len(self._data):
+                 self._highlighted_rows.add(marker.row_index)
         self.endResetModel()
+
+    def clear_highlights(self):
+        if self._highlighted_rows:
+            self.beginResetModel()
+            self._highlighted_rows.clear()
+            self.endResetModel()
