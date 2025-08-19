@@ -17,7 +17,9 @@ class DashboardDialog(QDialog):
 
         # 이 변수는 이제 QWebEngineView 위젯들을 저장합니다.
         self.web_views = {}
-                # ✅ 1. 'data_to_update' 변수를 먼저 만듭니다.
+        
+        # ✅ 1. 마지막으로 차트를 그렸던 데이터를 저장할 변수 추가
+        self.last_rendered_data = None
         self.data_to_update = initial_data
         
         self._create_chart_views()
@@ -29,7 +31,7 @@ class DashboardDialog(QDialog):
         self.update_timer = QTimer(self)
         self.update_timer.setInterval(1000)  # 1초 간격
         self.update_timer.timeout.connect(self._perform_update)
-        self.update_timer.start() 
+        # self.update_timer.start() 
 
     def _create_chart_views(self):
         """각 차트를 위한 QWebEngineView 위젯을 생성하고 레이아웃에 추가합니다."""
@@ -47,11 +49,18 @@ class DashboardDialog(QDialog):
         self.data_to_update = new_data
 
     def _perform_update(self):
-        """타이머가 주기적으로 호출하여 모든 차트를 업데이트하는 메소드입니다."""
+        """타이머가 호출하여 차트를 업데이트합니다. 데이터가 변경됐을 때만 다시 그립니다."""
         if self.data_to_update is None or self.data_to_update.empty:
             return
 
+        # ✅ 2. 현재 데이터와 마지막으로 그렸던 데이터가 동일하면, 아무것도 하지 않고 반환 (깜빡임 방지)
+        if self.data_to_update.equals(self.last_rendered_data):
+            return
+        
         df = self.data_to_update
+        # 마지막으로 그린 데이터를 현재 데이터로 업데이트
+        self.last_rendered_data = df.copy()
+        
         print(f"Dashboard updating with {len(df)} rows...")
 
         # --- Category 파이 차트 ---
@@ -64,7 +73,17 @@ class DashboardDialog(QDialog):
         fig_dev = px.bar(device_counts, x='DeviceID', y='count', title="Log Counts by DeviceID (Top 10)")
         self.web_views['by_device'].setHtml(fig_dev.to_html(include_plotlyjs='cdn'))
 
-    def closeEvent(self, event):
-        """대화상자가 닫힐 때 타이머를 정지시킵니다."""
+    # ✅ 3. 타이머를 제어하는 새로운 메소드들 추가
+    def start_updates(self):
+        """대시보드 실시간 업데이트를 시작합니다."""
+        print("Dashboard updates started.")
+        self.update_timer.start()
+
+    def stop_updates(self):
+        """대시보드 실시간 업데이트를 중지합니다."""
+        print("Dashboard updates stopped.")
         self.update_timer.stop()
+
+    def closeEvent(self, event):
+        self.stop_updates() # 창이 닫힐 때도 타이머 정지
         super().closeEvent(event)

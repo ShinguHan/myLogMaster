@@ -122,6 +122,10 @@ class AppController(QObject):
                 # ✅ 2. 스레드의 error 신호를 컨트롤러 내부 슬롯에 연결
         self.fetch_thread.error.connect(self._handle_fetch_error)
 
+                # ✅ 1. 대시보드가 열려있으면, 업데이트 시작 명령
+        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
+            self.dashboard_dialog.start_updates()
+
         # ✅ 2. 타이머 시작
         self._update_timer.start()
         self.fetch_thread.start()
@@ -142,6 +146,10 @@ class AppController(QObject):
         print("Fetch thread finished.")
         if self._update_timer.isActive():
             self._update_timer.stop()
+
+        # ✅ 3. 작업 완료 시에도 대시보드 업데이트 중지 명령
+        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
+            self.dashboard_dialog.stop_updates()
             
         self.fetch_completed.emit()
 
@@ -412,6 +420,11 @@ class AppController(QObject):
         """Fetcher 스레드에서 발생한 에러를 처리합니다."""
         print(f"Controller caught error: {error_message}")
         self.fetch_error.emit(error_message)
+
+               # ✅ 2. 에러 발생 시에도 대시보드 업데이트 중지 명령
+        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
+            self.dashboard_dialog.stop_updates()
+
         # 에러 발생 시에도 타이머는 중지해야 합니다.
         if self._update_timer.isActive():
             self._update_timer.stop()
