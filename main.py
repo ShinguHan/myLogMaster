@@ -6,9 +6,36 @@ from app_controller import AppController
 from main_window import MainWindow
 from dialogs.ModeSelectionDialog import ModeSelectionDialog
 from dialogs.ConnectionManagerDialog import ConnectionManagerDialog
+import os, json
+
+# ✅ 1. 테마 적용 함수 추가
+def apply_theme(app, theme_name):
+    """지정된 이름의 QSS 파일을 읽어 앱에 적용합니다."""
+    theme_path = os.path.join("themes", f"{theme_name}.qss")
+    try:
+        if os.path.exists(theme_path):
+            with open(theme_path, "r") as f:
+                app.setStyleSheet(f.read())
+            return True
+    except Exception as e:
+        print(f"Could not apply theme '{theme_name}': {e}")
+    return False
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+        # ✅ 2. 시작 시 저장된 테마 적용
+    config_path = 'config.json'
+    theme_to_load = 'light' # 기본 테마
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                theme_to_load = config.get('theme', 'light')
+        except (json.JSONDecodeError, KeyError):
+            pass # 설정 파일이 잘못되었으면 기본값 사용
+    
+    apply_theme(app, theme_to_load)
     
     # 1. 모드 선택 대화상자를 실행합니다.
     mode_dialog = ModeSelectionDialog()

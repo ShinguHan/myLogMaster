@@ -16,5 +16,6 @@
         "ParsedBodyObject",
         "ParsedType",
         "SystemDate_dt"
-    ]
+    ],
+    "theme": "light"
 }

@@ -35,6 +35,7 @@ class AppController(QObject):
         self.last_query_conditions = None # ✅ 조회 조건 저장할 변수 추가
                 # ✅ 1. 대시보드 다이얼로그 참조를 저장할 변수 추가
         self.dashboard_dialog = None 
+        self.current_theme = 'light' # ✅ 1. 현재 테마 저장 변수
 
                 # ✅ 1. 데이터 업데이트를 위한 큐와 타이머 추가
         self._update_queue = []
@@ -428,3 +429,19 @@ class AppController(QObject):
         # 에러 발생 시에도 타이머는 중지해야 합니다.
         if self._update_timer.isActive():
             self._update_timer.stop()
+            
+        # ✅ 2. 테마 설정을 위한 새로운 메소드들
+    def set_current_theme(self, theme_name):
+        self.current_theme = theme_name
+
+    def get_current_theme(self):
+        # 시작 시 config.json에서 로드한 값을 반영하기 위해 추가
+        config_path = 'config.json'
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                    self.current_theme = config.get('theme', 'light')
+            except (json.JSONDecodeError, KeyError):
+                pass
+        return self.current_theme

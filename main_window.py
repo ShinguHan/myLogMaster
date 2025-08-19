@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser, QPushButton,
     QHBoxLayout, QCheckBox
 )
-from PySide6.QtGui import QAction, QCursor
+from PySide6.QtGui import QAction,  QActionGroup
 
 # ✅ app_controller는 MainWindow의 생성자(__init__)에서 타입 힌팅을 위해 필요합니다.
 from app_controller import AppController
@@ -51,9 +51,6 @@ class MainWindow(QMainWindow):
         filter_layout.addWidget(self.auto_scroll_checkbox)
         layout.addLayout(filter_layout) # QVBoxLayout에 QHBoxLayout을 추가
 
-        self.filter_input = QLineEdit()
-        self.filter_input.setPlaceholderText("Filter logs (case-insensitive)...")
-        layout.addWidget(self.filter_input)
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.tableView = QTableView()
         self.tableView.setSortingEnabled(True)
@@ -123,27 +120,38 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
-
-
-
+        # 'View' menu now contains the 'Theme' submenu
         self.view_menu = menu_bar.addMenu("&View")
+        
+        theme_menu = self.view_menu.addMenu("Theme")
+        theme_group = QActionGroup(self)
+
+        themes = ["light", "dark"] 
+        for theme in themes:
+            action = QAction(theme.capitalize(), self, checkable=True)
+            action.triggered.connect(lambda checked, t=theme: self._apply_theme(t))
+            theme_group.addAction(action)
+            theme_menu.addAction(action)
+            
+            if self.controller.get_current_theme() == theme:
+                action.setChecked(True)
+
+        self.view_menu.addSeparator()
+
         select_columns_action = QAction("&Select Columns...", self)
         select_columns_action.triggered.connect(self.open_column_selection_dialog)
         self.view_menu.addAction(select_columns_action)
+        
         self.view_menu.addSeparator()
+        
         dashboard_action = QAction("Show Dashboard...", self)
         dashboard_action.triggered.connect(self.show_dashboard)
         self.view_menu.addAction(dashboard_action)
+
+        # 'Tools' menu remains the same
         self.tools_menu = menu_bar.addMenu("&Tools")
         query_builder_action = QAction("Advanced Filter...", self)
         query_builder_action.triggered.connect(self.open_query_builder)
-
-
-
-
-
-
-
         self.tools_menu.addAction(query_builder_action)
         clear_filter_action = QAction("Clear Advanced Filter", self)
         clear_filter_action.triggered.connect(self.clear_advanced_filter)
@@ -161,6 +169,7 @@ class MainWindow(QMainWindow):
         script_editor_action.triggered.connect(self.open_script_editor)
         self.tools_menu.addAction(script_editor_action)
 
+        # 'Help' menu remains the same
         help_menu = menu_bar.addMenu("&Help")
         about_action = QAction("&About...", self)
         about_action.triggered.connect(self.show_about_dialog)
@@ -439,7 +448,12 @@ class MainWindow(QMainWindow):
 
         all_columns = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
         visible_columns = [col for i, col in enumerate(all_columns) if not self.tableView.isColumnHidden(i)]
-        config = {'visible_columns': visible_columns}
+
+                # ✅ 3. 현재 테마를 config에 추가
+        config = {
+            'visible_columns': visible_columns,
+            'theme': self.controller.get_current_theme()
+        }
         try:
             with open(CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=4)
@@ -571,3 +585,15 @@ class MainWindow(QMainWindow):
     def _on_dashboard_closed(self):
         print("Dashboard closed. Clearing reference in controller.")
         self.controller.dashboard_dialog = None
+
+     # ✅ 2. 테마 적용을 위한 새로운 메소드
+    def _apply_theme(self, theme_name):
+        """선택된 테마를 앱에 적용하고 컨트롤러에 저장합니다."""
+        # main.py의 함수를 재사용하기 위해 QApplication 인스턴스에 접근
+        from main import apply_theme
+        if apply_theme(QApplication.instance(), theme_name):
+            print(f"Applied theme: {theme_name}")
+            self.controller.set_current_theme(theme_name)
+        else:
+            QMessageBox.warning(self, "Theme Error", f"Could not find or apply theme: {theme_name}")
+

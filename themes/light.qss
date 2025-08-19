@@ -1,0 +1,22 @@
+/* Light Theme (Default Qt style with minor tweaks) */
+QWidget {
+    background-color: #f0f0f0;
+    color: #000000;
+}
+QTableView {
+    alternate-background-color: #e0e0e0;
+    selection-background-color: #a8cce9;
+    selection-color: #000000;
+}
+QHeaderView::section {
+    background-color: #d0d0d0;
+}
+QPushButton {
+    background-color: #e1e1e1;
+    border: 1px solid #adadad;
+    padding: 5px;
+    border-radius: 4px;
+}
+QPushButton:hover {
+    background-color: #cacaca;
+}
