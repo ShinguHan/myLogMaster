@@ -47,25 +47,37 @@ class LogTableModel(QAbstractTableModel):
             return str(self._data.columns[section])
         return None
 
-    def check_rule(self, row_data, rule):
-        col = rule.get("column")
-        op = rule.get("operator")
-        val = rule.get("value")
-        if not all([col, op, val]) or col not in row_data:
-            return False
-        
-        cell_value = str(row_data[col]).lower()
-        check_value = val.lower()
+    # shinguhan/mylogmaster/myLogMaster-main/models/LogTableModel.py
 
-        if op == "contains":
-            return check_value in cell_value
-        elif op == "equals":
-            return check_value == cell_value
-        elif op == "starts with":
-            return cell_value.startswith(check_value)
-        elif op == "ends with":
-            return cell_value.endswith(check_value)
-        return False
+    def check_rule(self, row_data, rule):
+        # ✅ 규칙에 포함된 모든 'conditions'를 순회
+        for condition in rule.get("conditions", []):
+            col = condition.get("column")
+            op = condition.get("operator")
+            val = condition.get("value")
+            
+            if not all([col, op, val]) or col not in row_data:
+                return False # 조건이 불완전하면 규칙 불일치
+            
+            cell_value = str(row_data[col]).lower()
+            check_value = val.lower()
+
+            match = False
+            if op == "contains":
+                match = check_value in cell_value
+            elif op == "equals":
+                match = check_value == cell_value
+            elif op == "starts with":
+                match = cell_value.startswith(check_value)
+            elif op == "ends with":
+                match = cell_value.endswith(check_value)
+
+            # ✅ AND 조건이므로, 하나라도 거짓이면 즉시 False 반환
+            if not match:
+                return False
+        
+        # 모든 조건을 통과했으면 True 반환
+        return True
 
     def set_highlighting_rules(self, rules):
         self.beginResetModel()

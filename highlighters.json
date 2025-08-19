@@ -6,6 +6,18 @@
         "operator": "contains",
         "value": "CEID:",
         "foreground": "#ff0000",
-        "background": null
+        "background": null,
+        "conditions": [
+            {
+                "column": "Category",
+                "operator": "contains",
+                "value": ""
+            },
+            {
+                "column": "Category",
+                "operator": "contains",
+                "value": ""
+            }
+        ]
     }
 ]

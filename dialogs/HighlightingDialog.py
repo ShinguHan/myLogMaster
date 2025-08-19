@@ -1,13 +1,38 @@
-import sys, os
+import sys
 import json
+import os
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                                QListWidget, QListWidgetItem, QColorDialog,
                                QFrame, QLabel, QLineEdit, QComboBox, QCheckBox,
-                               QMessageBox, QWidget)
-from PySide6.QtGui import QColor, QPalette, QBrush
+                               QMessageBox, QWidget, QGridLayout)
+from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
 
 HIGHLIGHTERS_FILE = 'highlighters.json'
+
+# (ColorButton, ConditionWidget 클래스는 이전과 동일하므로 생략)
+class ColorButton(QPushButton):
+    def __init__(self, color=None, parent=None):
+        super().__init__(parent)
+        self.set_color(color); self.setFixedSize(28, 28)
+    def set_color(self, color):
+        self._color = color
+        if color: self.setStyleSheet(f"background-color: {color}; border: 1px solid #888; border-radius: 5px;")
+        else: self.setStyleSheet("background-color: transparent; border: 1px dashed #888; border-radius: 5px;")
+    def get_color(self): return self._color
+
+class ConditionWidget(QWidget):
+    def __init__(self, column_names, condition_data=None, parent=None):
+        super().__init__(parent)
+        self.layout = QHBoxLayout(self); self.layout.setContentsMargins(0,0,0,0)
+        self.column_combo = QComboBox(); self.column_combo.addItems(column_names)
+        self.operator_combo = QComboBox(); self.operator_combo.addItems(["contains", "equals", "starts with", "ends with"])
+        self.value_edit = QLineEdit(); self.remove_button = QPushButton("－"); self.remove_button.setFixedSize(24,24)
+        self.layout.addWidget(self.column_combo, 2); self.layout.addWidget(self.operator_combo, 1); self.layout.addWidget(self.value_edit, 3); self.layout.addWidget(self.remove_button)
+        if condition_data:
+            self.column_combo.setCurrentText(condition_data.get("column", "")); self.operator_combo.setCurrentText(condition_data.get("operator", "contains")); self.value_edit.setText(condition_data.get("value", ""))
+    def get_data(self):
+        return {"column": self.column_combo.currentText(), "operator": self.operator_combo.currentText(), "value": self.value_edit.text()}
 
 class HighlightingDialog(QDialog):
     def __init__(self, column_names, parent=None):
@@ -16,195 +41,167 @@ class HighlightingDialog(QDialog):
         self.column_names = column_names
         self.rules = self.load_rules()
         self.current_item = None
-        self.setMinimumSize(700, 400)
+        self.setMinimumSize(800, 500)
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        # ✅ 1. 전체 위젯을 담을 메인 수직 레이아웃을 생성합니다.
-        main_layout = QVBoxLayout(self)
-
-        # 상단 부분 (리스트와 에디터를 담을 수평 레이아웃)
-        top_part_layout = QHBoxLayout()
-
-        # 왼쪽: 규칙 리스트
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
+        # --- 왼쪽: 규칙 리스트 ---
+        left_panel = QFrame()
+        left_panel.setObjectName("leftPanel")
+        left_panel.setStyleSheet("#leftPanel { background-color: #e8e8e8; border-right: 1px solid #dcdcdc; }")
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.setContentsMargins(1, 8, 1, 8)
+        
         self.list_widget = QListWidget()
-        self.list_widget.itemClicked.connect(self.on_item_selected)
-        left_layout.addWidget(self.list_widget)
+        self.list_widget.itemSelectionChanged.connect(self.on_item_selected)
+        self.list_widget.setStyleSheet("""
+            QListWidget { border: none; background-color: transparent; }
+            QListWidget::item { padding: 8px 12px; }
+            QListWidget::item:selected { background-color: #c7c7c7; color: black; border-radius: 5px; }
+        """)
+        left_layout.addWidget(self.list_widget) # ✅ Stretch factor 없이 추가
 
+        # ✅ 버튼 레이아웃을 QFrame으로 감싸서 최소 크기를 보장
+        button_container = QFrame()
         list_button_layout = QHBoxLayout()
-        add_button = QPushButton("Add New")
+        add_button = QPushButton("Add Rule") # 텍스트를 명확하게 변경
+        add_button.setMinimumHeight(30)      # ✅ 최소 높이를 지정하여 버튼 크기 확보
         add_button.clicked.connect(self.add_new_rule)
-        remove_button = QPushButton("Remove Selected")
+        
+        remove_button = QPushButton("Remove Rule") # 텍스트를 명확하게 변경
+        remove_button.setMinimumHeight(30)       # ✅ 최소 높이를 지정하여 버튼 크기 확보
         remove_button.clicked.connect(self.remove_selected_rule)
+        
         list_button_layout.addWidget(add_button)
         list_button_layout.addWidget(remove_button)
-        left_layout.addLayout(list_button_layout)
+        list_button_layout.addStretch()
+        left_layout.addLayout(list_button_layout) # ✅ QFrame으로 감싸지 않고 직접 추가
         
-        # 오른쪽: 규칙 에디터
+        # --- 오른쪽: 규칙 에디터 (이전과 동일) ---
         self.editor_widget = QWidget()
         right_layout = QVBoxLayout(self.editor_widget)
+        right_layout.setContentsMargins(20, 20, 20, 20)
         self.name_edit = QLineEdit()
-        self.enabled_check = QCheckBox("Enabled")
-        self.column_combo = QComboBox()
-        self.column_combo.addItems(self.column_names)
-        self.operator_combo = QComboBox()
-        self.operator_combo.addItems(["contains", "equals", "starts with", "ends with"])
-        self.value_edit = QLineEdit()
-        self.fg_button = QPushButton("Foreground Color")
+        self.enabled_check = QCheckBox("Enable this rule")
+        self.conditions_area = QWidget()
+        self.conditions_layout = QVBoxLayout(self.conditions_area)
+        add_condition_button = QPushButton("+ Add Condition")
+        add_condition_button.clicked.connect(self.add_condition_widget_action)
+        format_frame = QFrame()
+        format_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        format_layout = QGridLayout(format_frame)
+        self.fg_button = ColorButton()
         self.fg_button.clicked.connect(lambda: self.pick_color('foreground'))
-        self.bg_button = QPushButton("Background Color")
+        format_layout.addWidget(QLabel("Text Color:"), 0, 0); format_layout.addWidget(self.fg_button, 0, 1)
+        self.bg_button = ColorButton()
         self.bg_button.clicked.connect(lambda: self.pick_color('background'))
-        
-        right_layout.addWidget(QLabel("Rule Name:"))
-        right_layout.addWidget(self.name_edit)
-        right_layout.addWidget(self.enabled_check)
-        right_layout.addWidget(QLabel("Column:"))
-        right_layout.addWidget(self.column_combo)
-        right_layout.addWidget(QLabel("Operator:"))
-        right_layout.addWidget(self.operator_combo)
-        right_layout.addWidget(QLabel("Value:"))
-        right_layout.addWidget(self.value_edit)
-        right_layout.addWidget(self.fg_button)
-        right_layout.addWidget(self.bg_button)
+        format_layout.addWidget(QLabel("Background Color:"), 1, 0); format_layout.addWidget(self.bg_button, 1, 1)
+        format_layout.setColumnStretch(2, 1)
+        right_layout.addWidget(QLabel("<b>Rule Name</b>")); right_layout.addWidget(self.name_edit)
+        right_layout.addWidget(self.enabled_check); right_layout.addSpacing(20)
+        right_layout.addWidget(QLabel("<b>Conditions (all must be true)</b>")); right_layout.addWidget(self.conditions_area)
+        right_layout.addWidget(add_condition_button, 0, Qt.AlignmentFlag.AlignLeft); right_layout.addSpacing(20)
+        right_layout.addWidget(QLabel("<b>Formatting</b>")); right_layout.addWidget(format_frame)
         right_layout.addStretch()
+        bottom_layout = QHBoxLayout()
+        ok_button = QPushButton("OK"); ok_button.setDefault(True); ok_button.clicked.connect(self.accept)
+        cancel_button = QPushButton("Cancel"); cancel_button.clicked.connect(self.reject)
+        apply_button = QPushButton("Apply"); apply_button.clicked.connect(self.apply_changes)
+        bottom_layout.addStretch(); bottom_layout.addWidget(cancel_button); bottom_layout.addWidget(ok_button)
+        right_panel = QWidget(); right_panel_layout = QVBoxLayout(right_panel)
+        right_panel_layout.addWidget(self.editor_widget); right_panel_layout.addLayout(bottom_layout)
+        main_layout.addWidget(left_panel, 1); main_layout.addWidget(right_panel, 3)
+        self.populate_list(); self.editor_widget.setEnabled(False); self.connect_editors()
+
+    def on_item_selected(self):
+        selected_items = self.list_widget.selectedItems()
+        if not selected_items:
+            self.editor_widget.setEnabled(False)
+            self.current_item = None
+            return
+            
+        self.current_item = selected_items[0]
+        row = self.list_widget.row(self.current_item)
         
-        # 상단 레이아웃에 왼쪽과 오른쪽 위젯을 추가
-        top_part_layout.addWidget(left_widget, 1)
-        top_part_layout.addWidget(self.editor_widget, 2)
+        # ✅ IndexError 방지를 위한 안전장치
+        if not (0 <= row < len(self.rules)):
+            print(f"Warning: Selection index {row} out of range for rules list size {len(self.rules)}.")
+            self.editor_widget.setEnabled(False)
+            return
 
-        # 하단 버튼 부분 (수평 레이아웃)
-        bottom_button_layout = QHBoxLayout()
-        ok_button = QPushButton("OK")
-        ok_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.reject)
-        apply_button = QPushButton("Apply")
-        apply_button.clicked.connect(self.apply_changes)
-        bottom_button_layout.addStretch()
-        bottom_button_layout.addWidget(ok_button)
-        bottom_button_layout.addWidget(cancel_button)
-        bottom_button_layout.addWidget(apply_button)
-
-        # ✅ 2. 메인 수직 레이아웃에 상단과 하단 레이아웃을 순서대로 추가합니다.
-        main_layout.addLayout(top_part_layout)
-        main_layout.addLayout(bottom_button_layout)
-
-        # 초기 상태 설정
-        self.populate_list()
-        self.editor_widget.setEnabled(False)
-        self.connect_editors()
-
-    def connect_editors(self):
-        self.name_edit.textChanged.connect(self.update_rule_data)
-        self.enabled_check.stateChanged.connect(self.update_rule_data)
-        self.column_combo.currentTextChanged.connect(self.update_rule_data)
-        self.operator_combo.currentTextChanged.connect(self.update_rule_data)
-        self.value_edit.textChanged.connect(self.update_rule_data)
+        rule = self.rules[row]
+        self.editor_widget.setEnabled(True)
+        self.name_edit.setText(rule.get("name", ""))
+        self.enabled_check.setChecked(rule.get("enabled", True))
+        self.fg_button.set_color(rule.get("foreground"))
+        self.bg_button.set_color(rule.get("background"))
+        self.rebuild_condition_widgets(rule)
 
     def populate_list(self):
+        # selectionChanged 시그널을 잠시 비활성화하여 불필요한 호출 방지
+        self.list_widget.itemSelectionChanged.disconnect(self.on_item_selected)
         self.list_widget.clear()
         for rule in self.rules:
             item = QListWidgetItem(rule.get("name", "Unnamed Rule"))
             self.list_widget.addItem(item)
+        # 시그널을 다시 연결
+        self.list_widget.itemSelectionChanged.connect(self.on_item_selected)
+
         if self.rules:
             self.list_widget.setCurrentRow(0)
-            self.on_item_selected(self.list_widget.item(0))
+        else:
+            # 규칙이 없으면 에디터 비활성화
+            self.on_item_selected()
 
-    def on_item_selected(self, item):
-        self.current_item = item
-        row = self.list_widget.row(item)
-        rule = self.rules[row]
-        
-        self.editor_widget.setEnabled(True)
-        self.name_edit.setText(rule.get("name", ""))
-        self.enabled_check.setChecked(rule.get("enabled", True))
-        self.column_combo.setCurrentText(rule.get("column", ""))
-        self.operator_combo.setCurrentText(rule.get("operator", "contains"))
-        self.value_edit.setText(rule.get("value", ""))
-        self.update_color_button('foreground', rule.get("foreground"))
-        self.update_color_button('background', rule.get("background"))
-        
+    # (이하 나머지 메소드들은 이전과 동일합니다)
+    def connect_editors(self): self.name_edit.textChanged.connect(self.update_rule_data); self.enabled_check.stateChanged.connect(self.update_rule_data)
+    def rebuild_condition_widgets(self, rule):
+        while self.conditions_layout.count():
+            child = self.conditions_layout.takeAt(0)
+            if child.widget(): child.widget().deleteLater()
+        for cond_data in rule.get("conditions", []): self.add_condition_widget_to_layout(cond_data)
+    def add_condition_widget_to_layout(self, condition_data=None):
+        cond_widget = ConditionWidget(self.column_names, condition_data); cond_widget.remove_button.clicked.connect(lambda: self.remove_condition_widget(cond_widget)); cond_widget.column_combo.currentTextChanged.connect(self.update_rule_data); cond_widget.operator_combo.currentTextChanged.connect(self.update_rule_data); cond_widget.value_edit.textChanged.connect(self.update_rule_data); self.conditions_layout.addWidget(cond_widget)
+    def add_condition_widget_action(self):
+        if not self.current_item: return
+        self.add_condition_widget_to_layout(); self.update_rule_data()
+    def remove_condition_widget(self, widget):
+        widget.deleteLater(); self.update_rule_data()
     def update_rule_data(self):
         if not self.current_item: return
         row = self.list_widget.row(self.current_item)
+        if not (0 <= row < len(self.rules)): return
         rule = self.rules[row]
-        
-        rule['name'] = self.name_edit.text()
-        rule['enabled'] = self.enabled_check.isChecked()
-        rule['column'] = self.column_combo.currentText()
-        rule['operator'] = self.operator_combo.currentText()
-        rule['value'] = self.value_edit.text()
-        self.current_item.setText(rule['name'])
-
+        rule['name'] = self.name_edit.text(); rule['enabled'] = self.enabled_check.isChecked(); self.current_item.setText(rule['name'])
+        conditions = [];
+        for i in range(self.conditions_layout.count()):
+            widget = self.conditions_layout.itemAt(i).widget()
+            if isinstance(widget, ConditionWidget): conditions.append(widget.get_data())
+        rule['conditions'] = conditions
     def pick_color(self, target):
         if not self.current_item: return
-        row = self.list_widget.row(self.current_item)
-        rule = self.rules[row]
-        
-        initial_color = rule.get(target)
-        color = QColorDialog.getColor(QColor(initial_color) if initial_color else Qt.GlobalColor.white, self)
-        
-        if color.isValid():
-            hex_color = color.name()
-            rule[target] = hex_color
-            self.update_color_button(target, hex_color)
-
-    def update_color_button(self, target, hex_color):
-        button = self.fg_button if target == 'foreground' else self.bg_button
-        text = target.capitalize()
-        if hex_color:
-            button.setText(f"{text}: {hex_color}")
-            button.setStyleSheet(f"background-color: {hex_color}; color: {self.get_contrasting_color(hex_color)}")
-        else:
-            button.setText(f"{text}: None")
-            button.setStyleSheet("")
-
-    def get_contrasting_color(self, hex_color):
-        color = QColor(hex_color)
-        return 'white' if color.lightness() < 128 else 'black'
-
+        row = self.list_widget.row(self.current_item); rule = self.rules[row]; button = self.fg_button if target == 'foreground' else self.bg_button; initial_color = button.get_color(); color = QColorDialog.getColor(QColor(initial_color) if initial_color else Qt.GlobalColor.white, self)
+        if color.isValid(): hex_color = color.name(); rule[target] = hex_color; button.set_color(hex_color)
     def add_new_rule(self):
-        new_rule = {"name": "New Rule", "enabled": True, "column": self.column_names[0], "operator": "contains", "value": "", "foreground": "#ff0000", "background": None}
-        self.rules.append(new_rule)
-        self.populate_list()
-        self.list_widget.setCurrentRow(len(self.rules) - 1)
-        self.on_item_selected(self.list_widget.item(len(self.rules) - 1))
-
+        new_rule = {"name": "New Rule", "enabled": True, "conditions": [{"column": self.column_names[0], "operator": "contains", "value": ""}], "foreground": "#ff0000", "background": None}
+        self.rules.append(new_rule); self.populate_list(); self.list_widget.setCurrentRow(len(self.rules) - 1)
     def remove_selected_rule(self):
         if not self.current_item: return
         row = self.list_widget.row(self.current_item)
         if QMessageBox.question(self, "Confirm", f"Are you sure you want to delete rule '{self.rules[row]['name']}'?") == QMessageBox.StandardButton.Yes:
-            del self.rules[row]
-            self.populate_list()
-            self.editor_widget.setEnabled(False)
-            self.current_item = None
-
+            del self.rules[row]; self.populate_list()
     def load_rules(self):
-        if not os.path.exists(HIGHLIGHTERS_FILE):
-            return []
+        if not os.path.exists(HIGHLIGHTERS_FILE): return []
         try:
-            with open(HIGHLIGHTERS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, Exception) as e:
-            print(f"Error loading highlighting rules: {e}")
-            return []
-
+            with open(HIGHLIGHTERS_FILE, 'r', encoding='utf-8') as f: return json.load(f)
+        except Exception: return []
     def save_rules(self):
+        self.update_rule_data()
         try:
-            with open(HIGHLIGHTERS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(self.rules, f, indent=4)
-            return True
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Could not save rules:\n{e}")
-            return False
-
+            with open(HIGHLIGHTERS_FILE, 'w', encoding='utf-8') as f: json.dump(self.rules, f, indent=4); return True
+        except Exception as e: QMessageBox.critical(self, "Error", f"Could not save rules:\n{e}"); return False
     def accept(self):
-        """OK 버튼을 누르면 변경사항을 적용하고 저장한 뒤 창을 닫습니다."""
-        self.apply_changes() # ✅ 변경사항을 먼저 적용하는 함수 호출
-        super().accept()     # 그 다음에 창을 닫습니다 (저장은 apply_changes에 포함됨)
-    
+        if self.save_rules(): self.parent().controller.apply_new_highlighting_rules(); super().accept()
     def apply_changes(self):
-        if self.save_rules():
-            # In a real app, you would emit a signal here to apply the changes live
-            print("Changes applied and saved.")
-            self.parent().controller.apply_new_highlighting_rules()
+        if self.save_rules(): self.parent().controller.apply_new_highlighting_rules()
