@@ -13,6 +13,7 @@ from oracle_fetcher import OracleFetcherThread
 
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios'
+HIGHLIGHTERS_FILE = 'highlighters.json' # ✅ 파일 경로 추가
 
 class AppController(QObject):
     model_updated = Signal(LogTableModel)
@@ -52,6 +53,8 @@ class AppController(QObject):
                 self.db_manager = None
         else:
             self.db_manager = None
+
+        self.highlighting_rules = self.load_highlighting_rules() # ✅ 시작 시 규칙 로드
 
     def load_data_from_cache(self):
         """로컬 캐시에서 데이터를 로드하고, 데이터 유무와 상관없이 항상 UI에 모델을 업데이트하도록 신호를 보냅니다."""
@@ -100,6 +103,8 @@ class AppController(QObject):
         }
     def update_model_data(self, dataframe):
         self.source_model.update_data(dataframe)
+        # ✅ 모델 업데이트 시 하이라이트 규칙도 함께 적용
+        self.source_model.set_highlighting_rules(self.highlighting_rules)
         self.model_updated.emit(self.source_model)
 
     def start_db_fetch(self, query_conditions):
@@ -429,7 +434,7 @@ class AppController(QObject):
         # 에러 발생 시에도 타이머는 중지해야 합니다.
         if self._update_timer.isActive():
             self._update_timer.stop()
-            
+
         # ✅ 2. 테마 설정을 위한 새로운 메소드들
     def set_current_theme(self, theme_name):
         self.current_theme = theme_name
@@ -445,3 +450,17 @@ class AppController(QObject):
             except (json.JSONDecodeError, KeyError):
                 pass
         return self.current_theme
+    
+        # ✅ 하이라이트 규칙을 위한 새로운 메소드들
+    def load_highlighting_rules(self):
+        if not os.path.exists(HIGHLIGHTERS_FILE):
+            return []
+        try:
+            with open(HIGHLIGHTERS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, Exception):
+            return []
+
+    def apply_new_highlighting_rules(self):
+        self.highlighting_rules = self.load_highlighting_rules()
+        self.source_model.set_highlighting_rules(self.highlighting_rules)

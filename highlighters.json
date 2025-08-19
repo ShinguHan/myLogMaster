@@ -1,0 +1,11 @@
+[
+    {
+        "name": "CEID",
+        "enabled": true,
+        "column": "AsciiData",
+        "operator": "contains",
+        "value": "CEID:",
+        "foreground": "#ff0000",
+        "background": null
+    }
+]

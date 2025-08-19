@@ -2,6 +2,7 @@
 
 import pandas as pd
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtGui import QColor # ✅ QColor 임포트
 
 class LogTableModel(QAbstractTableModel):
     # ✅ 1. 생성자에 max_rows 파라미터 추가
@@ -10,6 +11,8 @@ class LogTableModel(QAbstractTableModel):
         self._data = data if data is not None else pd.DataFrame()
         self._highlighted_rows = set()
         self.max_rows = max_rows # 최대 행 수 저장
+          # ✅ 1. 하이라이트 규칙을 저장할 변수 추가
+        self._highlighting_rules = []
 
     def rowCount(self, parent=QModelIndex()):
         return self._data.shape[0]
@@ -20,6 +23,18 @@ class LogTableModel(QAbstractTableModel):
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
+        
+                # ✅ 2. 배경색과 글자색을 결정하는 로직 추가
+        if role == Qt.ItemDataRole.BackgroundRole or role == Qt.ItemDataRole.ForegroundRole:
+            row_data = self._data.iloc[index.row()]
+            for rule in self._highlighting_rules:
+                if rule.get("enabled", False) and self.check_rule(row_data, rule):
+                    if role == Qt.ItemDataRole.BackgroundRole and rule.get("background"):
+                        return QColor(rule["background"])
+                    if role == Qt.ItemDataRole.ForegroundRole and rule.get("foreground"):
+                        return QColor(rule["foreground"])
+            return None # 규칙에 맞지 않으면 기본값 사용
+        
         if role == Qt.ItemDataRole.DisplayRole:
             try:
                 return str(self._data.iloc[index.row(), index.column()])
@@ -85,3 +100,30 @@ class LogTableModel(QAbstractTableModel):
             self.beginResetModel()
             self._highlighted_rows.clear()
             self.endResetModel()
+    
+     # ✅ 3. 규칙이 현재 행에 맞는지 확인하는 헬퍼 메소드
+    def check_rule(self, row_data, rule):
+        col = rule.get("column")
+        op = rule.get("operator")
+        val = rule.get("value")
+        if not all([col, op, val]) or col not in row_data:
+            return False
+        
+        cell_value = str(row_data[col]).lower()
+        check_value = val.lower()
+
+        if op == "contains":
+            return check_value in cell_value
+        elif op == "equals":
+            return check_value == cell_value
+        elif op == "starts with":
+            return cell_value.startswith(check_value)
+        elif op == "ends with":
+            return cell_value.endswith(check_value)
+        return False
+
+    # ✅ 4. 외부에서 규칙을 설정하고 테이블을 새로고침하는 메소드
+    def set_highlighting_rules(self, rules):
+        self.beginResetModel()
+        self._highlighting_rules = [r for r in rules if r.get("enabled")]
+        self.endResetModel()

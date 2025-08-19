@@ -22,6 +22,8 @@ from dialogs.ScriptEditorDialog import ScriptEditorDialog
 # ⛔️ MainWindow는 시그널을 직접 정의하지 않으므로 이 import는 삭제합니다.
 # from PySide6.QtCore import QObject, Signal 
 from dialogs.DashboardDialog import DashboardDialog # ✅ 직접 임포트
+# ✅ 새로 만든 HighlightingDialog 임포트
+from dialogs.HighlightingDialog import HighlightingDialog
 
 CONFIG_FILE = 'config.json'
 
@@ -169,6 +171,12 @@ class MainWindow(QMainWindow):
         script_editor_action = QAction("Analysis Script Editor...", self)
         script_editor_action.triggered.connect(self.open_script_editor)
         self.tools_menu.addAction(script_editor_action)
+
+                # ✅ 'Tools' 메뉴에 하이라이트 설정 액션 추가
+        self.tools_menu.addSeparator()
+        highlighting_action = QAction("Conditional Highlighting...", self)
+        highlighting_action.triggered.connect(self.open_highlighting_dialog)
+        self.tools_menu.addAction(highlighting_action)
 
         # 'Help' menu remains the same
         help_menu = menu_bar.addMenu("&Help")
@@ -598,3 +606,20 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self, "Theme Error", f"Could not find or apply theme: {theme_name}")
 
+        # ✅ 하이라이트 설정창을 여는 새로운 메소드
+    def open_highlighting_dialog(self):
+        source_model = self.proxy_model.sourceModel()
+        if source_model is None or source_model._data.empty:
+            QMessageBox.information(self, "Info", "Please load data first.")
+            return
+
+        # ✅ 1. 대화상자가 이미 열려있으면 새로 열지 않고 맨 앞으로 가져옵니다.
+        #    이 검사를 하려면 self.highlighting_dialog 변수를 사용해야 합니다.
+        if hasattr(self, 'highlighting_dialog') and self.highlighting_dialog.isVisible():
+            self.highlighting_dialog.activateWindow()
+            return
+
+        column_names = source_model._data.columns.tolist()
+        # ✅ 2. 대화상자를 self.highlighting_dialog에 저장하여 사라지지 않게 합니다.
+        self.highlighting_dialog = HighlightingDialog(column_names, self)
+        self.highlighting_dialog.show()
