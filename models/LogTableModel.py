@@ -4,10 +4,12 @@ import pandas as pd
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 
 class LogTableModel(QAbstractTableModel):
-    def __init__(self, data=None):
+    # ✅ 1. 생성자에 max_rows 파라미터 추가
+    def __init__(self, data=None, max_rows=100000):
         super().__init__()
         self._data = data if data is not None else pd.DataFrame()
         self._highlighted_rows = set()
+        self.max_rows = max_rows # 최대 행 수 저장
 
     def rowCount(self, parent=QModelIndex()):
         return self._data.shape[0]
@@ -43,9 +45,9 @@ class LogTableModel(QAbstractTableModel):
         self._data = data.copy() if data is not None else pd.DataFrame()
         self.endResetModel()
 
-    # ✅ 이 부분이 추가되어야 합니다.
+    # ✅ 2. append_data 메소드에 오래된 데이터 삭제 로직 추가
     def append_data(self, df_chunk):
-        """모델의 끝에 새로운 데이터프레임 조각을 추가합니다."""
+        """모델의 끝에 새로운 데이터 조각을 추가하고, 최대 행 수를 초과하면 오래된 데이터를 삭제합니다."""
         if df_chunk is None or df_chunk.empty:
             return
             
@@ -53,10 +55,17 @@ class LogTableModel(QAbstractTableModel):
         end_row = start_row + len(df_chunk) - 1
 
         self.beginInsertRows(QModelIndex(), start_row, end_row)
-        
         self._data = pd.concat([self._data, df_chunk], ignore_index=True)
-        
         self.endInsertRows()
+
+        # 최대 행 수를 초과했는지 확인
+        overflow = self.rowCount() - self.max_rows
+        if overflow > 0:
+            # 오래된 데이터를 삭제한다고 View에 알림
+            self.beginRemoveRows(QModelIndex(), 0, overflow - 1)
+            # 데이터프레임의 맨 위에서 overflow 개수만큼 행을 삭제
+            self._data = self._data.iloc[overflow:].reset_index(drop=True)
+            self.endRemoveRows()
 
     def get_data_by_col_name(self, row_index, col_name):
         if col_name in self._data.columns and 0 <= row_index < len(self._data):

@@ -25,7 +25,8 @@ class AppController(QObject):
         self.connection_name = connection_name
         self.connection_info = connection_info
         self.original_data = pd.DataFrame()
-        self.source_model = LogTableModel()
+        # ✅ 1. 모델 생성 시 최대 행 수를 전달합니다. (테스트를 위해 20000으로 설정)
+        self.source_model = LogTableModel(max_rows=20000) 
         self.fetch_thread = None
         self.last_query_conditions = None # ✅ 조회 조건 저장할 변수 추가
 
@@ -109,23 +110,28 @@ class AppController(QObject):
         # ...
         self.fetch_thread.start()
 
-    # 💡 3. 데이터를 점진적으로 추가하는 새로운 메소드
+    # ✅ 2. append_data_chunk 메소드에 original_data 잘라내는 로직 추가
     def append_data_chunk(self, df_chunk):
-        """받은 데이터 조각을 기존 모델에 추가하고 UI를 업데이트합니다."""
+        """받은 데이터 조각을 모델과 원본 데이터에 추가하고, 최대 행 수를 관리합니다."""
         print(f"Received and appending a chunk of {len(df_chunk)} logs.")
-        
         if df_chunk.empty: return
 
         if 'SystemDate' in df_chunk.columns and 'SystemDate_dt' not in df_chunk.columns:
             df_chunk['SystemDate_dt'] = pd.to_datetime(df_chunk['SystemDate'], format='%d-%b-%Y %H:%M:%S:%f', errors='coerce')
 
-        # 원본 데이터에도 추가
+        # 원본 데이터에 먼저 추가
         self.original_data = pd.concat([self.original_data, df_chunk], ignore_index=True)
         
-        # 모델에 데이터 추가 (UI 업데이트 신호는 모델 내부에서 발생)
+        # 모델에 데이터 추가 (모델이 스스로 오래된 데이터를 자름)
         self.source_model.append_data(df_chunk)
         
-        # 로컬 캐시에 저장
+        # 모델의 데이터와 원본 데이터의 개수를 동기화
+        current_model_rows = self.source_model.rowCount()
+        if len(self.original_data) > current_model_rows:
+            # 모델에서 잘려나간 만큼 원본 데이터의 앞부분도 잘라냄
+            self.original_data = self.original_data.tail(current_model_rows).reset_index(drop=True)
+            print(f"Original data trimmed to {len(self.original_data)} rows.")
+
         if self.db_manager:
             self.db_manager.upsert_logs_to_local_cache(df_chunk)
 
