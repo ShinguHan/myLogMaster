@@ -86,6 +86,8 @@ class MainWindow(QMainWindow):
 
         self.connect_signals()
         self.setup_ui_for_mode()
+                # ✅ 1. 버튼의 현재 상태를 저장할 플래그 추가
+        self._is_fetching = False
 
     def connect_signals(self):
         self.controller.model_updated.connect(self.update_table_model)
@@ -93,6 +95,8 @@ class MainWindow(QMainWindow):
         self.controller.fetch_completed.connect(self.on_fetch_complete)
         # ✅ 2. 새로운 신호-슬롯 연결
         self.controller.row_count_updated.connect(self._update_row_count_status)
+                # ✅ 2. 컨트롤러의 에러 신호를 UI의 에러 처리 슬롯에 연결
+        self.controller.fetch_error.connect(self.on_fetch_error)
 
     def update_table_model(self, source_model):
         self.proxy_model.setSourceModel(source_model)
@@ -480,19 +484,34 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Ready. Please open a log file.")
 
     def start_db_connection(self):
-        dialog = QueryConditionsDialog(self)
-        if dialog.exec():
-            query_conditions = dialog.get_conditions()
-            self.controller.start_db_fetch(query_conditions)
-            self.db_connect_button.setEnabled(False)
-            self.db_connect_button.setText("⏳ Loading...")
+        # ✅ 3. 버튼 클릭 시, 현재 상태에 따라 조회 시작 또는 취소를 결정
+        if self._is_fetching:
+            # --- 데이터 수신 중일 때 (취소 로직) ---
+            print("Requesting to cancel the fetch operation...")
+            self.controller.cancel_db_fetch()
+            self.statusBar().showMessage("Cancelling...")
+            # 버튼 상태는 on_fetch_complete 또는 on_fetch_error에서 최종적으로 변경됩니다.
+        else:
+            # --- 유휴 상태일 때 (조회 시작 로직) ---
+            dialog = QueryConditionsDialog(self)
+            if dialog.exec():
+                query_conditions = dialog.get_conditions()
+                self.controller.start_db_fetch(query_conditions)
+                
+                # UI 상태를 '수신 중'으로 변경
+                self._is_fetching = True
+                self.db_connect_button.setText("❌ 데이터 수신 중단")
+                self.db_connect_button.setStyleSheet("background-color: #DA4453; color: white;")
 
     def on_fetch_progress(self, message):
         self.statusBar().showMessage(message)
 
     def on_fetch_complete(self):
+                # ✅ 4. 작업 완료 시 UI 상태를 원상 복구
+        self._is_fetching = False
         self.db_connect_button.setEnabled(True)
         self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
+        self.db_connect_button.setStyleSheet("") # 기본 스타일로 복원
         
         source_model = self.proxy_model.sourceModel()
         if source_model:
@@ -505,3 +524,12 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Receiving... {row_count:,} rows")
         if self.auto_scroll_checkbox.isChecked():
             self.tableView.scrollToBottom()
+
+        # ✅ 5. 에러 발생 시 호출될 새로운 슬롯
+    def on_fetch_error(self, error_message):
+        """컨트롤러로부터 에러 메시지를 받아 사용자에게 대화상자로 보여줍니다."""
+        print(f"UI received error: {error_message}")
+        QMessageBox.critical(self, "Error", f"An error occurred:\n{error_message}")
+        
+        # 에러가 발생해도 UI 상태는 원상 복구
+        self.on_fetch_complete()

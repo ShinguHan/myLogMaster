@@ -20,6 +20,8 @@ class AppController(QObject):
     fetch_progress = Signal(str)
         # ✅ 현재 행 개수를 전달할 새로운 신호
     row_count_updated = Signal(int)
+        # ✅ 1. UI에 에러를 전달할 새로운 신호
+    fetch_error = Signal(str)
 
     def __init__(self, app_mode, connection_name=None, connection_info=None):
         super().__init__()
@@ -115,6 +117,9 @@ class AppController(QObject):
         
         self.fetch_thread.data_fetched.connect(self.append_data_chunk)
         self.fetch_thread.finished.connect(self.on_fetch_finished)
+                # ✅ 2. 스레드의 error 신호를 컨트롤러 내부 슬롯에 연결
+        self.fetch_thread.error.connect(self._handle_fetch_error)
+
         # ✅ 2. 타이머 시작
         self._update_timer.start()
         self.fetch_thread.start()
@@ -127,12 +132,15 @@ class AppController(QObject):
             self._update_queue.append(df_chunk)
 
     def on_fetch_finished(self):
-        """데이터 수신이 완료되면 큐를 비우고 타이머를 중지합니다."""
+        """데이터 수신이 완료/중단/에러 발생 후 공통으로 호출됩니다."""
         # 마지막 남은 데이터를 처리
-        self._process_update_queue()
+        if self._update_queue:
+            self._process_update_queue()
         
         print("Fetch thread finished.")
-        self._update_timer.stop() # ✅ 타이머 중지
+        if self._update_timer.isActive():
+            self._update_timer.stop()
+            
         self.fetch_completed.emit()
 
         # ✅ 데이터 조회가 성공적으로 끝났을 때만 이력을 저장합니다.
@@ -383,3 +391,20 @@ class AppController(QObject):
         
         # UI에 현재 총 행 수를 알림
         self.row_count_updated.emit(self.source_model.rowCount())
+
+        # ✅ 3. UI의 취소 요청을 처리할 새로운 메소드
+    def cancel_db_fetch(self):
+        """실행 중인 데이터 fetch 스레드를 중지시킵니다."""
+        if self.fetch_thread and self.fetch_thread.isRunning():
+            self.fetch_thread.stop()
+            # finished 신호가 올 때까지 기다리지 않고, UI는 즉시 반응하도록 합니다.
+            # 스레드는 내부적으로 멈추고 on_fetch_finished를 호출하여 정리할 것입니다.
+    
+    # ✅ 4. 스레드의 에러를 받아 UI에 전달하는 새로운 슬롯
+    def _handle_fetch_error(self, error_message):
+        """Fetcher 스레드에서 발생한 에러를 처리합니다."""
+        print(f"Controller caught error: {error_message}")
+        self.fetch_error.emit(error_message)
+        # 에러 발생 시에도 타이머는 중지해야 합니다.
+        if self._update_timer.isActive():
+            self._update_timer.stop()

@@ -77,7 +77,11 @@ class OracleFetcherThread(QThread):
             mock_data = []
             start_time = datetime(2025, 8, 18, 14, 0, 0)
             for i in range(5000): # 총 5000개 데이터 생성
-                if not self._is_running: break
+                # ✅ 루프 시작 시점에 항상 실행 여부 체크
+                if not self._is_running:
+                    self.progress.emit("Fetching cancelled by user.")
+                    break
+
                 row_time = start_time + timedelta(milliseconds=i * 10)
                 mock_data.append({
                     "Category": "Info", "LevelID": 7, "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
