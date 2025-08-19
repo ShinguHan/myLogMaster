@@ -1,83 +1,67 @@
-# shinguhan/mylogmaster/myLogMaster-main/main_window.py
+# shinguhan/mylogmaster/myLogMaster-main/dialogs/DashboardDialog.py
 
-# ... (기존 import)
+import pandas as pd
+from PySide6.QtWidgets import QDialog, QGridLayout
+from PySide6.QtCore import QTimer
+# ✅ QWebEngineView는 PySide6에 기본 포함되어 있습니다.
+from PySide6.QtWebEngineWidgets import QWebEngineView
+import plotly.express as px
 
-class MainWindow(QMainWindow):
-    # ... (__init__ 메소드는 동일)
+class DashboardDialog(QDialog):
+    def __init__(self, initial_data, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Real-time Dashboard")
+        self.setGeometry(150, 150, 1000, 700)
+        self.layout = QGridLayout(self)
 
-    def _create_menu(self):
-        menu_bar = self.menuBar()
+        # 이 변수는 이제 QWebEngineView 위젯들을 저장합니다.
+        self.web_views = {}
         
-        # 파일 메뉴 (변경 없음)
-        file_menu = menu_bar.addMenu("&File")
-        # ...
+        self._create_chart_views()
         
-        # ✅ 1. View와 Tools 메뉴를 인스턴스 변수로 저장하여 나중에 접근할 수 있도록 함
-        self.view_menu = menu_bar.addMenu("&View")
-        select_columns_action = QAction("&Select Columns...", self)
-        select_columns_action.triggered.connect(self.open_column_selection_dialog)
-        self.view_menu.addAction(select_columns_action)
-        self.view_menu.addSeparator()
-        dashboard_action = QAction("Show Dashboard...", self)
-        dashboard_action.triggered.connect(self.show_dashboard)
-        self.view_menu.addAction(dashboard_action)
+        # 업데이트가 필요한 데이터를 저장할 변수
+        self.data_to_update = initial_data
 
-        self.tools_menu = menu_bar.addMenu("&Tools")
-        query_builder_action = QAction("Advanced Filter...", self)
-        query_builder_action.triggered.connect(self.open_query_builder)
-        self.tools_menu.addAction(query_builder_action)
-        # ... (나머지 Tools 메뉴 구성은 동일)
+        # 성능을 위한 업데이트 타이머
+        self.update_timer = QTimer(self)
+        self.update_timer.setInterval(1000)  # 1초 간격
+        self.update_timer.timeout.connect(self._perform_update)
+        self.update_timer.start() 
+
+    def _create_chart_views(self):
+        """각 차트를 위한 QWebEngineView 위젯을 생성하고 레이아웃에 추가합니다."""
+        self.web_views['by_category'] = QWebEngineView()
+        self.web_views['by_device'] = QWebEngineView()
+
+        self.layout.addWidget(self.web_views['by_category'], 0, 0)
+        self.layout.addWidget(self.web_views['by_device'], 0, 1)
         
-        help_menu = menu_bar.addMenu("&Help")
-        # ...
+        # 대화상자가 열리자마자 차트를 한번 그려줍니다.
+        self._perform_update()
 
-    def setup_ui_for_mode(self):
-        if self.controller.mode == 'realtime':
-            self.db_connect_button.setVisible(True)
-            self.filter_input.setVisible(False) # 실시간 모드에서는 기본 필터 숨김
-            self.auto_scroll_checkbox.setVisible(True)
-            self.setWindowTitle(f"Log Analyzer - [DB: {self.controller.connection_name}]")
-            self.statusBar().showMessage("Ready to connect to the database.")
-        else: # file mode
-            self.db_connect_button.setVisible(False)
-            self.filter_input.setVisible(True)
-            self.auto_scroll_checkbox.setVisible(False) # 파일 모드에서는 자동 스크롤 숨김
-            self.setWindowTitle("Log Analyzer - [File Mode]")
-            self.statusBar().showMessage("Ready. Please open a log file.")
-    
-    def start_db_connection(self):
-        if self._is_fetching:
-            # ... (취소 로직은 동일)
-        else:
-            # --- 조회 시작 로직 ---
-            dialog = QueryConditionsDialog(self)
-            if dialog.exec():
-                # ... (기존 조회 시작 로직)
-                self.controller.start_db_fetch(query_conditions)
-                
-                self._is_fetching = True
-                self.db_connect_button.setText("❌ 데이터 수신 중단")
-                self.db_connect_button.setStyleSheet("background-color: #DA4453; color: white;")
+    def update_dashboard(self, new_data):
+        """컨트롤러에서 새로운 데이터를 받아 저장하는 공개 메소드입니다."""
+        self.data_to_update = new_data
 
-                # ✅ 2. 데이터 수신 중에는 분석/뷰 메뉴 비활성화
-                if self.controller.mode == 'realtime':
-                    self.tools_menu.setEnabled(False)
-                    self.view_menu.setEnabled(False)
+    def _perform_update(self):
+        """타이머가 주기적으로 호출하여 모든 차트를 업데이트하는 메소드입니다."""
+        if self.data_to_update is None or self.data_to_update.empty:
+            return
 
-    def on_fetch_complete(self):
-        self._is_fetching = False
-        self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
-        self.db_connect_button.setStyleSheet("") 
-        
-        # ✅ 3. 작업 완료/취소/에러 시 분석/뷰 메뉴 다시 활성화
-        if self.controller.mode == 'realtime':
-            self.tools_menu.setEnabled(True)
-            self.view_menu.setEnabled(True)
-        
-        source_model = self.proxy_model.sourceModel()
-        if source_model:
-            total_rows = source_model.rowCount()
-            if self.statusBar().currentMessage() != "Cancelling...":
-                 self.statusBar().showMessage(f"Completed. Total {total_rows:,} logs in view.")
-                 
-    # ... (나머지 코드는 모두 동일)
+        df = self.data_to_update
+        print(f"Dashboard updating with {len(df)} rows...")
+
+        # --- Category 파이 차트 ---
+        category_counts = df['Category'].value_counts().reset_index()
+        fig_cat = px.pie(category_counts, names='Category', values='count', title="Log Counts by Category")
+        self.web_views['by_category'].setHtml(fig_cat.to_html(include_plotlyjs='cdn'))
+
+        # --- DeviceID 바 차트 ---
+        device_counts = df['DeviceID'].value_counts().reset_index().head(10)
+        fig_dev = px.bar(device_counts, x='DeviceID', y='count', title="Log Counts by DeviceID (Top 10)")
+        self.web_views['by_device'].setHtml(fig_dev.to_html(include_plotlyjs='cdn'))
+
+    def closeEvent(self, event):
+        """대화상자가 닫힐 때 타이머를 정지시킵니다."""
+        self.update_timer.stop()
+        super().closeEvent(event)

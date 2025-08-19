@@ -21,6 +21,7 @@ from analysis_result import AnalysisResult
 from dialogs.ScriptEditorDialog import ScriptEditorDialog
 # ⛔️ MainWindow는 시그널을 직접 정의하지 않으므로 이 import는 삭제합니다.
 # from PySide6.QtCore import QObject, Signal 
+from dialogs.DashboardDialog import DashboardDialog # ✅ 직접 임포트
 
 CONFIG_FILE = 'config.json'
 
@@ -276,8 +277,17 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
         
-        self.dashboard_dialog = DashboardDialog(source_model._data, self)
-        self.dashboard_dialog.exec()
+        # ✅ 1. 컨트롤러에 대시보드 객체가 없으면 새로 생성
+        if self.controller.dashboard_dialog is None:
+            print("Creating new dashboard instance.")
+            # 컨트롤러가 참조할 수 있도록 self.controller.dashboard_dialog에 할당
+            self.controller.dashboard_dialog = DashboardDialog(source_model._data, self)
+            # ✅ 대시보드가 닫힐 때 컨트롤러의 참조를 None으로 초기화하도록 연결
+            self.controller.dashboard_dialog.finished.connect(self._on_dashboard_closed)
+        
+        # ✅ 2. 이미 생성된 대시보드를 보여주거나, 새로 만든 대시보드를 보여줌
+        self.controller.dashboard_dialog.show()
+        self.controller.dashboard_dialog.activateWindow() # 창을 맨 앞으로 가져옴
 
     def show_table_context_menu(self, pos):
         selected_indexes = self.tableView.selectedIndexes()
@@ -556,3 +566,8 @@ class MainWindow(QMainWindow):
         
         # 에러가 발생해도 UI 상태는 원상 복구
         self.on_fetch_complete()
+
+    # ✅ 3. 대시보드가 닫혔을 때 호출될 슬롯
+    def _on_dashboard_closed(self):
+        print("Dashboard closed. Clearing reference in controller.")
+        self.controller.dashboard_dialog = None

@@ -1,71 +1,70 @@
+# shinguhan/mylogmaster/myLogMaster-main/dialogs/DashboardDialog.py
+
 import pandas as pd
-from PySide6.QtWidgets import QDialog, QVBoxLayout
-import pyqtgraph as pg
-import numpy as np # NumPy 임포트
+from PySide6.QtWidgets import QDialog, QGridLayout
+from PySide6.QtCore import QTimer
+# ✅ QWebEngineView는 PySide6에 기본 포함되어 있습니다.
+from PySide6.QtWebEngineWidgets import QWebEngineView
+import plotly.express as px
+from plotly.graph_objects import FigureWidget
 
 class DashboardDialog(QDialog):
-    def __init__(self, df, parent=None):
+    def __init__(self, initial_data, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Log Statistics Dashboard")
-        self.setGeometry(200, 200, 900, 700)
-        self.df = df
+        self.setWindowTitle("Real-time Dashboard")
+        self.setGeometry(150, 150, 1000, 700)
+        self.layout = QGridLayout(self)
 
-        main_layout = QVBoxLayout(self)
-        main_layout.addWidget(self._create_flow_chart()) # 메서드 이름 변경
-        main_layout.addWidget(self._create_category_chart())
-
-    # ⭐️ 메서드 전체를 새롭고 단순한 로직으로 교체
-    def _create_flow_chart(self):
-        """전체 로그를 100개의 구간으로 나누어 막대그래프로 표시합니다."""
-        widget = pg.PlotWidget(title="Overall Log Flow (100 Bins)")
-        widget.getAxis('left').setLabel("Log Count")
-        widget.getAxis('bottom').setLabel("Log Sequence Bins")
+        # 이 변수는 이제 QWebEngineView 위젯들을 저장합니다.
+        self.web_views = {}
+                # ✅ 1. 'data_to_update' 변수를 먼저 만듭니다.
+        self.data_to_update = initial_data
         
-        try:
-            if self.df.empty: return widget
-
-            num_logs = len(self.df)
-            num_bins = 1000
-            
-            # 데이터가 100개 미만일 경우 처리
-            if num_logs < num_bins:
-                num_bins = num_logs
-            
-            # NumPy를 사용하여 매우 빠르게 구간별 합계 계산
-            bin_counts = np.histogram(np.arange(num_logs), bins=num_bins)[0]
-
-            # 막대 그래프 생성
-            bar_graph = pg.BarGraphItem(x=range(num_bins), height=bin_counts, width=0.8, brush='c')
-            widget.addItem(bar_graph)
-
-        except Exception as e:
-            print(f"Error creating flow chart: {e}")
-
-        return widget
-
-    def _create_category_chart(self):
-        """로그 카테고리 분포 막대 차트를 생성합니다."""
-        widget = pg.PlotWidget(title="Log Category Distribution")
+        self._create_chart_views()
         
-        try:
-            if self.df.empty or 'Category' not in self.df.columns:
-                return widget
+        # 업데이트가 필요한 데이터를 저장할 변수
+        self.data_to_update = initial_data
 
-            category_counts = self.df['Category'].str.replace('"', '', regex=False).value_counts()
-            
-            if category_counts.empty:
-                return widget
+        # 성능을 위한 업데이트 타이머
+        self.update_timer = QTimer(self)
+        self.update_timer.setInterval(1000)  # 1초 간격
+        self.update_timer.timeout.connect(self._perform_update)
+        self.update_timer.start() 
 
-            ticks = [(i, category) for i, category in enumerate(category_counts.index)]
-            axis = widget.getAxis('bottom')
-            axis.setTicks([ticks])
-            axis.setLabel("Category")
-            widget.getAxis('left').setLabel("Count")
-            
-            bar_graph = pg.BarGraphItem(x=range(len(category_counts)), height=category_counts.values, width=0.6, brush='m')
-            widget.addItem(bar_graph)
+    def _create_chart_views(self):
+        """각 차트를 위한 QWebEngineView 위젯을 생성하고 레이아웃에 추가합니다."""
+        self.web_views['by_category'] = QWebEngineView()
+        self.web_views['by_device'] = QWebEngineView()
 
-        except Exception as e:
-            print(f"Error creating category chart: {e}")
+        self.layout.addWidget(self.web_views['by_category'], 0, 0)
+        self.layout.addWidget(self.web_views['by_device'], 0, 1)
+        
+        # 대화상자가 열리자마자 차트를 한번 그려줍니다.
+        self._perform_update()
 
-        return widget
+    def update_dashboard(self, new_data):
+        """컨트롤러에서 새로운 데이터를 받아 저장하는 공개 메소드입니다."""
+        self.data_to_update = new_data
+
+    def _perform_update(self):
+        """타이머가 주기적으로 호출하여 모든 차트를 업데이트하는 메소드입니다."""
+        if self.data_to_update is None or self.data_to_update.empty:
+            return
+
+        df = self.data_to_update
+        print(f"Dashboard updating with {len(df)} rows...")
+
+        # --- Category 파이 차트 ---
+        category_counts = df['Category'].value_counts().reset_index()
+        fig_cat = px.pie(category_counts, names='Category', values='count', title="Log Counts by Category")
+        self.web_views['by_category'].setHtml(fig_cat.to_html(include_plotlyjs='cdn'))
+
+        # --- DeviceID 바 차트 ---
+        device_counts = df['DeviceID'].value_counts().reset_index().head(10)
+        fig_dev = px.bar(device_counts, x='DeviceID', y='count', title="Log Counts by DeviceID (Top 10)")
+        self.web_views['by_device'].setHtml(fig_dev.to_html(include_plotlyjs='cdn'))
+
+    def closeEvent(self, event):
+        """대화상자가 닫힐 때 타이머를 정지시킵니다."""
+        self.update_timer.stop()
+        super().closeEvent(event)

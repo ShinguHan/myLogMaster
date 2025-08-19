@@ -33,6 +33,8 @@ class AppController(QObject):
         self.source_model = LogTableModel(max_rows=20000) 
         self.fetch_thread = None
         self.last_query_conditions = None # ✅ 조회 조건 저장할 변수 추가
+                # ✅ 1. 대시보드 다이얼로그 참조를 저장할 변수 추가
+        self.dashboard_dialog = None 
 
                 # ✅ 1. 데이터 업데이트를 위한 큐와 타이머 추가
         self._update_queue = []
@@ -391,6 +393,11 @@ class AppController(QObject):
         
         # UI에 현재 총 행 수를 알림
         self.row_count_updated.emit(self.source_model.rowCount())
+
+                # ✅ 2. 대시보드가 열려있으면, 업데이트 신호를 보냄
+        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
+            # 전체 original_data를 넘겨주어 대시보드가 항상 최신 상태를 반영하게 함
+            self.dashboard_dialog.update_dashboard(self.original_data)
 
         # ✅ 3. UI의 취소 요청을 처리할 새로운 메소드
     def cancel_db_fetch(self):
