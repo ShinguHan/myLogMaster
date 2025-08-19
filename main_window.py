@@ -121,33 +121,44 @@ class MainWindow(QMainWindow):
         exit_action = QAction("&Exit", self)
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-        view_menu = menu_bar.addMenu("&View")
+
+
+
+
+        self.view_menu = menu_bar.addMenu("&View")
         select_columns_action = QAction("&Select Columns...", self)
         select_columns_action.triggered.connect(self.open_column_selection_dialog)
-        view_menu.addAction(select_columns_action)
-        view_menu.addSeparator()
+        self.view_menu.addAction(select_columns_action)
+        self.view_menu.addSeparator()
         dashboard_action = QAction("Show Dashboard...", self)
         dashboard_action.triggered.connect(self.show_dashboard)
-        view_menu.addAction(dashboard_action)
-        tools_menu = menu_bar.addMenu("&Tools")
+        self.view_menu.addAction(dashboard_action)
+        self.tools_menu = menu_bar.addMenu("&Tools")
         query_builder_action = QAction("Advanced Filter...", self)
         query_builder_action.triggered.connect(self.open_query_builder)
-        tools_menu.addAction(query_builder_action)
+
+
+
+
+
+
+
+        self.tools_menu.addAction(query_builder_action)
         clear_filter_action = QAction("Clear Advanced Filter", self)
         clear_filter_action.triggered.connect(self.clear_advanced_filter)
-        tools_menu.addAction(clear_filter_action)
-        tools_menu.addSeparator()
+        self.tools_menu.addAction(clear_filter_action)
+        self.tools_menu.addSeparator()
         
-        self.scenario_menu = tools_menu.addMenu("Run Scenario Validation")
-        tools_menu.aboutToShow.connect(self.populate_scenario_menu)
+        self.scenario_menu = self.tools_menu.addMenu("Run Scenario Validation")
+        self.tools_menu.aboutToShow.connect(self.populate_scenario_menu)
 
         browse_scenarios_action = QAction("Browse Scenarios...", self)
         browse_scenarios_action.triggered.connect(self.open_scenario_browser)
-        tools_menu.addAction(browse_scenarios_action)
-        tools_menu.addSeparator()
+        self.tools_menu.addAction(browse_scenarios_action)
+        self.tools_menu.addSeparator()
         script_editor_action = QAction("Analysis Script Editor...", self)
         script_editor_action.triggered.connect(self.open_script_editor)
-        tools_menu.addAction(script_editor_action)
+        self.tools_menu.addAction(script_editor_action)
 
         help_menu = menu_bar.addMenu("&Help")
         about_action = QAction("&About...", self)
@@ -474,12 +485,14 @@ class MainWindow(QMainWindow):
     def setup_ui_for_mode(self):
         if self.controller.mode == 'realtime':
             self.db_connect_button.setVisible(True)
-            self.filter_input.setVisible(False)
+            self.filter_input.setVisible(False) # 실시간 모드에서는 기본 필터 숨김
+            self.auto_scroll_checkbox.setVisible(True)
             self.setWindowTitle(f"Log Analyzer - [DB: {self.controller.connection_name}]")
             self.statusBar().showMessage("Ready to connect to the database.")
         else: # file mode
             self.db_connect_button.setVisible(False)
             self.filter_input.setVisible(True)
+            self.auto_scroll_checkbox.setVisible(False) # 파일 모드에서는 자동 스크롤 숨김
             self.setWindowTitle("Log Analyzer - [File Mode]")
             self.statusBar().showMessage("Ready. Please open a log file.")
 
@@ -503,6 +516,11 @@ class MainWindow(QMainWindow):
                 self.db_connect_button.setText("❌ 데이터 수신 중단")
                 self.db_connect_button.setStyleSheet("background-color: #DA4453; color: white;")
 
+                # ✅ 2. 데이터 수신 중에는 분석/뷰 메뉴 비활성화
+                if self.controller.mode == 'realtime':
+                    self.tools_menu.setEnabled(False)
+                    self.view_menu.setEnabled(False)
+                    
     def on_fetch_progress(self, message):
         self.statusBar().showMessage(message)
 
@@ -512,11 +530,16 @@ class MainWindow(QMainWindow):
         self.db_connect_button.setEnabled(True)
         self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
         self.db_connect_button.setStyleSheet("") # 기본 스타일로 복원
-        
+        # ✅ 3. 작업 완료/취소/에러 시 분석/뷰 메뉴 다시 활성화
+        if self.controller.mode == 'realtime':
+            self.tools_menu.setEnabled(True)
+            self.view_menu.setEnabled(True)        
         source_model = self.proxy_model.sourceModel()
         if source_model:
             total_rows = source_model.rowCount()
-            self.statusBar().showMessage(f"Local cache contains {total_rows:,} logs.")
+            if self.statusBar().currentMessage() != "Cancelling...":
+                 self.statusBar().showMessage(f"Completed. Total {total_rows:,} logs in view.")
+           
 
         # ✅ 4. 행 개수 업데이트를 위한 새로운 슬롯
     def _update_row_count_status(self, row_count):
