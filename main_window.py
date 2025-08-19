@@ -102,6 +102,10 @@ class MainWindow(QMainWindow):
         self.proxy_model.setSourceModel(source_model)
         self.apply_settings(source_model)
 
+        # ✅ 데이터가 있으면 Save 메뉴 활성화, 없으면 비활성화
+        is_data_loaded = source_model is not None and not source_model._data.empty
+        self.save_action.setEnabled(is_data_loaded)
+
                 # ✅ 3. 모델이 변경될 때 자동 스크롤 실행
         if self.auto_scroll_checkbox.isChecked():
             # QTimer.singleShot을 사용해 다른 UI 이벤트가 처리된 후 스크롤 실행
@@ -117,6 +121,13 @@ class MainWindow(QMainWindow):
         open_action = QAction("&Open Log File...", self)
         open_action.triggered.connect(self.open_log_file)
         file_menu.addAction(open_action)
+
+        # ✅ "Save" 액션을 여기에 추가합니다.
+        self.save_action = QAction("&Save View as CSV...", self)
+        self.save_action.triggered.connect(self.save_log_file)
+        self.save_action.setEnabled(False) # 처음에는 비활성화
+        file_menu.addAction(self.save_action)
+
         file_menu.addSeparator()
         exit_action = QAction("&Exit", self)
         exit_action.triggered.connect(self.close)
@@ -288,6 +299,10 @@ class MainWindow(QMainWindow):
         if source_model:
             self.statusBar().showMessage(f"Filter cleared. Showing {source_model.rowCount():,} rows.")
         print("Advanced filter cleared.")
+
+        # ✅ 필터 클리어 시 Save 메뉴 상태 업데이트
+        is_data_loaded = source_model is not None and not source_model._data.empty
+        self.save_action.setEnabled(is_data_loaded)
         
     def show_dashboard(self):
         source_model = self.proxy_model.sourceModel()
@@ -623,3 +638,35 @@ class MainWindow(QMainWindow):
         # ✅ 2. 대화상자를 self.highlighting_dialog에 저장하여 사라지지 않게 합니다.
         self.highlighting_dialog = HighlightingDialog(column_names, self)
         self.highlighting_dialog.show()
+
+    # ✅ 아래 메소드를 클래스 맨 끝에 추가해주세요.
+    def save_log_file(self):
+        """현재 뷰에 보이는 데이터를 CSV 파일로 저장합니다."""
+        source_model = self.proxy_model.sourceModel()
+        if source_model is None or self.proxy_model.rowCount() == 0:
+            QMessageBox.information(self, "Info", "There is no data to save.")
+            return
+            
+        # 파일 저장 대화상자 열기
+        default_filename = "log_export.csv"
+        filepath, _ = QFileDialog.getSaveFileName(self, "Save Log File", default_filename, "CSV Files (*.csv);;All Files (*)")
+
+        if filepath:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            self.statusBar().showMessage("Saving file...")
+            try:
+                # 현재 proxy model에 보이는 데이터만 DataFrame으로 재구성
+                visible_rows_indices = [self.proxy_model.mapToSource(self.proxy_model.index(r, 0)).row() for r in range(self.proxy_model.rowCount())]
+                
+                # 원본 데이터에서 보이는 행들만 선택
+                df_to_save = source_model._data.iloc[visible_rows_indices]
+
+                # 컨트롤러에 저장 요청
+                success, message = self.controller.save_log_to_csv(df_to_save, filepath)
+
+                if success:
+                    self.statusBar().showMessage(message)
+                else:
+                    QMessageBox.critical(self, "Save Error", message)
+            finally:
+                QApplication.restoreOverrideCursor()

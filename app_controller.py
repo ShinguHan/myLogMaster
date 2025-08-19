@@ -464,3 +464,14 @@ class AppController(QObject):
     def apply_new_highlighting_rules(self):
         self.highlighting_rules = self.load_highlighting_rules()
         self.source_model.set_highlighting_rules(self.highlighting_rules)
+
+        # ✅ 아래 메소드를 클래스 맨 끝에 추가해주세요.
+    def save_log_to_csv(self, dataframe, file_path):
+        """데이터프레임을 지정된 경로의 CSV 파일로 저장합니다."""
+        try:
+            # utf-8-sig 인코딩은 Excel에서 한글이 깨지지 않도록 보장합니다.
+            dataframe.to_csv(file_path, index=False, encoding='utf-8-sig')
+            return True, f"Successfully saved to {os.path.basename(file_path)}"
+        except Exception as e:
+            print(f"Error saving to CSV: {e}")
+            return False, f"Could not save file: {e}"
