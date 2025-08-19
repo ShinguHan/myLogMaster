@@ -27,6 +27,7 @@ class AppController(QObject):
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel()
         self.fetch_thread = None
+        self.last_query_conditions = None # ✅ 조회 조건 저장할 변수 추가
 
         if self.mode == 'realtime':
             if self.connection_name:
@@ -92,18 +93,20 @@ class AppController(QObject):
             print("Fetch is already in progress.")
             return
 
-        # 💡 1. 데이터 가져오기를 시작하기 전, 기존 모델의 데이터를 초기화합니다.
+        # ✅ 현재 조회 조건을 인스턴스 변수에 저장
+        self.last_query_conditions = query_conditions
+
+        if self.db_manager:
+            self.db_manager.clear_logs_from_cache()
+
         self.source_model.update_data(pd.DataFrame())
-        self.original_data = pd.DataFrame() # 원본 데이터도 초기화
+        self.original_data = pd.DataFrame() 
 
         self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions)
         
-        # 💡 2. data_fetched 신호를 append_data_chunk 슬롯에 연결합니다.
         self.fetch_thread.data_fetched.connect(self.append_data_chunk)
         self.fetch_thread.finished.connect(self.on_fetch_finished)
-        self.fetch_thread.progress.connect(self.fetch_progress)
-        self.fetch_thread.error.connect(lambda e: self.fetch_progress.emit(f"Error: {e}"))
-
+        # ...
         self.fetch_thread.start()
 
     # 💡 3. 데이터를 점진적으로 추가하는 새로운 메소드
@@ -127,10 +130,17 @@ class AppController(QObject):
             self.db_manager.upsert_logs_to_local_cache(df_chunk)
 
     def on_fetch_finished(self):
+        """데이터 수신이 완료되면 호출됩니다."""
         print("Fetch thread finished.")
         self.fetch_completed.emit()
-        # 전체 데이터가 로드된 후 필터링이나 다른 작업을 수행할 수 있습니다.
-        # 예: self.apply_advanced_filter(self.last_query_data)
+
+        # ✅ 데이터 조회가 성공적으로 끝났을 때만 이력을 저장합니다.
+        if self.db_manager and self.last_query_conditions:
+            start_time = self.last_query_conditions.get('start_time', '')
+            end_time = self.last_query_conditions.get('end_time', '')
+            # start_time, end_time을 제외한 나머지 조건을 filters로 간주
+            filters = {k: v for k, v in self.last_query_conditions.items() if k not in ['start_time', 'end_time']}
+            self.db_manager.add_fetch_history(start_time, end_time, filters)
         
     # ... (load_log_file, run_analysis_script 등 나머지 코드는 동일)     
     def run_analysis_script(self, script_code, dataframe):
