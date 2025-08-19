@@ -1,3 +1,4 @@
 *.secsproj
 *.html
 __pycache__/*
+*.db

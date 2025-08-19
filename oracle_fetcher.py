@@ -76,7 +76,7 @@ class OracleFetcherThread(QThread):
             
             mock_data = []
             start_time = datetime(2025, 8, 18, 14, 0, 0)
-            for i in range(10000): # 총 5000개 데이터 생성
+            for i in range(500000): # 총 5000개 데이터 생성
                 # ✅ 루프 시작 시점에 항상 실행 여부 체크
                 if not self._is_running:
                     self.progress.emit("Fetching cancelled by user.")
@@ -96,7 +96,7 @@ class OracleFetcherThread(QThread):
                     df_chunk = pd.DataFrame(mock_data)
                     self.data_fetched.emit(df_chunk)
                     mock_data = []
-                    time.sleep(0.1)  # 네트워크 지연 흉내
+                    time.sleep(0.01)  # 네트워크 지연 흉내
 
             if mock_data and self._is_running:
                 df_chunk = pd.DataFrame(mock_data)
