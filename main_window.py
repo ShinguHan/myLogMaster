@@ -89,6 +89,9 @@ class MainWindow(QMainWindow):
                 # ✅ 1. 버튼의 현재 상태를 저장할 플래그 추가
         self._is_fetching = False
 
+        # ✅ 아래 한 줄을 __init__ 메소드의 맨 마지막에 추가해주세요.
+        self.update_table_model(self.controller.source_model)
+
     def connect_signals(self):
         self.controller.model_updated.connect(self.update_table_model)
         self.controller.fetch_progress.connect(self.on_fetch_progress)

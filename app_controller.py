@@ -44,6 +44,8 @@ class AppController(QObject):
         self._update_timer.setInterval(200) # 200ms (0.2초) 마다 실행
         self._update_timer.timeout.connect(self._process_update_queue)
 
+        self.highlighting_rules = self.load_highlighting_rules() # ✅ 시작 시 규칙 로드
+
         if self.mode == 'realtime':
             if self.connection_name:
                 self.db_manager = DatabaseManager(self.connection_name)
@@ -54,7 +56,6 @@ class AppController(QObject):
         else:
             self.db_manager = None
 
-        self.highlighting_rules = self.load_highlighting_rules() # ✅ 시작 시 규칙 로드
 
     def load_data_from_cache(self):
         """로컬 캐시에서 데이터를 로드하고, 데이터 유무와 상관없이 항상 UI에 모델을 업데이트하도록 신호를 보냅니다."""
