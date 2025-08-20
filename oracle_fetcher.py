@@ -13,13 +13,15 @@ class OracleFetcherThread(QThread):
     finished = Signal()
     error = Signal(str)
 
-    def __init__(self, connection_info, query_conditions, chunk_size=1000, use_mock_data=True):
+    def __init__(self, connection_info, where_clause, params, chunk_size=1000, use_mock_data=False): # ✅ use_mock_data 기본값을 False로 변경
         super().__init__()
         self.conn_info = connection_info
-        self.conditions = query_conditions
+        # ✅ WHERE 절과 파라미터를 직접 받도록 수정
+        self.where_clause = where_clause
+        self.params = params
         self.chunk_size = chunk_size
         self._is_running = True
-        self.use_mock_data = use_mock_data # 💡 테스트용 Mock 데이터 사용 여부 플래그
+        self.use_mock_data = use_mock_data
 
     def run(self):
         """백그라운드에서 실행될 메인 로직"""
@@ -30,23 +32,24 @@ class OracleFetcherThread(QThread):
         conn = None
         try:
             self.progress.emit("Connecting to Oracle DB...")
-            # ⭐️ 1. 실제 DB 연결 (환경에 맞게 수정)
-            # conn = oracledb.connect(
-            #     user=self.conn_info.get('user'),
-            #     password=self.conn_info.get('password'),
-            #     dsn=self.conn_info.get('dsn')
-            # )
+            # ⭐️ 실제 DB 연결 (환경에 맞게 수정)
+            conn = oracledb.connect(
+                user=self.conn_info.get('user'),
+                password=self.conn_info.get('password'),
+                dsn=self.conn_info.get('dsn')
+            )
             self.progress.emit("Connection successful. Fetching data...")
 
-            # ⭐️ 2. 실제 쿼리 실행
-            with conn.cursor() as cursor:
-                # TODO: self.conditions를 바탕으로 실제 쿼리문과 바인딩 변수 생성
-                # 예시: query = "SELECT * FROM YOUR_LOG_TABLE WHERE SystemDate BETWEEN :start_date AND :end_date"
-                query = "SELECT * FROM V_LOG_MESSAGE" # 실제 쿼리문으로 변경
-                
-                # cursor.execute(query, self.conditions) # 쿼리 조건 바인딩
-                cursor.execute(query)
+            # ✅ 1. 동적으로 생성된 WHERE 절을 사용하여 최종 쿼리 생성
+            base_query = "SELECT * FROM V_LOG_MESSAGE"
+            final_query = f"{base_query} WHERE {self.where_clause}"
+            
+            self.progress.emit(f"Executing query: {final_query}")
 
+            with conn.cursor() as cursor:
+                # ✅ 2. 파라미터를 바인딩하여 SQL Injection을 방지하며 안전하게 실행
+                cursor.execute(final_query, self.params)
+                
                 while self._is_running:
                     rows = cursor.fetchmany(self.chunk_size)
                     if not rows:
@@ -58,10 +61,13 @@ class OracleFetcherThread(QThread):
 
             if self._is_running:
                 self.progress.emit("Data fetching complete.")
+            else:
+                self.progress.emit("Fetching cancelled by user.")
 
-        # ⭐️ 3. 구체적인 예외 처리
         except oracledb.DatabaseError as e:
-            self.error.emit(f"Oracle DB Error: {e}")
+            # Oracle 에러를 더 사용자 친화적으로 표시
+            error_obj, = e.args
+            self.error.emit(f"DB Error: {error_obj.message}")
         except Exception as e:
             self.error.emit(f"An unexpected error occurred: {e}")
         finally:

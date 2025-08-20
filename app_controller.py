@@ -116,13 +116,19 @@ class AppController(QObject):
         # ✅ 현재 조회 조건을 인스턴스 변수에 저장
         self.last_query_conditions = query_conditions
 
+                # ✅ 1. 고급 필터 조건을 SQL WHERE 절로 변환
+        where_clause, params = self._build_where_clause(query_conditions)
+        print(f"Generated WHERE clause: {where_clause}")
+        print(f"Parameters: {params}")
+
         if self.db_manager:
             self.db_manager.clear_logs_from_cache()
 
         self.source_model.update_data(pd.DataFrame())
         self.original_data = pd.DataFrame() 
 
-        self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions)
+        # ✅ 2. 생성된 WHERE 절과 파라미터를 Fetcher 스레드에 전달
+        self.fetch_thread = OracleFetcherThread(self.connection_info, where_clause, params)
         
         self.fetch_thread.data_fetched.connect(self.append_data_chunk)
         self.fetch_thread.finished.connect(self.on_fetch_finished)
@@ -476,3 +482,67 @@ class AppController(QObject):
         except Exception as e:
             print(f"Error saving to CSV: {e}")
             return False, f"Could not save file: {e}"
+        
+    # ✅ 3. 아래의 두 메소드를 클래스 맨 끝에 새로 추가해주세요.
+    def _build_where_clause(self, query_conditions):
+        """QueryConditionsDialog에서 받은 조건으로 WHERE 절과 파라미터를 생성합니다."""
+        clauses = []
+        params = {}
+        
+        # 시간 조건 추가 (Oracle DATE 형식에 맞게 변환)
+        params['p_start_time'] = pd.to_datetime(query_conditions['start_time']).strftime('%Y-%m-%d %H:%M:%S')
+        params['p_end_time'] = pd.to_datetime(query_conditions['end_time']).strftime('%Y-%m-%d %H:%M:%S')
+        clauses.append("SystemDate BETWEEN TO_DATE(:p_start_time, 'YYYY-MM-DD HH24:MI:SS') AND TO_DATE(:p_end_time, 'YYYY-MM-DD HH24:MI:SS')")
+        
+        # 고급 필터 조건 추가
+        adv_filter = query_conditions.get('advanced_filter')
+        if adv_filter and adv_filter.get('rules'):
+            adv_clause, adv_params = self._parse_filter_group(adv_filter)
+            if adv_clause:
+                clauses.append(adv_clause)
+                params.update(adv_params)
+        
+        return " AND ".join(clauses), params
+
+    def _parse_filter_group(self, group, param_index=0):
+        """재귀적으로 필터 그룹을 파싱하여 SQL 조건문과 파라미터를 만듭니다."""
+        clauses = []
+        params = {}
+        logic = f" {group.get('logic', 'AND')} "
+        
+        for rule in group.get('rules', []):
+            if "logic" in rule: # 하위 그룹인 경우
+                sub_clause, sub_params = self._parse_filter_group(rule, param_index)
+                if sub_clause:
+                    clauses.append(f"({sub_clause})")
+                    params.update(sub_params)
+                    param_index += len(sub_params)
+            else: # 실제 규칙인 경우
+                col = rule.get('column')
+                op = rule.get('operator')
+                val = rule.get('value')
+                
+                if not all([col, op, val]): continue
+                
+                param_name = f"p{param_index}"
+                
+                # 연산자에 맞는 SQL 구문 생성
+                if op == 'Contains':
+                    clauses.append(f"INSTR({col}, :{param_name}) > 0")
+                    params[param_name] = val
+                elif op == 'Does Not Contain':
+                    clauses.append(f"INSTR({col}, :{param_name}) = 0")
+                    params[param_name] = val
+                elif op == 'Equals':
+                    clauses.append(f"{col} = :{param_name}")
+                    params[param_name] = val
+                elif op == 'Not Equals':
+                    clauses.append(f"{col} != :{param_name}")
+                    params[param_name] = val
+                elif op == 'Matches Regex': # Oracle REGEXP_LIKE 사용
+                    clauses.append(f"REGEXP_LIKE({col}, :{param_name})")
+                    params[param_name] = val
+
+                param_index += 1
+                
+        return logic.join(clauses), params
