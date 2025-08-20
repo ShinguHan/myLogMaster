@@ -1,0 +1,25 @@
+{
+    "aa": {
+        "start_time": "2022-08-19T22:00:11",
+        "end_time": "2025-08-20T22:02:11",
+        "advanced_filter": {
+            "logic": "AND",
+            "rules": [
+                {
+                    "column": "MethodID",
+                    "operator": "Contains",
+                    "type": "rule",
+                    "value": "555"
+                }
+            ]
+        }
+    },
+    "cc": {
+        "start_time": "2022-08-19T22:00:11",
+        "end_time": "2025-08-20T22:02:11",
+        "advanced_filter": {
+            "logic": "AND",
+            "rules": []
+        }
+    }
+}
