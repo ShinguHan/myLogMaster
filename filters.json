@@ -8,5 +8,15 @@
                 "value": "Info"
             }
         ]
+    },
+    "test1": {
+        "logic": "AND",
+        "rules": [
+            {
+                "column": "DeviceID",
+                "operator": "Contains",
+                "value": "12305"
+            }
+        ]
     }
 }

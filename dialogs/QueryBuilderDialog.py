@@ -43,7 +43,7 @@ class QueryBuilderDialog(QDialog):
         else:
             self._add_group_item(self.tree)
 
-        self._add_group_item(self.tree)
+        # self._add_group_item(self.tree)
 
     def save_filter(self):
         name, ok = QInputDialog.getText(self, "Save Filter As...", "Enter a name for this filter:")

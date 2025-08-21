@@ -105,14 +105,26 @@ class HighlightingDialog(QDialog):
         right_layout.addWidget(QLabel("<b>Formatting</b>")); right_layout.addWidget(format_frame)
         right_layout.addStretch()
         bottom_layout = QHBoxLayout()
-        ok_button = QPushButton("OK"); ok_button.setDefault(True); ok_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("Cancel"); cancel_button.clicked.connect(self.reject)
-        apply_button = QPushButton("Apply"); apply_button.clicked.connect(self.apply_changes)
-        bottom_layout.addStretch(); bottom_layout.addWidget(cancel_button); bottom_layout.addWidget(ok_button)
+        ok_button = QPushButton("OK")
+        ok_button.setDefault(True)
+        ok_button.clicked.connect(self.accept)
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(self.reject)
+        apply_button = QPushButton("Apply")
+        apply_button.clicked.connect(self.apply_changes)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(ok_button)
+        bottom_layout.addWidget(apply_button)
+        bottom_layout.addWidget(cancel_button)
         right_panel = QWidget(); right_panel_layout = QVBoxLayout(right_panel)
         right_panel_layout.addWidget(self.editor_widget); right_panel_layout.addLayout(bottom_layout)
         main_layout.addWidget(left_panel, 1); main_layout.addWidget(right_panel, 3)
-        self.populate_list(); self.editor_widget.setEnabled(False); self.connect_editors()
+
+                # ✅ 1. UI 로딩 중인지 상태를 알려주는 플래그(깃발) 추가
+        self._loading_rule = False
+        self.populate_list()
+        self.editor_widget.setEnabled(False)
+        self.connect_editors()
 
     def on_item_selected(self):
         selected_items = self.list_widget.selectedItems()
@@ -131,12 +143,19 @@ class HighlightingDialog(QDialog):
             return
 
         rule = self.rules[row]
+
+        # ✅ 1. "지금부터 UI에 데이터 채울 거니까, 업데이트 잠시 중단!"
+        self._loading_rule = True
+
         self.editor_widget.setEnabled(True)
         self.name_edit.setText(rule.get("name", ""))
         self.enabled_check.setChecked(rule.get("enabled", True))
         self.fg_button.set_color(rule.get("foreground"))
         self.bg_button.set_color(rule.get("background"))
         self.rebuild_condition_widgets(rule)
+
+        # ✅ 2. "데이터 채우기 끝! 이제 다시 업데이트 허용."
+        self._loading_rule = False
 
     def populate_list(self):
         # selectionChanged 시그널을 잠시 비활성화하여 불필요한 호출 방지
@@ -169,12 +188,16 @@ class HighlightingDialog(QDialog):
     def remove_condition_widget(self, widget):
         widget.deleteLater(); self.update_rule_data()
     def update_rule_data(self):
+        # ✅ '업데이트 금지' 깃발이 세워져 있으면 즉시 함수 종료
+        if self._loading_rule:
+            return
+        
         if not self.current_item: return
         row = self.list_widget.row(self.current_item)
         if not (0 <= row < len(self.rules)): return
         rule = self.rules[row]
         rule['name'] = self.name_edit.text(); rule['enabled'] = self.enabled_check.isChecked(); self.current_item.setText(rule['name'])
-        conditions = [];
+        conditions = []
         for i in range(self.conditions_layout.count()):
             widget = self.conditions_layout.itemAt(i).widget()
             if isinstance(widget, ConditionWidget): conditions.append(widget.get_data())
@@ -184,8 +207,16 @@ class HighlightingDialog(QDialog):
         row = self.list_widget.row(self.current_item); rule = self.rules[row]; button = self.fg_button if target == 'foreground' else self.bg_button; initial_color = button.get_color(); color = QColorDialog.getColor(QColor(initial_color) if initial_color else Qt.GlobalColor.white, self)
         if color.isValid(): hex_color = color.name(); rule[target] = hex_color; button.set_color(hex_color)
     def add_new_rule(self):
-        new_rule = {"name": "New Rule", "enabled": True, "conditions": [{"column": self.column_names[0], "operator": "contains", "value": ""}], "foreground": "#ff0000", "background": None}
-        self.rules.append(new_rule); self.populate_list(); self.list_widget.setCurrentRow(len(self.rules) - 1)
+        new_rule = {
+                    "name": "New Rule", 
+                    "enabled": True, 
+                    "conditions": [{"column": self.column_names[0], "operator": "contains", "value": ""}], 
+                    "foreground": "#ff0000", "background": None
+                    }
+        self.rules.append(new_rule)
+        self.populate_list()
+        self.list_widget.setCurrentRow(len(self.rules) - 1)
+
     def remove_selected_rule(self):
         if not self.current_item: return
         row = self.list_widget.row(self.current_item)
@@ -202,6 +233,19 @@ class HighlightingDialog(QDialog):
             with open(HIGHLIGHTERS_FILE, 'w', encoding='utf-8') as f: json.dump(self.rules, f, indent=4); return True
         except Exception as e: QMessageBox.critical(self, "Error", f"Could not save rules:\n{e}"); return False
     def accept(self):
-        if self.save_rules(): self.parent().controller.apply_new_highlighting_rules(); super().accept()
+        """OK 버튼: 변경사항을 저장 및 적용하고 창을 닫습니다."""
+        # ✅ 1. UI의 현재 상태를 내부 데이터로 먼저 업데이트합니다.
+        self.update_rule_data()
+    
+        if self.save_rules(): 
+            self.parent().controller.apply_new_highlighting_rules()
+            super().accept()
+
     def apply_changes(self):
-        if self.save_rules(): self.parent().controller.apply_new_highlighting_rules()
+        """Apply 버튼: 변경사항을 저장하고 실시간으로 적용합니다."""
+        # ✅ 2. UI의 현재 상태를 내부 데이터로 먼저 업데이트합니다.
+        self.update_rule_data()
+    
+        if self.save_rules(): 
+            self.parent().controller.apply_new_highlighting_rules()
+

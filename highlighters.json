@@ -1,23 +1,28 @@
 [
     {
-        "name": "CEID",
+        "name": "ALARM",
         "enabled": true,
-        "column": "AsciiData",
-        "operator": "contains",
-        "value": "CEID:",
-        "foreground": "#ff0000",
-        "background": null,
         "conditions": [
             {
-                "column": "Category",
+                "column": "AsciiData",
                 "operator": "contains",
-                "value": ""
-            },
-            {
-                "column": "Category",
-                "operator": "contains",
-                "value": ""
+                "value": "ALARM"
             }
-        ]
+        ],
+        "foreground": "#ff0000",
+        "background": null
+    },
+    {
+        "name": "MESSAGENAME",
+        "enabled": true,
+        "conditions": [
+            {
+                "column": "ParsedBody",
+                "operator": "contains",
+                "value": "S6F11"
+            }
+        ],
+        "foreground": "#000000",
+        "background": "#ffff00"
     }
 ]

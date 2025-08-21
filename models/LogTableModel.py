@@ -110,3 +110,13 @@ class LogTableModel(QAbstractTableModel):
         if col_name in self._data.columns and 0 <= row_index < len(self._data):
             return self._data.at[row_index, col_name]
         return None
+    
+        # ✅ 아래 메소드를 새로 추가해주세요.
+    def clear_highlights(self):
+        """적용된 모든 하이라이트 규칙을 제거하고 뷰를 갱신합니다."""
+        if not self._highlighting_rules:
+            return # 지울 하이라이트가 없으면 아무것도 하지 않음
+            
+        self.beginResetModel()
+        self._highlighting_rules = []
+        self.endResetModel()
