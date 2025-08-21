@@ -91,6 +91,8 @@ class MainWindow(QMainWindow):
 
         # ✅ 1. 버튼의 현재 상태를 저장할 플래그 추가
         self._is_fetching = False
+        # ✅ 결과 다이얼로그를 저장할 변수 추가
+        self.validation_result_dialog = None
 
         # ✅ 아래 한 줄을 __init__ 메소드의 맨 마지막에 추가해주세요.
         self.update_table_model(self.controller.source_model)
@@ -232,6 +234,12 @@ class MainWindow(QMainWindow):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             result_text = self.controller.run_scenario_validation(scenario_name)
+
+            # ✅ 이미 결과 창이 열려있으면 내용만 업데이트하고 새로 띄우지 않음
+            if self.validation_result_dialog and self.validation_result_dialog.isVisible():
+                self.validation_result_dialog.setText(result_text)
+                self.validation_result_dialog.activateWindow()
+                return
             
             result_dialog = QDialog(self)
             result_dialog.setWindowTitle("Scenario Validation Result")
@@ -241,7 +249,11 @@ class MainWindow(QMainWindow):
             text_browser.setFontFamily("Courier New")
             layout.addWidget(text_browser)
             result_dialog.resize(700, 350)
-            result_dialog.exec()
+            # ✅ 이미 결과 창이 열려있으면 내용만 업데이트하고 새로 띄우지 않음
+            if self.validation_result_dialog and self.validation_result_dialog.isVisible():
+                self.validation_result_dialog.setText(result_text)
+                self.validation_result_dialog.activateWindow()
+                return
         finally:
             QApplication.restoreOverrideCursor()
 

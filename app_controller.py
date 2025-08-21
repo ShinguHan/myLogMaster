@@ -287,6 +287,10 @@ class AppController(QObject):
         for name, scenario in scenarios.items():
             if scenario_to_run and name != scenario_to_run:
                 continue
+
+            # ✅ "Run All"일 때 (scenario_to_run=None), 비활성화된 시나리오는 건너뜀
+            if scenario_to_run is None and not scenario.get("enabled", True):
+                continue
             
             active_scenarios = {}
             completed_scenarios = []
@@ -385,7 +389,9 @@ class AppController(QObject):
         return all_scenarios
     
     def get_scenario_names(self):
-        return list(self.load_all_scenarios().keys())
+        scenarios = self.load_all_scenarios()
+        # ✅ "enabled"가 false가 아닌 시나리오의 이름만 리스트로 반환
+        return [name for name, details in scenarios.items() if details.get("enabled", True)]
     
     # ✅ 3. 타이머가 호출할 새로운 메소드
     def _process_update_queue(self):

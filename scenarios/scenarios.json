@@ -1,0 +1,38 @@
+{
+    "Communication_Establish": {
+        "description": "Host\uc640 \uc124\ube44\uac00 \uc815\uc0c1\uc801\uc73c\ub85c \ud1b5\uc2e0\uc744 \uac1c\uc2dc\ud558\ub294 \uc2dc\ub098\ub9ac\uc624",
+        "trigger_event": {
+            "column": "ParsedBody",
+            "equals": "S1F13"
+        },
+        "steps": [
+            {
+                "name": "Communication_Acknowledge",
+                "event_match": {
+                    "column": "ParsedBody",
+                    "equals": "S1F14"
+                },
+                "max_delay_seconds": 5
+            }
+        ],
+        "enabled": true
+    },
+    "Stocker_Normal_Store": {
+        "description": "\uc2a4\ud1a0\ucee4\uc5d0 Carrier\ub97c \uc815\uc0c1 \uc785\uace0\ud558\ub294 \uc2dc\ub098\ub9ac\uc624",
+        "trigger_event": {
+            "column": "MethodID",
+            "contains": "requestCarrierStore"
+        },
+        "steps": [
+            {
+                "name": "Host_Transfer_Request",
+                "event_match": {
+                    "column": "ParsedBody",
+                    "equals": "S2F49"
+                },
+                "max_delay_seconds": 10
+            }
+        ],
+        "enabled": false
+    }
+}

@@ -1,86 +1,174 @@
+import os
 import json
-from PySide6.QtWidgets import (
-    QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel
-)
-from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QTableWidget, 
+                               QTableWidgetItem, QHeaderView, QCheckBox, QWidget, 
+                               QPushButton, QMessageBox, QSplitter, QLabel,
+                               QTextEdit)
 from PySide6.QtCore import Qt
+from PySide6.QtWebEngineWidgets import QWebEngineView
+
+SCENARIOS_DIR = 'scenarios'
 
 class ScenarioBrowserDialog(QDialog):
-    # ⭐️ 생성자가 파일 대신 scenarios 딕셔너리를 직접 받도록 변경
     def __init__(self, scenarios_data, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Scenario Browser")
-        self.setGeometry(200, 200, 900, 600)
+        self.scenarios_data = scenarios_data
         
-        self.scenarios = scenarios_data # 전달받은 데이터 사용
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
+        self.setMinimumSize(900, 600)
+
+        main_layout = QVBoxLayout(self)
         
-        try:
-            with open('scenarios.json', 'r', encoding='utf-8') as f:
-                self.scenarios = json.load(f)
-        except Exception as e:
-            self.scenarios = {"Error": {"description": f"Could not load scenarios.json:\n{e}", "steps": []}}
-
-        main_layout = QHBoxLayout(self)
-        self.list_widget = QListWidget()
-        self.web_view = QWebEngineView()
+        # ✅ 1. 화면을 좌우로 나누는 Splitter 추가
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         
-        main_layout.addWidget(self.list_widget, 1)
-        main_layout.addWidget(self.web_view, 2)
+        # --- 왼쪽: 시나리오 리스트 ---
+        left_panel = QWidget()
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.addWidget(QLabel("<b>Available Scenarios</b>"))
+        self.table_widget = QTableWidget()
 
-        self.list_widget.currentItemChanged.connect(self.display_scenario)
-        self.populate_list()
+        # ✅ 아래의 setStyleSheet 코드로 기존 코드를 교체하거나 수정해주세요.
+        self.table_widget.setStyleSheet("""
+            QTableWidget {
+                alternate-background-color: #f5f5f5; /* 옅은 회색으로 행 구분 */
+                gridline-color: #e0e0e0;
+            }
+            QTableWidget::item:hover {
+                background-color: #e8f4ff; /* 1. 마우스 호버 시 연한 파란색 */
+            }
+            QTableWidget::item:selected {
+                background-color: #a8cce9;
+                color: black;
+            }
+            QCheckBox::indicator {
+                border: 1px solid #888;
+                width: 13px;
+                height: 13px;
+                border-radius: 3px;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #007aff; /* 2. 체크 시 파란색으로 채움 */
+                border: 1px solid #005fbf;
+            }
+        """)
 
-        if self.list_widget.count() > 0:
-            self.list_widget.setCurrentRow(0)
+        self.table_widget.setColumnCount(3)
+        self.table_widget.setHorizontalHeaderLabels(["Use", "Scenario Name", "Description"])
+        header = self.table_widget.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        self.table_widget.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table_widget.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table_widget.selectionModel().selectionChanged.connect(self.on_scenario_selected)
+        left_layout.addWidget(self.table_widget)
+        
+        # --- 오른쪽: 선택된 시나리오 상세 뷰 ---
+        right_panel = QWidget()
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.addWidget(QLabel("<b>Scenario Details & Flow</b>"))
+        self.mermaid_view = QWebEngineView() # Mermaid Diagram을 보여줄 웹 뷰
+        right_layout.addWidget(self.mermaid_view)
 
-    def populate_list(self):
-        """왼쪽 목록에 정의된 시나리오들을 채웁니다."""
-        for name, data in self.scenarios.items():
-            item_text = f"{name}\n- {data.get('description', 'No description')}"
-            item = QListWidgetItem(item_text)
-            item.setData(Qt.ItemDataRole.UserRole, name) # 시나리오 이름을 데이터로 저장
-            self.list_widget.addItem(item)
+        splitter.addWidget(left_panel)
+        splitter.addWidget(right_panel)
+        splitter.setSizes([300, 600])
+        main_layout.addWidget(splitter)
+        
+        # --- 하단 버튼 ---
+        button_layout = QHBoxLayout()
+        save_button = QPushButton("Save Changes")
+        save_button.clicked.connect(self.save_changes)
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.accept)
+        button_layout.addStretch()
+        button_layout.addWidget(save_button)
+        button_layout.addWidget(close_button)
+        main_layout.addLayout(button_layout)
 
-    def display_scenario(self, current_item, previous_item):
-        """선택된 시나리오의 기대 흐름을 다이어그램으로 표시합니다."""
-        if not current_item:
-            self.web_view.setHtml("<html><body>Select a scenario to view its definition.</body></html>")
+        self.populate_table()
+
+    def populate_table(self):
+        self.table_widget.setRowCount(len(self.scenarios_data))
+        
+        for row, (name, details) in enumerate(self.scenarios_data.items()):
+            # ✅ 2. Enable/Disable 체크박스 (항상 보이도록 수정)
+            checkbox = QCheckBox()
+            checkbox.setStyleSheet("QCheckBox::indicator { border: 1px solid #888; }")
+            checkbox.setChecked(details.get("enabled", True))
+            checkbox_widget = QWidget()
+            checkbox_layout = QHBoxLayout(checkbox_widget)
+            checkbox_layout.addWidget(checkbox)
+            checkbox_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            checkbox_layout.setContentsMargins(0,0,0,0)
+            self.table_widget.setCellWidget(row, 0, checkbox_widget)
+
+            self.table_widget.setItem(row, 1, QTableWidgetItem(name))
+            self.table_widget.setItem(row, 2, QTableWidgetItem(details.get("description", "")))
+        
+        if self.table_widget.rowCount() > 0:
+            self.table_widget.selectRow(0)
+
+    def on_scenario_selected(self, selected, deselected):
+        selected_rows = self.table_widget.selectionModel().selectedRows()
+        if not selected_rows:
             return
-            
-        scenario_name = current_item.data(Qt.ItemDataRole.UserRole)
-        scenario_data = self.scenarios.get(scenario_name, {})
         
-        mermaid_code = self._generate_mermaid_for_definition(scenario_data)
+        selected_row = selected_rows[0].row()
+        scenario_name = self.table_widget.item(selected_row, 1).text()
+        scenario_details = self.scenarios_data.get(scenario_name)
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html><body>
-            <h3>Expected Sequence for '{scenario_name}'</h3>
-            <pre class="mermaid">{mermaid_code}</pre>
-            <script type="module">
-                import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-                mermaid.initialize({{ startOnLoad: true, theme: 'default' }});
-            </script>
-        </body></html>
-        """
-        self.web_view.setHtml(html_content)
+        if scenario_details:
+            mermaid_code = self.generate_mermaid_code(scenario_name, scenario_details)
+            self.display_mermaid(mermaid_code)
 
-    def _generate_mermaid_for_definition(self, scenario_def):
-        """하나의 시나리오 정의로부터 기대 흐름 Mermaid 코드를 생성합니다."""
-        code = "sequenceDiagram\n    participant Host\n    participant Equipment\n\n"
-        trigger = scenario_def.get('trigger_event', {})
+    def generate_mermaid_code(self, name, details):
+        """시나리오 데이터로부터 Mermaid 시퀀스 다이어그램 코드를 생성합니다."""
+        code = "sequenceDiagram\n    participant User as Trigger\n    participant System\n\n"
         
-        if trigger:
-             code += f"    Note over Host,Equipment: Trigger: {trigger.get('column')} {list(trigger.keys())[1]} '{list(trigger.values())[1]}'\n\n"
+        trigger = details.get("trigger_event", {})
+        trigger_desc = f"{trigger.get('column')} {trigger.get('contains', trigger.get('equals', ''))}"
+        code += f"    User->>System: 1. Trigger: {trigger_desc}\n"
 
-        for step in scenario_def.get('steps', []):
-            step_name = step.get('name', 'Unknown Step')
-            match_rule = step.get('event_match', {})
-            timeout = step.get('max_delay_seconds', 'N/A')
-            
-            actor = "Equipment" if "S" in match_rule.get('equals', '') else "Host"
-            
-            code += f"    {actor}->>Host: {step_name}\n"
-            code += f"    Note right of Host: Expects '{match_rule.get('column')}' to be '{match_rule.get('equals')}'<br/>Timeout: {timeout}s\n"
-        
+        for i, step in enumerate(details.get("steps", [])):
+            step_desc = f"{step['event_match'].get('column')} {step['event_match'].get('contains', step['event_match'].get('equals', ''))}"
+            delay = step.get('max_delay_seconds', 'N/A')
+            code += f"    System-->>System: {i+2}. Step: {step['name']} (wait max {delay}s)\n"
+            code += f"    note right of System: expect: {step_desc}\n"
         return code
+
+    def display_mermaid(self, mermaid_code):
+        """Mermaid 코드를 QWebEngineView에 렌더링합니다."""
+        escaped_code = json.dumps(mermaid_code)
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+            <script>mermaid.initialize({{startOnLoad:true, theme: 'neutral'}});</script>
+        </head>
+        <body>
+            <div class="mermaid">
+            {mermaid_code}
+            </div>
+        </body>
+        </html>
+        """
+        self.mermaid_view.setHtml(html)
+
+    def save_changes(self):
+        # ... (이전과 동일한 저장 로직)
+        for row in range(self.table_widget.rowCount()):
+            checkbox = self.table_widget.cellWidget(row, 0).findChild(QCheckBox)
+            name = self.table_widget.item(row, 1).text()
+            if name in self.scenarios_data: self.scenarios_data[name]['enabled'] = checkbox.isChecked()
+        try:
+            # TODO: 개별 파일에 나누어 저장하는 로직으로 개선 필요
+            file_to_save = os.path.join(SCENARIOS_DIR, "scenarios.json")
+            with open(file_to_save, 'w', encoding='utf-8') as f:
+                json.dump(self.scenarios_data, f, indent=4)
+            QMessageBox.information(self, "Success", "Scenario settings have been saved.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not save scenario settings:\n{e}")
