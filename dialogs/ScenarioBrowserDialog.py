@@ -68,13 +68,15 @@ class ScenarioBrowserDialog(QDialog):
         # --- 오른쪽: 선택된 시나리오 상세 뷰 ---
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
-        right_layout.addWidget(QLabel("<b>Scenario Details & Flow</b>"))
+        right_layout.addWidget(QLabel("<b>Scenario Details & Flow</b>"), stretch=0)
         self.mermaid_view = QWebEngineView() # Mermaid Diagram을 보여줄 웹 뷰
-        right_layout.addWidget(self.mermaid_view)
+        right_layout.addWidget(self.mermaid_view, stretch=1)
 
         splitter.addWidget(left_panel)
         splitter.addWidget(right_panel)
-        splitter.setSizes([300, 600])
+         # ✅ splitter.setSizes([300, 600]) 대신 아래 코드로 교체
+        splitter.setStretchFactor(0, 1) # 왼쪽 패널의 Stretch Factor
+        splitter.setStretchFactor(1, 3) # 오른쪽 패널의 Stretch Factor
         main_layout.addWidget(splitter)
         
         # --- 하단 버튼 ---
@@ -124,20 +126,70 @@ class ScenarioBrowserDialog(QDialog):
             mermaid_code = self.generate_mermaid_code(scenario_name, scenario_details)
             self.display_mermaid(mermaid_code)
 
-    def generate_mermaid_code(self, name, details):
-        """시나리오 데이터로부터 Mermaid 시퀀스 다이어그램 코드를 생성합니다."""
-        code = "sequenceDiagram\n    participant User as Trigger\n    participant System\n\n"
-        
-        trigger = details.get("trigger_event", {})
-        trigger_desc = f"{trigger.get('column')} {trigger.get('contains', trigger.get('equals', ''))}"
-        code += f"    User->>System: 1. Trigger: {trigger_desc}\n"
+    # shinguhan/mylogmaster/myLogMaster-main/dialogs/ScenarioBrowserDialog.py
 
+    def generate_mermaid_code(self, name, details):
+        """모든 고급 문법을 시각화하는 Mermaid 시퀀스 다이어그램 코드를 생성합니다."""
+        code = f"sequenceDiagram\n    participant User as Trigger\n    participant System\n\n"
+        
+        # 1. Trigger 조건 시각화
+        trigger = details.get("trigger_event", {})
+        trigger_desc = self._format_rule_group(trigger)
+        code += f"    User->>System: 1. Trigger If<br/>{trigger_desc}\n"
+
+        # 2. 각 Steps 시각화
         for i, step in enumerate(details.get("steps", [])):
-            step_desc = f"{step['event_match'].get('column')} {step['event_match'].get('contains', step['event_match'].get('equals', ''))}"
-            delay = step.get('max_delay_seconds', 'N/A')
-            code += f"    System-->>System: {i+2}. Step: {step['name']} (wait max {delay}s)\n"
-            code += f"    note right of System: expect: {step_desc}\n"
+            step_name = step.get('name', f'Step {i+2}')
+            
+            # 2a. 순서 없는 그룹(Unordered Group) 처리
+            if 'unordered_group' in step:
+                delay = step.get('max_delay_seconds')
+                delay_text = f" (wait max {delay}s)" if delay else ""
+                code += f"\n    par {step_name}{delay_text}\n"
+                for sub_step in step.get('unordered_group', []):
+                    sub_name = sub_step.get('name')
+                    sub_desc = self._format_rule_group(sub_step.get('event_match', {}))
+                    code += f"        System-->>System: {sub_name}\n"
+                    code += f"        note right of System: expect: {sub_desc}\n"
+                code += "    end\n"
+            
+            # 2b. 일반 단계(Ordered Step) 처리
+            else:
+                optional_text = " (Optional)" if step.get('optional', False) else ""
+                delay = step.get('max_delay_seconds')
+                delay_text = f" (wait max {delay}s)" if delay else " (no time limit)"
+                
+                step_desc = self._format_rule_group(step.get('event_match', {}))
+                
+                code += f"    System-->>System: {i+2}. {step_name}{optional_text}{delay_text}\n"
+                code += f"    note right of System: expect: {step_desc}\n"
+                
         return code
+
+    def _format_rule_group(self, group):
+        """AND/OR 복합 조건을 Mermaid에서 보기 좋은 텍스트로 변환하는 헬퍼 함수"""
+        if not group: return "Any"
+        
+        # 단일 조건 (이전 버전 호환용)
+        if "logic" not in group:
+            col = group.get('column', '?')
+            op = 'contains' if 'contains' in group else 'equals'
+            val = group.get(op, '?')
+            return f"{col} {op} '{val}'"
+
+        # 복합 조건
+        parts = []
+        for rule in group.get("rules", []):
+            if "logic" in rule:
+                parts.append(f"({self._format_rule_group(rule)})") # 중첩 그룹
+            else:
+                col = rule.get('column', '?')
+                op = rule.get('operator', '?')
+                val = rule.get('value', '?')
+                parts.append(f"{col} {op} '{val}'")
+        
+        logic = f" {group.get('logic', 'AND')} "
+        return logic.join(parts)
 
     def display_mermaid(self, mermaid_code):
         """Mermaid 코드를 QWebEngineView에 렌더링합니다."""

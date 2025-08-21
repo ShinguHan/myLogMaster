@@ -33,6 +33,108 @@
                 "max_delay_seconds": 10
             }
         ],
-        "enabled": false
+        "enabled": true
+    },
+    "Smart Factory - Full Process Cycle": {
+        "enabled": true,
+        "description": "\uc720\ub9ac \uae30\ud310(Glass)\uc774 \ub85c\ubd07\uc5d0 \uc758\ud574 Pick Up \ub41c \ud6c4, \ub808\uc2dc\ud53c \ud30c\ub77c\ubbf8\ud130 \uc124\uc815, \ube44\uc804 \uac80\uc0ac, \ucd5c\uc885 Place Down\uae4c\uc9c0\uc758 \uc804\uccb4 \uacf5\uc815 \ud750\ub984\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4. (\ubcf5\ud569 \uc870\uac74 \ucd1d\ub9dd\ub77c)",
+        "key_columns": [
+            "TrackingID"
+        ],
+        "trigger_event": {
+            "logic": "AND",
+            "rules": [
+                {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "PICK_UP_START"
+                },
+                {
+                    "column": "DeviceID",
+                    "operator": "starts with",
+                    "value": "ROBOT"
+                }
+            ]
+        },
+        "steps": [
+            {
+                "name": "Step 1: Set Recipe Parameters (Unordered)",
+                "max_delay_seconds": 15,
+                "unordered_group": [
+                    {
+                        "name": "Set Thickness",
+                        "event_match": {
+                            "logic": "AND",
+                            "rules": [
+                                {
+                                    "column": "MessageName",
+                                    "operator": "equals",
+                                    "value": "RP_SET"
+                                },
+                                {
+                                    "column": "AsciiData",
+                                    "operator": "contains",
+                                    "value": "Thickness"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "Set LotID",
+                        "event_match": {
+                            "logic": "AND",
+                            "rules": [
+                                {
+                                    "column": "MessageName",
+                                    "operator": "equals",
+                                    "value": "RP_SET"
+                                },
+                                {
+                                    "column": "AsciiData",
+                                    "operator": "contains",
+                                    "value": "LotID"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "Step 2: Optional Pre-Inspection Cleaning",
+                "optional": true,
+                "max_delay_seconds": 10,
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "CLEANING_START"
+                }
+            },
+            {
+                "name": "Step 3: Vision Inspection",
+                "event_match": {
+                    "column": "DeviceID",
+                    "operator": "equals",
+                    "value": "VISION_01"
+                }
+            },
+            {
+                "name": "Step 4: Place Down Complete",
+                "event_match": {
+                    "logic": "OR",
+                    "rules": [
+                        {
+                            "column": "MessageName",
+                            "operator": "equals",
+                            "value": "PLACE_DOWN_END"
+                        },
+                        {
+                            "column": "MessageName",
+                            "operator": "equals",
+                            "value": "PROCESS_CANCELED"
+                        }
+                    ]
+                }
+            }
+        ]
     }
 }
