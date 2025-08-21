@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.db_connect_button.clicked.connect(self.start_db_connection)
         layout.addWidget(self.db_connect_button)
         
-                # ✅ 1. 필터 입력창과 자동 스크롤 체크박스를 가로로 배치
+        # ✅ 1. 필터 입력창과 자동 스크롤 체크박스를 가로로 배치
         filter_layout = QHBoxLayout()
         self.filter_input = QLineEdit()
         self.filter_input.setPlaceholderText("Filter logs (case-insensitive)...")
@@ -86,7 +86,10 @@ class MainWindow(QMainWindow):
 
         self.connect_signals()
         self.setup_ui_for_mode()
-                # ✅ 1. 버튼의 현재 상태를 저장할 플래그 추가
+        # ✅ 열려있는 추적 다이얼로그를 저장할 리스트
+        self.open_trace_dialogs = [] 
+
+        # ✅ 1. 버튼의 현재 상태를 저장할 플래그 추가
         self._is_fetching = False
 
         # ✅ 아래 한 줄을 __init__ 메소드의 맨 마지막에 추가해주세요.
@@ -380,8 +383,19 @@ class MainWindow(QMainWindow):
         if trace_data.empty:
             QMessageBox.information(self, "Trace Result", f"No logs found containing ID: '{trace_id}'")
             return
-        self.trace_dialog = TraceDialog(trace_data, trace_id, self)
-        self.trace_dialog.exec()
+        
+        # ✅ 1. 컨트롤러에서 현재 하이라이트 규칙을 가져옵니다.
+        rules = self.controller.highlighting_rules
+        
+        # ✅ 2. TraceDialog에 필요한 모든 정보를 전달합니다.
+        trace_dialog = TraceDialog(trace_data, trace_id, rules, self.controller, self)
+        
+        # ✅ 3. 다이얼로그가 닫힐 때 리스트에서 제거되도록 연결
+        trace_dialog.finished.connect(lambda: self.open_trace_dialogs.remove(trace_dialog))
+        
+        # ✅ 4. 리스트에 추가하고, 독립적인 창으로 띄웁니다.
+        self.open_trace_dialogs.append(trace_dialog)
+        trace_dialog.show()
 
     def _display_log_detail(self, source_index):
         source_model = self.proxy_model.sourceModel()
