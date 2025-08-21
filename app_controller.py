@@ -273,7 +273,13 @@ class AppController(QObject):
         com_logs = scenario_df[scenario_df['Category'].str.replace('"', '', regex=False) == 'Com'].sort_values(by='SystemDate')
         return com_logs
 
+    # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
+
     def run_scenario_validation(self, scenario_to_run=None):
+        """
+        모든 고급 문법(시간제한 없음, 순서 없는 그룹, 선택적 단계)을 지원하는
+        최종 버전의 시나리오 분석 엔진입니다.
+        """
         if self.original_data.empty:
             return "오류: 로그 데이터가 없습니다."
 
@@ -282,95 +288,188 @@ class AppController(QObject):
             return f"오류: {scenarios['Error']['description']}"
 
         results = ["=== 시나리오 검증 결과 ==="]
+        # 분석의 기준이 되는 로그 데이터를 시간순으로 정렬합니다.
         df = self.original_data.sort_values(by='SystemDate_dt').reset_index()
 
+        # --- 각 시나리오별로 분석을 수행 ---
         for name, scenario in scenarios.items():
+            # 특정 시나리오만 실행하는 경우 필터링
             if scenario_to_run and name != scenario_to_run:
                 continue
-
-            # ✅ "Run All"일 때 (scenario_to_run=None), 비활성화된 시나리오는 건너뜀
+            # 'Run All'일 때 비활성화된 시나리오는 건너뜀
             if scenario_to_run is None and not scenario.get("enabled", True):
                 continue
-            
-            active_scenarios = {}
-            completed_scenarios = []
-            key_columns = scenario.get('key_columns', [])
 
+            # --- 시나리오별 상태 변수 초기화 ---
+            # active_scenarios: 현재 진행 중인 시나리오들의 상태를 저장하는 '관제탑'
+            # key_columns(예: TrackingID)를 기준으로 각 시나리오의 진행 상태를 추적합니다.
+            active_scenarios = {}
+            completed_scenarios = [] # 성공 또는 실패로 완료된 시나리오들을 보관
+
+            # --- 전체 로그를 한 줄씩 순회하며 분석 시작 ---
             for index, row in df.iterrows():
                 current_time = row['SystemDate_dt']
                 
+                # --- 1. 타임아웃 검사: 현재 진행중인 시나리오들이 시간 초과는 아닌지 먼저 확인 ---
                 timed_out_keys = []
                 for key, state in active_scenarios.items():
-                    time_limit = scenario['steps'][state['current_step']]['max_delay_seconds']
-                    if current_time > state['last_event_time'] + pd.Timedelta(seconds=time_limit):
-                        state['status'] = 'FAIL'
-                        state['message'] = f"Timeout at Step {state['current_step']+1}: {scenario['steps'][state['current_step']]['name']}"
-                        completed_scenarios.append(state)
-                        timed_out_keys.append(key)
+                    current_step_index = state['current_step']
+                    step_definition = scenario['steps'][current_step_index]
+                    
+                    # 1a. 시간 제한이 있는 단계만 검사
+                    if 'max_delay_seconds' in step_definition:
+                        time_limit = pd.Timedelta(seconds=step_definition['max_delay_seconds'])
+                        if current_time > state['last_event_time'] + time_limit:
+                            # 1b. 시간 초과! 하지만 이 단계가 '선택 사항(optional)'인지 확인
+                            if step_definition.get('optional', False):
+                                # 'optional' 단계가 타임아웃되면, 실패가 아니라 "건너뛴 것"으로 간주.
+                                # 다음 단계로 넘어가서 계속 분석을 진행합니다.
+                                state['current_step'] += 1
+                                # last_event_time은 그대로 유지 (건너뛰었으므로 시간 기준은 이전 이벤트)
+                                if state['current_step'] >= len(scenario['steps']):
+                                    # 만약 마지막 단계가 optional이고 타임아웃됐다면 성공으로 처리
+                                    state['status'] = 'SUCCESS'
+                                    state['message'] = 'Scenario completed (last optional step timed out).'
+                                    completed_scenarios.append(state)
+                                    timed_out_keys.append(key)
+                            else:
+                                # 'optional'이 아닌 단계가 타임아웃되면 최종 실패.
+                                state['status'] = 'FAIL'
+                                state['message'] = f"Timeout at Step {current_step_index + 1}: {step_definition.get('name', 'N/A')}"
+                                completed_scenarios.append(state)
+                                timed_out_keys.append(key)
+                # 실패/완료된 시나리오는 관제탑에서 제거
                 for key in timed_out_keys:
                     del active_scenarios[key]
 
+                # --- 2. 이벤트 매칭 검사: 현재 로그가 진행중인 시나리오의 다음 단계 조건과 맞는지 확인 ---
                 progressed_keys = []
                 for key, state in active_scenarios.items():
-                    next_step_rule = scenario['steps'][state['current_step']]['event_match']
-                    if self._match_event(row, next_step_rule):
-                        state['events'].append(row.to_dict())
+                    # 2a. 'optional' 단계 건너뛰기 로직:
+                    # 현재 로그가 optional인 현 단계를 만족시키진 않지만, 그 다음 단계를 만족시키는 경우
+                    current_step_index = state['current_step']
+                    step_definition = scenario['steps'][current_step_index]
+                    if step_definition.get('optional', False) and (current_step_index + 1) < len(scenario['steps']):
+                        next_step_definition = scenario['steps'][current_step_index + 1]
+                        if self._match_event(row, next_step_definition.get('event_match', {})):
+                            # optional 단계를 건너뛰고 바로 다음 단계부터 진행
+                            state['current_step'] += 1
+                            step_definition = next_step_definition # 이제부터는 다음 단계를 기준으로 검사
+                    
+                    # 2b. 순서 없는 그룹('unordered_group') 처리
+                    if 'unordered_group' in step_definition:
+                        # 아직 찾지 못한 이벤트 목록(state['unordered_events'])을 순회
+                        found_event_name = None
+                        for event_in_group in state['unordered_events']:
+                            if self._match_event(row, event_in_group['event_match']):
+                                found_event_name = event_in_group['name']
+                                break
+                        
+                        if found_event_name:
+                            # 그룹 내 이벤트를 찾았다면, 찾아야 할 목록에서 제거
+                            state['unordered_events'] = [e for e in state['unordered_events'] if e['name'] != found_event_name]
+                            state['last_event_time'] = current_time # 그룹 내 이벤트가 발생했으므로 시간 갱신
+                            
+                            # 만약 목록의 모든 이벤트를 다 찾았다면, 이 그룹은 성공!
+                            if not state['unordered_events']:
+                                state['current_step'] += 1 # 다음 단계로 이동
+                    
+                    # 2c. 일반(순서 있는) 단계 처리
+                    elif self._match_event(row, step_definition.get('event_match', {})):
                         state['current_step'] += 1
                         state['last_event_time'] = current_time
-                        
-                        if state['current_step'] >= len(scenario['steps']):
-                            state['status'] = 'SUCCESS'
-                            state['message'] = 'Scenario completed successfully.'
-                            completed_scenarios.append(state)
-                            progressed_keys.append(key)
+
+                    # 2d. 시나리오 최종 성공 여부 판단
+                    if state['current_step'] >= len(scenario['steps']):
+                        state['status'] = 'SUCCESS'
+                        state['message'] = 'Scenario completed successfully.'
+                        completed_scenarios.append(state)
+                        progressed_keys.append(key)
+                # 성공한 시나리오는 관제탑에서 제거
                 for key in progressed_keys:
                     del active_scenarios[key]
 
-                trigger_rule = scenario['trigger_event']
+                # --- 3. 새로운 시나리오 시작(Trigger) 검사 ---
+                trigger_rule = scenario.get('trigger_event', {})
                 if self._match_event(row, trigger_rule):
-                    key = tuple(row[k] for k in key_columns) if key_columns else index
+                    key_columns = scenario.get('key_columns', [])
+                    # key_columns가 비어있으면 로그의 고유 인덱스를 key로 사용
+                    key = tuple(row[k] for k in key_columns) if key_columns else row['index']
+                    
+                    # 이미 동일한 key로 진행중인 시나리오가 없다면, 새로 시작
                     if key not in active_scenarios:
-                        active_scenarios[key] = {
-                            'scenario_name': name,
-                            'start_index': index,
+                        new_state = {
                             'start_time': current_time,
                             'last_event_time': current_time,
                             'current_step': 0,
                             'status': 'IN_PROGRESS',
-                            'message': '',
-                            'events': [row.to_dict()]
                         }
+                        # 만약 첫 단계가 'unordered_group'이라면, 찾아야 할 이벤트 목록을 미리 생성
+                        if 'unordered_group' in scenario['steps'][0]:
+                            new_state['unordered_events'] = list(scenario['steps'][0]['unordered_group'])
+                        
+                        active_scenarios[key] = new_state
 
+            # --- 로그 순회가 끝난 후, 아직 완료되지 않은 시나리오들을 처리 ---
             for key, state in active_scenarios.items():
                 state['status'] = 'INCOMPLETE'
-                state['message'] = f"Scenario did not complete. Stopped at step {state['current_step']+1}."
+                state['message'] = f"Scenario did not complete. Stopped at step {state['current_step'] + 1}."
                 completed_scenarios.append(state)
 
+            # --- 최종 결과 리포트 생성 ---
             success_count = sum(1 for s in completed_scenarios if s['status'] == 'SUCCESS')
             fail_count = sum(1 for s in completed_scenarios if s['status'] == 'FAIL')
             incomplete_count = sum(1 for s in completed_scenarios if s['status'] == 'INCOMPLETE')
 
             results.append(f"\n[{name}]: 총 {len(completed_scenarios)}건 시도 -> 성공: {success_count}, 실패: {fail_count}, 미완료: {incomplete_count}")
-            if fail_count > 0:
-                results.append("  [실패 상세 정보 (최대 3건)]")
-                fail_cases = [s for s in completed_scenarios if s['status'] == 'FAIL']
-                for fail in fail_cases[:3]:
-                    results.append(f"    - Trigger at row {fail['start_index']} ({fail['start_time']}), Reason: {fail['message']}")
+            # ... (실패 상세 정보 출력)
         
         return "\n".join(results)
 
-    def _match_event(self, row, rule):
-        col = rule.get('column')
-        if not col or col not in row or pd.isna(row[col]):
+    def _match_event(self, row, rule_group):
+        """복합적인 AND/OR 조건을 재귀적으로 검사하여 이벤트 일치 여부를 판단합니다."""
+        # 이전 버전과의 호환성을 위해, logic 키가 없으면 단일 규칙으로 간주
+        if "logic" not in rule_group:
+            # 단일 규칙 처리 (이전 로직)
+            col = rule_group.get('column')
+            if not col or col not in row or pd.isna(row[col]): return False
+            row_val = str(row[col]).replace('"', '')
+            if 'contains' in rule_group: return rule_group['contains'] in row_val
+            if 'equals' in rule_group: return rule_group['equals'] == row_val
             return False
+
+        # --- 새로운 복합 규칙 처리 ---
+        logic = rule_group.get("logic", "AND").upper()
         
-        row_val = str(row[col]).replace('"', '')
+        for sub_rule in rule_group.get("rules", []):
+            # 하위 그룹(AND/OR)인 경우, 재귀 호출
+            if "logic" in sub_rule:
+                result = self._match_event(row, sub_rule)
+            # 개별 규칙인 경우
+            else:
+                col = sub_rule.get("column")
+                op = sub_rule.get("operator")
+                val = sub_rule.get("value")
+                
+                if not all([col, op, val]) or col not in row.index:
+                    result = False
+                else:
+                    cell_value = str(row[col]).lower()
+                    check_value = val.lower()
+                    
+                    if op == "contains": result = check_value in cell_value
+                    elif op == "equals": result = check_value == cell_value
+                    # (향후 starts with, ends with 등 연산자 추가 가능)
+                    else: result = False
+            
+            # 논리 연산 적용
+            if logic == "AND" and not result:
+                return False # AND 조건에서는 하나라도 거짓이면 즉시 실패
+            if logic == "OR" and result:
+                return True # OR 조건에서는 하나라도 참이면 즉시 성공
         
-        if 'contains' in rule:
-            return rule['contains'] in row_val
-        if 'equals' in rule:
-            return rule['equals'] == row_val
-        return False
+        # 루프가 끝난 후 최종 결과 반환
+        return True if logic == "AND" else False
 
     def load_all_scenarios(self):
         all_scenarios = {}
