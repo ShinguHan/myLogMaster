@@ -471,6 +471,8 @@ class AppController(QObject):
         # 루프가 끝난 후 최종 결과 반환
         return True if logic == "AND" else False
 
+    # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
+
     def load_all_scenarios(self):
         all_scenarios = {}
         if not os.path.exists(SCENARIOS_DIR):
@@ -479,12 +481,15 @@ class AppController(QObject):
         for filename in sorted(os.listdir(SCENARIOS_DIR)):
             if filename.endswith(".json"):
                 filepath = os.path.join(SCENARIOS_DIR, filename)
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    try:
-                        scenarios = json.load(f)
-                        all_scenarios.update(scenarios)
-                    except json.JSONDecodeError:
-                        print(f"Warning: Could not parse {filename}")
+                try:
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        scenarios_in_file = json.load(f)
+                        # ✅ 각 시나리오에 원본 파일 이름을 '_source_file' 키로 추가합니다.
+                        for name, details in scenarios_in_file.items():
+                            details['_source_file'] = filename
+                            all_scenarios[name] = details
+                except (json.JSONDecodeError, Exception) as e:
+                    print(f"Warning: Could not parse {filename}: {e}")
         return all_scenarios
     
     def get_scenario_names(self):

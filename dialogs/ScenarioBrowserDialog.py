@@ -210,17 +210,42 @@ class ScenarioBrowserDialog(QDialog):
         """
         self.mermaid_view.setHtml(html)
 
+    # shinguhan/mylogmaster/myLogMaster-main/dialogs/ScenarioBrowserDialog.py
+
     def save_changes(self):
-        # ... (이전과 동일한 저장 로직)
+        """
+        UI의 변경사항을 각 시나리오의 원본 개별 JSON 파일에 나누어 저장합니다.
+        """
+        # 1. UI의 현재 체크박스 상태를 self.scenarios_data에 먼저 업데이트합니다.
         for row in range(self.table_widget.rowCount()):
             checkbox = self.table_widget.cellWidget(row, 0).findChild(QCheckBox)
             name = self.table_widget.item(row, 1).text()
-            if name in self.scenarios_data: self.scenarios_data[name]['enabled'] = checkbox.isChecked()
+            if name in self.scenarios_data:
+                self.scenarios_data[name]['enabled'] = checkbox.isChecked()
+
+        # 2. 시나리오들을 원본 파일 이름별로 다시 그룹화합니다.
+        files_to_update = {}
+        for name, details in self.scenarios_data.items():
+            source_file = details.get('_source_file')
+            if not source_file:
+                print(f"Warning: Source file not found for scenario '{name}'. Skipping.")
+                continue
+
+            if source_file not in files_to_update:
+                files_to_update[source_file] = {}
+            
+            # 파일에 저장할 때는 임시 꼬리표(_source_file)를 제거합니다.
+            clean_details = details.copy()
+            del clean_details['_source_file']
+            files_to_update[source_file][name] = clean_details
+
+        # 3. 그룹화된 데이터를 각 파일에 덮어씁니다.
         try:
-            # TODO: 개별 파일에 나누어 저장하는 로직으로 개선 필요
-            file_to_save = os.path.join(SCENARIOS_DIR, "scenarios.json")
-            with open(file_to_save, 'w', encoding='utf-8') as f:
-                json.dump(self.scenarios_data, f, indent=4)
-            QMessageBox.information(self, "Success", "Scenario settings have been saved.")
+            for filename, content in files_to_update.items():
+                filepath = os.path.join(SCENARIOS_DIR, filename)
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(content, f, indent=4,ensure_ascii=False)
+            
+            QMessageBox.information(self, "Success", "Scenario settings have been saved successfully.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not save scenario settings:\n{e}")

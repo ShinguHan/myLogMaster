@@ -1,13 +1,20 @@
 {
-  "Communication_Establish": {
-    "description": "Host와 설비가 정상적으로 통신을 개시하는 시나리오",
-    "trigger_event": { "column": "ParsedBody", "equals": "S1F13" },
-    "steps": [
-      {
-        "name": "Communication_Acknowledge",
-        "event_match": { "column": "ParsedBody", "equals": "S1F14" },
-        "max_delay_seconds": 5
-      }
-    ]
-  }
+    "Communication_Establish": {
+        "description": "Host와 설비가 정상적으로 통신을 개시하는 시나리오",
+        "trigger_event": {
+            "column": "ParsedBody",
+            "equals": "S1F13"
+        },
+        "steps": [
+            {
+                "name": "Communication_Acknowledge",
+                "event_match": {
+                    "column": "ParsedBody",
+                    "equals": "S1F14"
+                },
+                "max_delay_seconds": 5
+            }
+        ],
+        "enabled": true
+    }
 }

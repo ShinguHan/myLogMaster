@@ -1,13 +1,20 @@
 {
-  "Stocker_Normal_Store": {
-    "description": "스토커에 Carrier를 정상 입고하는 시나리오",
-    "trigger_event": { "column": "MethodID", "contains": "requestCarrierStore" },
-    "steps": [
-      {
-        "name": "Host_Transfer_Request",
-        "event_match": { "column": "ParsedBody", "equals": "S2F49" },
-        "max_delay_seconds": 10
-      }
-    ]
-  }
+    "Stocker_Normal_Store": {
+        "description": "스토커에 Carrier를 정상 입고하는 시나리오",
+        "trigger_event": {
+            "column": "MethodID",
+            "contains": "requestCarrierStore"
+        },
+        "steps": [
+            {
+                "name": "Host_Transfer_Request",
+                "event_match": {
+                    "column": "ParsedBody",
+                    "equals": "S2F49"
+                },
+                "max_delay_seconds": 10
+            }
+        ],
+        "enabled": true
+    }
 }

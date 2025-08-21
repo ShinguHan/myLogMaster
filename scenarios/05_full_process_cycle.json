@@ -1,43 +1,7 @@
 {
-    "Communication_Establish": {
-        "description": "Host\uc640 \uc124\ube44\uac00 \uc815\uc0c1\uc801\uc73c\ub85c \ud1b5\uc2e0\uc744 \uac1c\uc2dc\ud558\ub294 \uc2dc\ub098\ub9ac\uc624",
-        "trigger_event": {
-            "column": "ParsedBody",
-            "equals": "S1F13"
-        },
-        "steps": [
-            {
-                "name": "Communication_Acknowledge",
-                "event_match": {
-                    "column": "ParsedBody",
-                    "equals": "S1F14"
-                },
-                "max_delay_seconds": 5
-            }
-        ],
-        "enabled": true
-    },
-    "Stocker_Normal_Store": {
-        "description": "\uc2a4\ud1a0\ucee4\uc5d0 Carrier\ub97c \uc815\uc0c1 \uc785\uace0\ud558\ub294 \uc2dc\ub098\ub9ac\uc624",
-        "trigger_event": {
-            "column": "MethodID",
-            "contains": "requestCarrierStore"
-        },
-        "steps": [
-            {
-                "name": "Host_Transfer_Request",
-                "event_match": {
-                    "column": "ParsedBody",
-                    "equals": "S2F49"
-                },
-                "max_delay_seconds": 10
-            }
-        ],
-        "enabled": true
-    },
     "Smart Factory - Full Process Cycle": {
         "enabled": true,
-        "description": "\uc720\ub9ac \uae30\ud310(Glass)\uc774 \ub85c\ubd07\uc5d0 \uc758\ud574 Pick Up \ub41c \ud6c4, \ub808\uc2dc\ud53c \ud30c\ub77c\ubbf8\ud130 \uc124\uc815, \ube44\uc804 \uac80\uc0ac, \ucd5c\uc885 Place Down\uae4c\uc9c0\uc758 \uc804\uccb4 \uacf5\uc815 \ud750\ub984\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4. (\ubcf5\ud569 \uc870\uac74 \ucd1d\ub9dd\ub77c)",
+        "description": "유리 기판(Glass)이 로봇에 의해 Pick Up 된 후, 레시피 파라미터 설정, 비전 검사, 최종 Place Down까지의 전체 공정 흐름을 검증합니다. (복합 조건 총망라)",
         "key_columns": [
             "TrackingID"
         ],
