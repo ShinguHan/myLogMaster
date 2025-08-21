@@ -6,6 +6,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QCheckBox
 )
 from PySide6.QtGui import QAction,  QActionGroup
+# ✅ functools 라이브러리에서 partial을 임포트합니다.
+from functools import partial
 
 # ✅ app_controller는 MainWindow의 생성자(__init__)에서 타입 힌팅을 위해 필요합니다.
 from app_controller import AppController
@@ -214,7 +216,9 @@ class MainWindow(QMainWindow):
             if scenario_names and "Error" not in scenario_names:
                 for name in scenario_names:
                     action = QAction(name, self)
-                    action.triggered.connect(lambda checked, s_name=name: self.run_scenario_validation(s_name))
+                    # ✅ lambda 대신 partial을 사용하여, 클릭 시 실행될 함수(run_scenario_validation)와
+                    # ✅ 그 함수에 전달할 인자(name)를 명확하게 지정해줍니다.
+                    action.triggered.connect(partial(self.run_scenario_validation, name))
                     self.scenario_menu.addAction(action)
             else:
                 action = QAction(scenario_names[0] if scenario_names else "No scenarios found", self)
@@ -225,6 +229,8 @@ class MainWindow(QMainWindow):
             action.setEnabled(False)
             self.scenario_menu.addAction(action)
     
+    # shinguhan/mylogmaster/myLogMaster-main/main_window.py
+
     def run_scenario_validation(self, scenario_name=None):
         source_model = self.proxy_model.sourceModel()
         if source_model is None or source_model._data.empty:
@@ -235,25 +241,27 @@ class MainWindow(QMainWindow):
         try:
             result_text = self.controller.run_scenario_validation(scenario_name)
 
-            # ✅ 이미 결과 창이 열려있으면 내용만 업데이트하고 새로 띄우지 않음
+            # ✅ 1. 'self.validation_result_dialog'가 존재하는지 먼저 확인합니다.
             if self.validation_result_dialog and self.validation_result_dialog.isVisible():
-                self.validation_result_dialog.setText(result_text)
-                self.validation_result_dialog.activateWindow()
-                return
-            
-            result_dialog = QDialog(self)
-            result_dialog.setWindowTitle("Scenario Validation Result")
-            layout = QVBoxLayout(result_dialog)
-            text_browser = QTextBrowser()
-            text_browser.setText(result_text)
-            text_browser.setFontFamily("Courier New")
-            layout.addWidget(text_browser)
-            result_dialog.resize(700, 350)
-            # ✅ 이미 결과 창이 열려있으면 내용만 업데이트하고 새로 띄우지 않음
-            if self.validation_result_dialog and self.validation_result_dialog.isVisible():
-                self.validation_result_dialog.setText(result_text)
-                self.validation_result_dialog.activateWindow()
-                return
+                # ✅ 2. 만약 창이 이미 열려있다면, 그 창 안의 text_browser를 찾아 내용만 업데이트합니다.
+                #    (이 방식을 사용하기 위해 text_browser를 self 변수로 저장합니다.)
+                self.validation_text_browser.setText(result_text)
+                self.validation_result_dialog.activateWindow() # 창을 맨 앞으로 가져옴
+            else:
+                # ✅ 3. 창이 없다면, 새로 생성합니다.
+                self.validation_result_dialog = QDialog(self)
+                self.validation_result_dialog.setWindowTitle("Scenario Validation Result")
+                layout = QVBoxLayout(self.validation_result_dialog)
+                
+                # ✅ 4. text_browser를 self 변수에 저장하여 나중에 다시 접근할 수 있게 합니다.
+                self.validation_text_browser = QTextBrowser()
+                self.validation_text_browser.setText(result_text)
+                self.validation_text_browser.setFontFamily("Courier New")
+                
+                layout.addWidget(self.validation_text_browser)
+                self.validation_result_dialog.resize(700, 350)
+                self.validation_result_dialog.show()
+
         finally:
             QApplication.restoreOverrideCursor()
 
