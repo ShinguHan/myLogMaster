@@ -54,7 +54,8 @@ class AppController(QObject):
                 print("Error: Realtime mode requires a connection name.")
                 self.db_manager = None
         else:
-            self.db_manager = None
+            # 파일 모드에서는 'file_mode'라는 고정된 이름으로 DB 생성
+            self.db_manager = DatabaseManager("file_mode")
 
 
     def load_data_from_cache(self):
@@ -280,18 +281,13 @@ class AppController(QObject):
     # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
 
     def run_scenario_validation(self, scenario_to_run=None):
-        """
-        '사건 보고서' 생성 및 DB 저장을 포함한 모든 고급 문법을 지원하는
-        최종 버전의 시나리오 분석 엔진입니다.
-        """
         if self.original_data.empty:
-            return "오류: 로그 데이터가 없습니다."
-
+            return [] # 텍스트 대신 빈 리스트 반환
         scenarios = self.load_all_scenarios()
         if "Error" in scenarios:
-            return f"오류: {scenarios['Error']['description']}"
+            return [{"scenario_name": "Error", "status": "FAIL", "message": scenarios['Error']['description']}]
 
-        results = ["=== 시나리오 검증 결과 ==="]
+        all_completed_scenarios = []
         df = self.original_data.sort_values(by='SystemDate_dt').reset_index()
 
         for name, scenario in scenarios.items():
@@ -316,8 +312,8 @@ class AppController(QObject):
                     
                     if state['current_step'] >= len(state['steps']): continue
                     step_definition = state['steps'][state['current_step']]
-
-                    # --- 타임아웃 검사 ---
+                    
+                    # --- [복원] 타임아웃 검사 ---
                     if 'max_delay_seconds' in step_definition:
                         time_limit = pd.Timedelta(seconds=step_definition['max_delay_seconds'])
                         if current_time > state['last_event_time'] + time_limit:
@@ -330,8 +326,13 @@ class AppController(QObject):
                                 state['status'] = 'FAIL'; state['message'] = f"Timeout at Step {state['current_step'] + 1}: {step_definition.get('name', 'N/A')}"; completed_scenarios.append(state); finished_keys.append(key)
                                 continue
                     
-                    # --- 이벤트 매칭 (Optional, Unordered, Branch 등) ---
+                    # --- [복원] 이벤트 매칭 (Optional, Unordered 등) ---
                     step_matched = False
+                    if step_definition.get('optional', False) and (state['current_step'] + 1) < len(state['steps']):
+                        next_step_definition = state['steps'][state['current_step'] + 1]
+                        if self._match_event(row, next_step_definition.get('event_match', {})):
+                            state['current_step'] += 1; step_definition = next_step_definition
+                    
                     if 'unordered_group' in step_definition:
                         found_event_name = None
                         for event_in_group in state.get('unordered_events', []):
@@ -345,10 +346,15 @@ class AppController(QObject):
                         state['current_step'] += 1
                         step_matched = True
 
+                    # ✅ [수정] 단계 성공 시, 상세 딕셔너리를 저장하도록 변경
                     if step_matched:
                         state['last_event_time'] = current_time
-                        # [사건 보고서] 근거가 된 로그의 원본 인덱스를 보고서에 추가합니다.
-                        state['involved_logs'].append(int(row['index']))
+                        step_name = step_definition.get('name', f"Step {state['current_step']}")
+                        state['involved_logs'].append({
+                            "step_name": step_name,
+                            "log_index": int(row['index']),
+                            "timestamp": row['SystemDate_dt']
+                        })
 
                     if state['current_step'] >= len(state['steps']):
                         state['status'] = 'SUCCESS'; state['message'] = 'Scenario completed successfully.'; completed_scenarios.append(state); finished_keys.append(key)
@@ -372,34 +378,30 @@ class AppController(QObject):
                             'last_event_time': current_time,
                             'current_step': 0,
                             'status': 'IN_PROGRESS',
-                            # [사건 보고서] 보고서의 기본 정보를 생성합니다.
                             'scenario_name': name,
-                            'involved_logs': [int(row['index'])] # Trigger 로그를 첫번째 근거로 기록
+                            # ✅ [수정] involved_logs에 상세 딕셔너리를 저장하도록 변경
+                            'involved_logs': [{"step_name": "Trigger", "log_index": int(row['index']), "timestamp": row['SystemDate_dt']}]
                         }
                         if 'unordered_group' in new_state['steps'][0]:
                             new_state['unordered_events'] = list(new_state['steps'][0]['unordered_group'])
                         active_scenarios[key] = new_state
             
-            # --- 3. 최종 결과 처리 및 DB 저장 ---
+            # --- 3. 최종 결과 처리 ---
             for key, state in active_scenarios.items():
                 state['status'] = 'INCOMPLETE'; state['message'] = f"Scenario stopped at step {state['current_step'] + 1}."; completed_scenarios.append(state)
             
-            # [사건 보고서] 완성된 보고서들을 DB에 저장합니다.
-            if self.db_manager:
-                for report in completed_scenarios:
-                    self.db_manager.add_validation_history(
-                        scenario_name=report['scenario_name'],
-                        status=report['status'],
-                        message=report.get('message', ''),
-                        involved_log_indices=report.get('involved_logs', [])
-                    )
+            all_completed_scenarios.extend(completed_scenarios)
 
-            success = sum(1 for s in completed_scenarios if s['status'] == 'SUCCESS')
-            fail = sum(1 for s in completed_scenarios if s['status'] == 'FAIL')
-            incomplete = sum(1 for s in completed_scenarios if s['status'] == 'INCOMPLETE')
-            results.append(f"\n[{name}]: 총 {len(completed_scenarios)}건 시도 -> 성공: {success}, 실패: {fail}, 미완료: {incomplete}")
+        if self.db_manager:
+            for report in all_completed_scenarios:
+                self.db_manager.add_validation_history(
+                    scenario_name=report['scenario_name'],
+                    status=report['status'],
+                    message=report.get('message', ''),
+                    involved_log_indices=report.get('involved_logs', [])
+                )
         
-        return "\n".join(results)
+        return all_completed_scenarios
 
     # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
 

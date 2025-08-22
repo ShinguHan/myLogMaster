@@ -130,23 +130,32 @@ class DatabaseManager:
             print(f"Error reading from local cache: {e}")
             return pd.DataFrame()
         
-    # ✅ 아래 메소드를 클래스 맨 끝에 추가해주세요.
+    # shinguhan/mylogmaster/myLogMaster-main/database_manager.py
+
     def add_validation_history(self, scenario_name, status, message, involved_log_indices):
         """시나리오 분석 결과를 validation_history 테이블에 저장합니다."""
         try:
+            # ✅ [수정] 저장 전, Timestamp 객체를 표준 문자열(ISO format)로 변환
+            serializable_logs = []
+            for log_event in involved_log_indices:
+                # log_event가 딕셔너리인지 확인
+                if isinstance(log_event, dict) and 'timestamp' in log_event:
+                    # 복사본을 만들어 수정
+                    event_copy = log_event.copy()
+                    event_copy['timestamp'] = event_copy['timestamp'].isoformat()
+                    serializable_logs.append(event_copy)
+                else:
+                    serializable_logs.append(log_event) # 딕셔너리가 아니면 그대로 추가
+
             with self.local_engine.connect() as connection:
-                with connection.begin(): # 트랜잭션 시작
-                    # 로그 인덱스 리스트를 JSON 문자열로 변환하여 저장
-                    indices_json = json.dumps(involved_log_indices)
+                with connection.begin():
+                    indices_json = json.dumps(serializable_logs, ensure_ascii=False)
                     stmt = text("""
                         INSERT INTO validation_history (run_timestamp, scenario_name, status, message, involved_log_indices)
                         VALUES (datetime('now', 'localtime'), :name, :status, :msg, :indices)
                     """)
                     connection.execute(stmt, {
-                        "name": scenario_name,
-                        "status": status,
-                        "msg": message,
-                        "indices": indices_json
+                        "name": scenario_name, "status": status, "msg": message, "indices": indices_json
                     })
             print(f"Saved validation history for '{scenario_name}'.")
         except Exception as e:

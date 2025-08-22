@@ -26,6 +26,8 @@ from dialogs.ScriptEditorDialog import ScriptEditorDialog
 from dialogs.DashboardDialog import DashboardDialog # ✅ 직접 임포트
 # ✅ 새로 만든 HighlightingDialog 임포트
 from dialogs.HighlightingDialog import HighlightingDialog
+from dialogs.ValidationResultDialog import ValidationResultDialog # ✅ 새 다이얼로그 임포트
+
 
 CONFIG_FILE = 'config.json'
 
@@ -239,28 +241,17 @@ class MainWindow(QMainWindow):
         
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
-            result_text = self.controller.run_scenario_validation(scenario_name)
+            # ✅ 이제 텍스트가 아닌, '사건 보고서' 리스트를 받습니다.
+            validation_reports = self.controller.run_scenario_validation(scenario_name)
+            
+            if not validation_reports:
+                QMessageBox.information(self, "Info", "No matching scenarios were attempted.")
+                return
 
-            # ✅ 1. 'self.validation_result_dialog'가 존재하는지 먼저 확인합니다.
-            if self.validation_result_dialog and self.validation_result_dialog.isVisible():
-                # ✅ 2. 만약 창이 이미 열려있다면, 그 창 안의 text_browser를 찾아 내용만 업데이트합니다.
-                #    (이 방식을 사용하기 위해 text_browser를 self 변수로 저장합니다.)
-                self.validation_text_browser.setText(result_text)
-                self.validation_result_dialog.activateWindow() # 창을 맨 앞으로 가져옴
-            else:
-                # ✅ 3. 창이 없다면, 새로 생성합니다.
-                self.validation_result_dialog = QDialog(self)
-                self.validation_result_dialog.setWindowTitle("Scenario Validation Result")
-                layout = QVBoxLayout(self.validation_result_dialog)
-                
-                # ✅ 4. text_browser를 self 변수에 저장하여 나중에 다시 접근할 수 있게 합니다.
-                self.validation_text_browser = QTextBrowser()
-                self.validation_text_browser.setText(result_text)
-                self.validation_text_browser.setFontFamily("Courier New")
-                
-                layout.addWidget(self.validation_text_browser)
-                self.validation_result_dialog.resize(700, 350)
-                self.validation_result_dialog.show()
+            # ✅ [핵심] 리포트 창을 생성할 때, 원본 로그 데이터(source_model._data)를 함께 전달
+            self.validation_result_dialog = ValidationResultDialog(validation_reports, source_model._data, self)
+            self.validation_result_dialog.highlight_log_requested.connect(self.highlight_log_row)
+            self.validation_result_dialog.show()
 
         finally:
             QApplication.restoreOverrideCursor()
@@ -707,3 +698,24 @@ class MainWindow(QMainWindow):
                     QMessageBox.critical(self, "Save Error", message)
             finally:
                 QApplication.restoreOverrideCursor()
+
+    # ✅ 아래 메소드를 클래스에 새로 추가해주세요.
+    def highlight_log_row(self, original_index):
+        """원본 데이터프레임 인덱스에 해당하는 행을 찾아 테이블 뷰에서 선택 및 하이라이트합니다."""
+        source_model = self.proxy_model.sourceModel()
+        if not source_model or source_model._data.empty:
+            return
+            
+        try:
+            # 원본 인덱스를 현재 모델의 행 번호(row)로 변환
+            model_row = source_model._data.index.get_loc(original_index)
+            
+            # 프록시 모델을 통해 현재 화면에 보이는 행인지 확인하고, 화면상의 인덱스로 변환
+            proxy_index = self.proxy_model.mapFromSource(source_model.index(model_row, 0))
+            
+            if proxy_index.isValid():
+                self.tableView.scrollTo(proxy_index, QTableView.ScrollHint.PositionAtCenter)
+                self.tableView.selectRow(proxy_index.row())
+                self.activateWindow() # 메인 창을 앞으로 가져옴
+        except KeyError:
+            print(f"Could not find original index {original_index} in the current model.")
