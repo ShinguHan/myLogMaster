@@ -160,3 +160,34 @@ class DatabaseManager:
             print(f"Saved validation history for '{scenario_name}'.")
         except Exception as e:
             print(f"Error saving validation history: {e}")
+
+    # ✅ 아래 두 메소드를 클래스 맨 끝에 추가해주세요.
+    def get_validation_history_summary(self):
+        """저장된 모든 분석 이력의 요약 목록을 반환합니다."""
+        try:
+            query = "SELECT run_id, run_timestamp, scenario_name, status, message FROM validation_history ORDER BY run_timestamp DESC"
+            with self.local_engine.connect() as connection:
+                return pd.read_sql(query, connection)
+        except Exception as e:
+            print(f"Error fetching validation history summary: {e}")
+            return pd.DataFrame()
+
+    def get_validation_history_detail(self, run_id):
+        """특정 run_id에 해당하는 상세 분석 결과를 반환합니다."""
+        try:
+            query = "SELECT * FROM validation_history WHERE run_id = :id"
+            with self.local_engine.connect() as connection:
+                result = pd.read_sql(query, connection, params={"id": run_id}).iloc[0]
+            
+            # JSON으로 저장된 로그 목록을 다시 파이썬 리스트로 변환
+            report = result.to_dict()
+            report['involved_logs'] = json.loads(report['involved_log_indices'])
+            
+            # 타임스탬프 문자열을 다시 datetime 객체로 변환
+            for log_event in report['involved_logs']:
+                if isinstance(log_event, dict) and 'timestamp' in log_event:
+                    log_event['timestamp'] = pd.to_datetime(log_event['timestamp'])
+            return report
+        except Exception as e:
+            print(f"Error fetching validation history detail for run_id {run_id}: {e}")
+            return None

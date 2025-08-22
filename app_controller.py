@@ -659,3 +659,14 @@ class AppController(QObject):
             if found_value:
                 context_data[context_name] = found_value
         return context_data
+    
+        # ✅ 아래 두 메소드를 클래스 맨 끝에 추가해주세요.
+    def get_history_summary(self):
+        if self.db_manager:
+            return self.db_manager.get_validation_history_summary()
+        return pd.DataFrame()
+
+    def get_history_detail(self, run_id):
+        if self.db_manager:
+            return self.db_manager.get_validation_history_detail(run_id)
+        return None

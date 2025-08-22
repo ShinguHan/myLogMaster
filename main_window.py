@@ -27,6 +27,7 @@ from dialogs.DashboardDialog import DashboardDialog # ✅ 직접 임포트
 # ✅ 새로 만든 HighlightingDialog 임포트
 from dialogs.HighlightingDialog import HighlightingDialog
 from dialogs.ValidationResultDialog import ValidationResultDialog # ✅ 새 다이얼로그 임포트
+from dialogs.HistoryBrowserDialog import HistoryBrowserDialog
 
 
 CONFIG_FILE = 'config.json'
@@ -195,11 +196,17 @@ class MainWindow(QMainWindow):
         script_editor_action.triggered.connect(self.open_script_editor)
         self.tools_menu.addAction(script_editor_action)
 
-                # ✅ 'Tools' 메뉴에 하이라이트 설정 액션 추가
+        # ✅ 'Tools' 메뉴에 하이라이트 설정 액션 추가
         self.tools_menu.addSeparator()
         highlighting_action = QAction("Conditional Highlighting...", self)
         highlighting_action.triggered.connect(self.open_highlighting_dialog)
         self.tools_menu.addAction(highlighting_action)
+
+        # ✅ 'Tools' 메뉴에 History 메뉴 추가
+        self.tools_menu.addSeparator()
+        history_action = QAction("Validation History...", self)
+        history_action.triggered.connect(self.open_history_browser)
+        self.tools_menu.addAction(history_action)
 
         # 'Help' menu remains the same
         help_menu = menu_bar.addMenu("&Help")
@@ -719,3 +726,37 @@ class MainWindow(QMainWindow):
                 self.activateWindow() # 메인 창을 앞으로 가져옴
         except KeyError:
             print(f"Could not find original index {original_index} in the current model.")
+
+    # ✅ 아래 두 메소드를 클래스 맨 끝에 추가해주세요.
+    def open_history_browser(self):
+        """분석 이력 목록 창을 엽니다."""
+        history_summary = self.controller.get_history_summary()
+        if history_summary.empty:
+            QMessageBox.information(self, "Info", "No validation history found.")
+            return
+
+        # history_browser는 여러 개 띄울 필요 없으므로 self 변수에 저장하지 않음
+        history_browser = HistoryBrowserDialog(history_summary, self)
+        history_browser.history_selected.connect(self.show_history_detail)
+        history_browser.exec() # 이 창은 Modal로 띄워 집중하게 함
+
+    def show_history_detail(self, run_id):
+        """선택된 과거 분석 이력의 상세 리포트를 엽니다."""
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            # 컨트롤러를 통해 상세 데이터를 가져옴
+            history_report = self.controller.get_history_detail(run_id)
+            if not history_report:
+                QMessageBox.warning(self, "Error", f"Could not load details for Run ID: {run_id}")
+                return
+            
+            # ValidationResultDialog를 재사용하여 상세 리포트 표시
+            # report는 단일 항목이므로 리스트로 감싸서 전달
+            source_model = self.proxy_model.sourceModel()
+            detail_dialog = ValidationResultDialog([history_report], source_model._data, self)
+            detail_dialog.highlight_log_requested.connect(self.highlight_log_row)
+            # 상세 리포트는 여러 개 띄울 수 있도록 self에 저장하지 않고 직접 show()
+            detail_dialog.show()
+
+        finally:
+            QApplication.restoreOverrideCursor()
