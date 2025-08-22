@@ -130,22 +130,36 @@ class ScenarioBrowserDialog(QDialog):
 
     def generate_mermaid_code(self, name, details):
         """모든 고급 문법을 시각화하는 Mermaid 시퀀스 다이어그램 코드를 생성합니다."""
-        code = f"sequenceDiagram\n    participant User as Trigger\n    participant System\n\n"
+        code = f"sequenceDiagram\n    participant User as Logs\n    participant System as Analyzer\n\n"
         
-        # 1. Trigger 조건 시각화
+        # 1. 주인공(Context) 정의 시각화
+        extractors = details.get("context_extractors")
+        if extractors:
+            extractor_desc = []
+            for key, rules in extractors.items():
+                rule_descs = []
+                for rule in rules:
+                    if "from_column" in rule:
+                        rule_descs.append(f"column '{rule['from_column']}'")
+                    elif "from_regex" in rule:
+                        rule_descs.append(f"regex on '{rule['from_regex']['column']}'")
+                extractor_desc.append(f"<b>{key}</b> from {' or '.join(rule_descs)}")
+            code += f"    note over System: Extracts Context<br/>{'<br/>'.join(extractor_desc)}\n\n"
+
+        # 2. Trigger 조건 시각화
         trigger = details.get("trigger_event", {})
         trigger_desc = self._format_rule_group(trigger)
         code += f"    User->>System: 1. Trigger If<br/>{trigger_desc}\n"
 
-        # 2. 각 Steps 시각화
+        # 3. 각 Steps 시각화
         for i, step in enumerate(details.get("steps", [])):
             step_name = step.get('name', f'Step {i+2}')
             
-            # 2a. 순서 없는 그룹(Unordered Group) 처리
+            # 3a. 순서 없는 그룹(Unordered Group) 처리
             if 'unordered_group' in step:
                 delay = step.get('max_delay_seconds')
-                delay_text = f" (wait max {delay}s)" if delay else ""
-                code += f"\n    par {step_name}{delay_text}\n"
+                delay_text = f" (within {delay}s)" if delay else ""
+                code += f"\n    par {step_name}{delay_text} [All must occur in any order]\n"
                 for sub_step in step.get('unordered_group', []):
                     sub_name = sub_step.get('name')
                     sub_desc = self._format_rule_group(sub_step.get('event_match', {}))
@@ -153,7 +167,7 @@ class ScenarioBrowserDialog(QDialog):
                     code += f"        note right of System: expect: {sub_desc}\n"
                 code += "    end\n"
             
-            # 2b. 일반 단계(Ordered Step) 처리
+            # 3b. 일반 단계(Ordered Step) 처리
             else:
                 optional_text = " (Optional)" if step.get('optional', False) else ""
                 delay = step.get('max_delay_seconds')
@@ -168,7 +182,7 @@ class ScenarioBrowserDialog(QDialog):
 
     def _format_rule_group(self, group):
         """AND/OR 복합 조건을 Mermaid에서 보기 좋은 텍스트로 변환하는 헬퍼 함수"""
-        if not group: return "Any"
+        if not group: return "Any Event"
         
         # 단일 조건 (이전 버전 호환용)
         if "logic" not in group:
@@ -181,7 +195,7 @@ class ScenarioBrowserDialog(QDialog):
         parts = []
         for rule in group.get("rules", []):
             if "logic" in rule:
-                parts.append(f"({self._format_rule_group(rule)})") # 중첩 그룹
+                parts.append(f"({self._format_rule_group(rule)})")
             else:
                 col = rule.get('column', '?')
                 op = rule.get('operator', '?')
@@ -189,7 +203,7 @@ class ScenarioBrowserDialog(QDialog):
                 parts.append(f"{col} {op} '{val}'")
         
         logic = f" {group.get('logic', 'AND')} "
-        return logic.join(parts)
+        return logic.join(parts).replace("<", "&lt;").replace(">", "&gt;")
 
     def display_mermaid(self, mermaid_code):
         """Mermaid 코드를 QWebEngineView에 렌더링합니다."""

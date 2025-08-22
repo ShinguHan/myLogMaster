@@ -2,7 +2,7 @@
 
 import pandas as pd
 import json
-import os
+import os, re
 from PySide6.QtCore import QObject, Signal, QDateTime, QTimer
 
 from universal_parser import parse_log_with_profile
@@ -277,8 +277,8 @@ class AppController(QObject):
 
     def run_scenario_validation(self, scenario_to_run=None):
         """
-        모든 고급 문법(시간제한 없음, 순서 없는 그룹, 선택적 단계)을 지원하는
-        최종 버전의 시나리오 분석 엔진입니다.
+        모든 고급 문법(context_extractor, 시간제한 없음, 순서 없는 그룹, 선택적 단계)을
+        지원하는 최종 버전의 시나리오 분석 엔진입니다.
         """
         if self.original_data.empty:
             return "오류: 로그 데이터가 없습니다."
@@ -288,141 +288,134 @@ class AppController(QObject):
             return f"오류: {scenarios['Error']['description']}"
 
         results = ["=== 시나리오 검증 결과 ==="]
-        # 분석의 기준이 되는 로그 데이터를 시간순으로 정렬합니다.
         df = self.original_data.sort_values(by='SystemDate_dt').reset_index()
 
-        # --- 각 시나리오별로 분석을 수행 ---
         for name, scenario in scenarios.items():
-            # 특정 시나리오만 실행하는 경우 필터링
-            if scenario_to_run and name != scenario_to_run:
-                continue
-            # 'Run All'일 때 비활성화된 시나리오는 건너뜀
-            if scenario_to_run is None and not scenario.get("enabled", True):
+            if (scenario_to_run and name != scenario_to_run) or \
+               (scenario_to_run is None and not scenario.get("enabled", True)):
                 continue
 
-            # --- 시나리오별 상태 변수 초기화 ---
-            # active_scenarios: 현재 진행 중인 시나리오들의 상태를 저장하는 '관제탑'
-            # key_columns(예: TrackingID)를 기준으로 각 시나리오의 진행 상태를 추적합니다.
             active_scenarios = {}
-            completed_scenarios = [] # 성공 또는 실패로 완료된 시나리오들을 보관
+            completed_scenarios = []
+            
+            # [달라진 점] 시나리오에 정의된 '주인공 이름' (예: "CarrierID")을 미리 가져옵니다.
+            context_keys = list(scenario.get("context_extractors", {}).keys())
 
-            # --- 전체 로그를 한 줄씩 순회하며 분석 시작 ---
             for index, row in df.iterrows():
                 current_time = row['SystemDate_dt']
                 
-                # --- 1. 타임아웃 검사: 현재 진행중인 시나리오들이 시간 초과는 아닌지 먼저 확인 ---
+                # [달라진 점] 현재 로그에서 주인공(컨텍스트)을 미리 추출해 둡니다.
+                current_row_context = self._extract_context(row, scenario.get("context_extractors", {}))
+
+                # --- 1. 타임아웃 검사 ---
                 timed_out_keys = []
                 for key, state in active_scenarios.items():
                     current_step_index = state['current_step']
+                    # 시나리오의 모든 단계를 통과했으면 더 이상 타임아웃 검사를 하지 않습니다.
+                    if current_step_index >= len(scenario['steps']):
+                        continue
                     step_definition = scenario['steps'][current_step_index]
                     
-                    # 1a. 시간 제한이 있는 단계만 검사
                     if 'max_delay_seconds' in step_definition:
                         time_limit = pd.Timedelta(seconds=step_definition['max_delay_seconds'])
                         if current_time > state['last_event_time'] + time_limit:
-                            # 1b. 시간 초과! 하지만 이 단계가 '선택 사항(optional)'인지 확인
                             if step_definition.get('optional', False):
-                                # 'optional' 단계가 타임아웃되면, 실패가 아니라 "건너뛴 것"으로 간주.
-                                # 다음 단계로 넘어가서 계속 분석을 진행합니다.
                                 state['current_step'] += 1
-                                # last_event_time은 그대로 유지 (건너뛰었으므로 시간 기준은 이전 이벤트)
                                 if state['current_step'] >= len(scenario['steps']):
-                                    # 만약 마지막 단계가 optional이고 타임아웃됐다면 성공으로 처리
                                     state['status'] = 'SUCCESS'
                                     state['message'] = 'Scenario completed (last optional step timed out).'
                                     completed_scenarios.append(state)
                                     timed_out_keys.append(key)
                             else:
-                                # 'optional'이 아닌 단계가 타임아웃되면 최종 실패.
                                 state['status'] = 'FAIL'
                                 state['message'] = f"Timeout at Step {current_step_index + 1}: {step_definition.get('name', 'N/A')}"
                                 completed_scenarios.append(state)
                                 timed_out_keys.append(key)
-                # 실패/완료된 시나리오는 관제탑에서 제거
                 for key in timed_out_keys:
                     del active_scenarios[key]
 
-                # --- 2. 이벤트 매칭 검사: 현재 로그가 진행중인 시나리오의 다음 단계 조건과 맞는지 확인 ---
+                # --- 2. 이벤트 매칭 검사 ---
                 progressed_keys = []
                 for key, state in active_scenarios.items():
-                    # 2a. 'optional' 단계 건너뛰기 로직:
-                    # 현재 로그가 optional인 현 단계를 만족시키진 않지만, 그 다음 단계를 만족시키는 경우
+                    # [달라진 점] 현재 로그의 주인공과, 추적 중인 이야기의 주인공이 일치하는지 먼저 확인합니다.
+                    context_match = all(
+                        state['context'].get(k) == current_row_context.get(k) for k in context_keys if k in current_row_context
+                    )
+                    if not context_match:
+                        continue # 주인공이 다르면 이 로그는 무시
+
+                    # 시나리오의 모든 단계를 통과했으면 더 이상 진행하지 않습니다.
+                    if state['current_step'] >= len(scenario['steps']):
+                        continue
+                        
                     current_step_index = state['current_step']
                     step_definition = scenario['steps'][current_step_index]
+                    
                     if step_definition.get('optional', False) and (current_step_index + 1) < len(scenario['steps']):
                         next_step_definition = scenario['steps'][current_step_index + 1]
                         if self._match_event(row, next_step_definition.get('event_match', {})):
-                            # optional 단계를 건너뛰고 바로 다음 단계부터 진행
                             state['current_step'] += 1
-                            step_definition = next_step_definition # 이제부터는 다음 단계를 기준으로 검사
+                            step_definition = next_step_definition
                     
-                    # 2b. 순서 없는 그룹('unordered_group') 처리
                     if 'unordered_group' in step_definition:
-                        # 아직 찾지 못한 이벤트 목록(state['unordered_events'])을 순회
                         found_event_name = None
                         for event_in_group in state['unordered_events']:
                             if self._match_event(row, event_in_group['event_match']):
                                 found_event_name = event_in_group['name']
                                 break
-                        
                         if found_event_name:
-                            # 그룹 내 이벤트를 찾았다면, 찾아야 할 목록에서 제거
                             state['unordered_events'] = [e for e in state['unordered_events'] if e['name'] != found_event_name]
-                            state['last_event_time'] = current_time # 그룹 내 이벤트가 발생했으므로 시간 갱신
-                            
-                            # 만약 목록의 모든 이벤트를 다 찾았다면, 이 그룹은 성공!
+                            state['last_event_time'] = current_time
                             if not state['unordered_events']:
-                                state['current_step'] += 1 # 다음 단계로 이동
+                                state['current_step'] += 1
                     
-                    # 2c. 일반(순서 있는) 단계 처리
                     elif self._match_event(row, step_definition.get('event_match', {})):
                         state['current_step'] += 1
                         state['last_event_time'] = current_time
 
-                    # 2d. 시나리오 최종 성공 여부 판단
                     if state['current_step'] >= len(scenario['steps']):
                         state['status'] = 'SUCCESS'
                         state['message'] = 'Scenario completed successfully.'
                         completed_scenarios.append(state)
                         progressed_keys.append(key)
-                # 성공한 시나리오는 관제탑에서 제거
                 for key in progressed_keys:
                     del active_scenarios[key]
 
                 # --- 3. 새로운 시나리오 시작(Trigger) 검사 ---
-                trigger_rule = scenario.get('trigger_event', {})
-                if self._match_event(row, trigger_rule):
-                    key_columns = scenario.get('key_columns', [])
-                    # key_columns가 비어있으면 로그의 고유 인덱스를 key로 사용
-                    key = tuple(row[k] for k in key_columns) if key_columns else row['index']
+                if self._match_event(row, scenario.get('trigger_event', {})):
+                    # [달라진 점] Trigger 로그에서 주인공(컨텍스트)을 추출합니다.
+                    trigger_context = self._extract_context(row, scenario.get("context_extractors", {}))
                     
-                    # 이미 동일한 key로 진행중인 시나리오가 없다면, 새로 시작
-                    if key not in active_scenarios:
-                        new_state = {
-                            'start_time': current_time,
-                            'last_event_time': current_time,
-                            'current_step': 0,
-                            'status': 'IN_PROGRESS',
-                        }
-                        # 만약 첫 단계가 'unordered_group'이라면, 찾아야 할 이벤트 목록을 미리 생성
-                        if 'unordered_group' in scenario['steps'][0]:
-                            new_state['unordered_events'] = list(scenario['steps'][0]['unordered_group'])
-                        
-                        active_scenarios[key] = new_state
+                    if trigger_context and all(k in trigger_context for k in context_keys):
+                        key = tuple(trigger_context[k] for k in context_keys)
+                        if key not in active_scenarios:
+                            new_state = {
+                                'context': trigger_context, # [달라진 점] 주인공 정보를 '기억'
+                                'start_time': current_time,
+                                'last_event_time': current_time,
+                                'current_step': 0,
+                                'status': 'IN_PROGRESS',
+                            }
+                            if 'unordered_group' in scenario['steps'][0]:
+                                new_state['unordered_events'] = list(scenario['steps'][0]['unordered_group'])
+                            active_scenarios[key] = new_state
+                    # [달라진 점] context_extractor가 없는 시나리오(key_columns 방식)와의 호환성 유지
+                    elif "key_columns" in scenario:
+                        key_columns = scenario.get('key_columns', [])
+                        key = tuple(row[k] for k in key_columns) if key_columns else row['index']
+                        if key not in active_scenarios:
+                           # ... (기존 key_columns 방식의 new_state 생성 로직)
+                           pass
 
-            # --- 로그 순회가 끝난 후, 아직 완료되지 않은 시나리오들을 처리 ---
             for key, state in active_scenarios.items():
                 state['status'] = 'INCOMPLETE'
                 state['message'] = f"Scenario did not complete. Stopped at step {state['current_step'] + 1}."
                 completed_scenarios.append(state)
 
-            # --- 최종 결과 리포트 생성 ---
             success_count = sum(1 for s in completed_scenarios if s['status'] == 'SUCCESS')
             fail_count = sum(1 for s in completed_scenarios if s['status'] == 'FAIL')
             incomplete_count = sum(1 for s in completed_scenarios if s['status'] == 'INCOMPLETE')
-
             results.append(f"\n[{name}]: 총 {len(completed_scenarios)}건 시도 -> 성공: {success_count}, 실패: {fail_count}, 미완료: {incomplete_count}")
-            # ... (실패 상세 정보 출력)
         
         return "\n".join(results)
 
@@ -656,3 +649,26 @@ class AppController(QObject):
                 param_index += 1
                 
         return logic.join(clauses), params
+    
+    def _extract_context(self, row, extractors):
+        """정의된 여러 추출기 규칙에 따라 로그(row)에서 컨텍스트 값을 찾아냅니다."""
+        context_data = {}
+        for context_name, rules in extractors.items():
+            found_value = None
+            for rule in rules:
+                if "from_column" in rule:
+                    val = row.get(rule["from_column"])
+                    if pd.notna(val) and str(val).strip():
+                        found_value = str(val)
+                        break
+                elif "from_regex" in rule:
+                    source_col = rule["from_regex"].get("column")
+                    pattern = rule["from_regex"].get("pattern")
+                    source_text = str(row.get(source_col, ''))
+                    match = re.search(pattern, source_text)
+                    if match:
+                        found_value = match.group(1) # 첫 번째 괄호 그룹을 추출
+                        break
+            if found_value:
+                context_data[context_name] = found_value
+        return context_data

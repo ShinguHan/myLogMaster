@@ -1,0 +1,35 @@
+{
+    "Dynamic Carrier ID Tracking": {
+        "enabled": true,
+        "description": "Carrier ID가 TrackingID 또는 AsciiData에서 발견되더라도, 동일한 Carrier의 작업 예약(schedule)과 실행(doWork)이 연속적으로 일어나는지 검사합니다.",
+        "context_extractors": {
+            "CarrierID": [
+                {
+                    "from_column": "TrackingID"
+                },
+                {
+                    "from_regex": {
+                        "column": "AsciiData",
+                        "pattern": "carrier: (\\w+)"
+                    }
+                }
+            ]
+        },
+        "trigger_event": {
+            "column": "MethodID",
+            "operator": "equals",
+            "value": "BaseDispatcher.scheduleWorkItem"
+        },
+        "steps": [
+            {
+                "name": "Execute Work for Same Carrier",
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.doWork"
+                },
+                "max_delay_seconds": 5
+            }
+        ]
+    }
+}
