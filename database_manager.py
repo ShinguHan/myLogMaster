@@ -129,3 +129,25 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error reading from local cache: {e}")
             return pd.DataFrame()
+        
+    # ✅ 아래 메소드를 클래스 맨 끝에 추가해주세요.
+    def add_validation_history(self, scenario_name, status, message, involved_log_indices):
+        """시나리오 분석 결과를 validation_history 테이블에 저장합니다."""
+        try:
+            with self.local_engine.connect() as connection:
+                with connection.begin(): # 트랜잭션 시작
+                    # 로그 인덱스 리스트를 JSON 문자열로 변환하여 저장
+                    indices_json = json.dumps(involved_log_indices)
+                    stmt = text("""
+                        INSERT INTO validation_history (run_timestamp, scenario_name, status, message, involved_log_indices)
+                        VALUES (datetime('now', 'localtime'), :name, :status, :msg, :indices)
+                    """)
+                    connection.execute(stmt, {
+                        "name": scenario_name,
+                        "status": status,
+                        "msg": message,
+                        "indices": indices_json
+                    })
+            print(f"Saved validation history for '{scenario_name}'.")
+        except Exception as e:
+            print(f"Error saving validation history: {e}")

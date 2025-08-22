@@ -275,10 +275,14 @@ class AppController(QObject):
 
     # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
 
+    # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
+
+    # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
+
     def run_scenario_validation(self, scenario_to_run=None):
         """
-        모든 고급 문법(context_extractor, 시간제한 없음, 순서 없는 그룹, 선택적 단계)을
-        지원하는 최종 버전의 시나리오 분석 엔진입니다.
+        '사건 보고서' 생성 및 DB 저장을 포함한 모든 고급 문법을 지원하는
+        최종 버전의 시나리오 분석 엔진입니다.
         """
         if self.original_data.empty:
             return "오류: 로그 데이터가 없습니다."
@@ -297,174 +301,155 @@ class AppController(QObject):
 
             active_scenarios = {}
             completed_scenarios = []
-            
-            # [달라진 점] 시나리오에 정의된 '주인공 이름' (예: "CarrierID")을 미리 가져옵니다.
             context_keys = list(scenario.get("context_extractors", {}).keys())
 
             for index, row in df.iterrows():
                 current_time = row['SystemDate_dt']
-                
-                # [달라진 점] 현재 로그에서 주인공(컨텍스트)을 미리 추출해 둡니다.
                 current_row_context = self._extract_context(row, scenario.get("context_extractors", {}))
 
-                # --- 1. 타임아웃 검사 ---
-                timed_out_keys = []
+                # --- 1. 타임아웃 및 이벤트 매칭 검사 ---
+                finished_keys = []
                 for key, state in active_scenarios.items():
-                    current_step_index = state['current_step']
-                    # 시나리오의 모든 단계를 통과했으면 더 이상 타임아웃 검사를 하지 않습니다.
-                    if current_step_index >= len(scenario['steps']):
-                        continue
-                    step_definition = scenario['steps'][current_step_index]
+                    if context_keys and any(k in current_row_context for k in context_keys):
+                        context_match = all(state['context'].get(k) == current_row_context.get(k) for k in context_keys if k in current_row_context)
+                        if not context_match: continue
                     
+                    if state['current_step'] >= len(state['steps']): continue
+                    step_definition = state['steps'][state['current_step']]
+
+                    # --- 타임아웃 검사 ---
                     if 'max_delay_seconds' in step_definition:
                         time_limit = pd.Timedelta(seconds=step_definition['max_delay_seconds'])
                         if current_time > state['last_event_time'] + time_limit:
                             if step_definition.get('optional', False):
                                 state['current_step'] += 1
-                                if state['current_step'] >= len(scenario['steps']):
-                                    state['status'] = 'SUCCESS'
-                                    state['message'] = 'Scenario completed (last optional step timed out).'
-                                    completed_scenarios.append(state)
-                                    timed_out_keys.append(key)
+                                if state['current_step'] >= len(state['steps']):
+                                    state['status'] = 'SUCCESS'; state['message'] = 'Completed (last optional step timed out).'; completed_scenarios.append(state); finished_keys.append(key)
+                                continue
                             else:
-                                state['status'] = 'FAIL'
-                                state['message'] = f"Timeout at Step {current_step_index + 1}: {step_definition.get('name', 'N/A')}"
-                                completed_scenarios.append(state)
-                                timed_out_keys.append(key)
-                for key in timed_out_keys:
-                    del active_scenarios[key]
-
-                # --- 2. 이벤트 매칭 검사 ---
-                progressed_keys = []
-                for key, state in active_scenarios.items():
-                    # [달라진 점] 현재 로그의 주인공과, 추적 중인 이야기의 주인공이 일치하는지 먼저 확인합니다.
-                    context_match = all(
-                        state['context'].get(k) == current_row_context.get(k) for k in context_keys if k in current_row_context
-                    )
-                    if not context_match:
-                        continue # 주인공이 다르면 이 로그는 무시
-
-                    # 시나리오의 모든 단계를 통과했으면 더 이상 진행하지 않습니다.
-                    if state['current_step'] >= len(scenario['steps']):
-                        continue
-                        
-                    current_step_index = state['current_step']
-                    step_definition = scenario['steps'][current_step_index]
+                                state['status'] = 'FAIL'; state['message'] = f"Timeout at Step {state['current_step'] + 1}: {step_definition.get('name', 'N/A')}"; completed_scenarios.append(state); finished_keys.append(key)
+                                continue
                     
-                    if step_definition.get('optional', False) and (current_step_index + 1) < len(scenario['steps']):
-                        next_step_definition = scenario['steps'][current_step_index + 1]
-                        if self._match_event(row, next_step_definition.get('event_match', {})):
-                            state['current_step'] += 1
-                            step_definition = next_step_definition
-                    
+                    # --- 이벤트 매칭 (Optional, Unordered, Branch 등) ---
+                    step_matched = False
                     if 'unordered_group' in step_definition:
                         found_event_name = None
-                        for event_in_group in state['unordered_events']:
+                        for event_in_group in state.get('unordered_events', []):
                             if self._match_event(row, event_in_group['event_match']):
-                                found_event_name = event_in_group['name']
-                                break
+                                found_event_name = event_in_group['name']; break
                         if found_event_name:
                             state['unordered_events'] = [e for e in state['unordered_events'] if e['name'] != found_event_name]
-                            state['last_event_time'] = current_time
-                            if not state['unordered_events']:
-                                state['current_step'] += 1
-                    
+                            if not state['unordered_events']: state['current_step'] += 1
+                            step_matched = True
                     elif self._match_event(row, step_definition.get('event_match', {})):
                         state['current_step'] += 1
+                        step_matched = True
+
+                    if step_matched:
                         state['last_event_time'] = current_time
+                        # [사건 보고서] 근거가 된 로그의 원본 인덱스를 보고서에 추가합니다.
+                        state['involved_logs'].append(int(row['index']))
 
-                    if state['current_step'] >= len(scenario['steps']):
-                        state['status'] = 'SUCCESS'
-                        state['message'] = 'Scenario completed successfully.'
-                        completed_scenarios.append(state)
-                        progressed_keys.append(key)
-                for key in progressed_keys:
-                    del active_scenarios[key]
+                    if state['current_step'] >= len(state['steps']):
+                        state['status'] = 'SUCCESS'; state['message'] = 'Scenario completed successfully.'; completed_scenarios.append(state); finished_keys.append(key)
 
-                # --- 3. 새로운 시나리오 시작(Trigger) 검사 ---
+                for key in finished_keys: del active_scenarios[key]
+
+                # --- 2. 새로운 시나리오 시작(Trigger) 검사 ---
                 if self._match_event(row, scenario.get('trigger_event', {})):
-                    # [달라진 점] Trigger 로그에서 주인공(컨텍스트)을 추출합니다.
                     trigger_context = self._extract_context(row, scenario.get("context_extractors", {}))
-                    
-                    if trigger_context and all(k in trigger_context for k in context_keys):
-                        key = tuple(trigger_context[k] for k in context_keys)
-                        if key not in active_scenarios:
-                            new_state = {
-                                'context': trigger_context, # [달라진 점] 주인공 정보를 '기억'
-                                'start_time': current_time,
-                                'last_event_time': current_time,
-                                'current_step': 0,
-                                'status': 'IN_PROGRESS',
-                            }
-                            if 'unordered_group' in scenario['steps'][0]:
-                                new_state['unordered_events'] = list(scenario['steps'][0]['unordered_group'])
-                            active_scenarios[key] = new_state
-                    # [달라진 점] context_extractor가 없는 시나리오(key_columns 방식)와의 호환성 유지
-                    elif "key_columns" in scenario:
-                        key_columns = scenario.get('key_columns', [])
-                        key = tuple(row[k] for k in key_columns) if key_columns else row['index']
-                        if key not in active_scenarios:
-                           # ... (기존 key_columns 방식의 new_state 생성 로직)
-                           pass
+                    key = None
+                    if context_keys:
+                        if trigger_context and all(k in trigger_context for k in context_keys):
+                            key = tuple(trigger_context[k] for k in context_keys)
+                    else: key = row['index']
 
+                    if key is not None and key not in active_scenarios:
+                        new_state = {
+                            'context': trigger_context,
+                            'steps': list(scenario['steps']),
+                            'start_time': current_time,
+                            'last_event_time': current_time,
+                            'current_step': 0,
+                            'status': 'IN_PROGRESS',
+                            # [사건 보고서] 보고서의 기본 정보를 생성합니다.
+                            'scenario_name': name,
+                            'involved_logs': [int(row['index'])] # Trigger 로그를 첫번째 근거로 기록
+                        }
+                        if 'unordered_group' in new_state['steps'][0]:
+                            new_state['unordered_events'] = list(new_state['steps'][0]['unordered_group'])
+                        active_scenarios[key] = new_state
+            
+            # --- 3. 최종 결과 처리 및 DB 저장 ---
             for key, state in active_scenarios.items():
-                state['status'] = 'INCOMPLETE'
-                state['message'] = f"Scenario did not complete. Stopped at step {state['current_step'] + 1}."
-                completed_scenarios.append(state)
+                state['status'] = 'INCOMPLETE'; state['message'] = f"Scenario stopped at step {state['current_step'] + 1}."; completed_scenarios.append(state)
+            
+            # [사건 보고서] 완성된 보고서들을 DB에 저장합니다.
+            if self.db_manager:
+                for report in completed_scenarios:
+                    self.db_manager.add_validation_history(
+                        scenario_name=report['scenario_name'],
+                        status=report['status'],
+                        message=report.get('message', ''),
+                        involved_log_indices=report.get('involved_logs', [])
+                    )
 
-            success_count = sum(1 for s in completed_scenarios if s['status'] == 'SUCCESS')
-            fail_count = sum(1 for s in completed_scenarios if s['status'] == 'FAIL')
-            incomplete_count = sum(1 for s in completed_scenarios if s['status'] == 'INCOMPLETE')
-            results.append(f"\n[{name}]: 총 {len(completed_scenarios)}건 시도 -> 성공: {success_count}, 실패: {fail_count}, 미완료: {incomplete_count}")
+            success = sum(1 for s in completed_scenarios if s['status'] == 'SUCCESS')
+            fail = sum(1 for s in completed_scenarios if s['status'] == 'FAIL')
+            incomplete = sum(1 for s in completed_scenarios if s['status'] == 'INCOMPLETE')
+            results.append(f"\n[{name}]: 총 {len(completed_scenarios)}건 시도 -> 성공: {success}, 실패: {fail}, 미완료: {incomplete}")
         
         return "\n".join(results)
 
+    # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
+
     def _match_event(self, row, rule_group):
-        """복합적인 AND/OR 조건을 재귀적으로 검사하여 이벤트 일치 여부를 판단합니다."""
-        # 이전 버전과의 호환성을 위해, logic 키가 없으면 단일 규칙으로 간주
-        if "logic" not in rule_group:
-            # 단일 규칙 처리 (이전 로직)
-            col = rule_group.get('column')
-            if not col or col not in row or pd.isna(row[col]): return False
-            row_val = str(row[col]).replace('"', '')
-            if 'contains' in rule_group: return rule_group['contains'] in row_val
-            if 'equals' in rule_group: return rule_group['equals'] == row_val
+        """
+        단순 조건과 복합 조건(AND/OR) 모두를 재귀적으로 처리하는
+        새롭고 안정적인 이벤트 매칭 함수입니다.
+        """
+        if not rule_group:
             return False
 
-        # --- 새로운 복합 규칙 처리 ---
-        logic = rule_group.get("logic", "AND").upper()
-        
-        for sub_rule in rule_group.get("rules", []):
-            # 하위 그룹(AND/OR)인 경우, 재귀 호출
-            if "logic" in sub_rule:
-                result = self._match_event(row, sub_rule)
-            # 개별 규칙인 경우
-            else:
-                col = sub_rule.get("column")
-                op = sub_rule.get("operator")
-                val = sub_rule.get("value")
-                
-                if not all([col, op, val]) or col not in row.index:
-                    result = False
-                else:
-                    cell_value = str(row[col]).lower()
-                    check_value = val.lower()
-                    
-                    if op == "contains": result = check_value in cell_value
-                    elif op == "equals": result = check_value == cell_value
-                    # (향후 starts with, ends with 등 연산자 추가 가능)
-                    else: result = False
+        # 'logic' 키가 있으면 복합 조건 그룹으로 처리
+        if "logic" in rule_group:
+            logic = rule_group.get("logic", "AND").upper()
             
-            # 논리 연산 적용
-            if logic == "AND" and not result:
-                return False # AND 조건에서는 하나라도 거짓이면 즉시 실패
-            if logic == "OR" and result:
-                return True # OR 조건에서는 하나라도 참이면 즉시 성공
+            # 모든 하위 규칙(rules)에 대해 재귀적으로 _match_event 호출
+            for sub_rule in rule_group.get("rules", []):
+                result = self._match_event(row, sub_rule)
+                
+                if logic == "AND" and not result:
+                    return False # AND 그룹에서는 하나라도 False이면 즉시 False
+                if logic == "OR" and result:
+                    return True # OR 그룹에서는 하나라도 True이면 즉시 True
+            
+            # 루프가 끝났을 때의 최종 결과
+            return True if logic == "AND" else False
         
-        # 루프가 끝난 후 최종 결과 반환
-        return True if logic == "AND" else False
-
-    # shinguhan/mylogmaster/myLogMaster-main/app_controller.py
+        # 'logic' 키가 없으면 단일 조건으로 처리
+        else:
+            col = rule_group.get("column")
+            op = rule_group.get("operator")
+            val = rule_group.get("value")
+            
+            # 규칙의 필수 요소가 없거나, 로그에 해당 컬럼이 없으면 False
+            if not all([col, op, val is not None]) or col not in row.index or pd.isna(row[col]):
+                return False
+                
+            cell_value = str(row[col]).lower()
+            check_value = str(val).lower()
+            
+            if op == "contains":
+                return check_value in cell_value
+            elif op == "equals":
+                return check_value == cell_value
+            elif op == "starts with":
+                return cell_value.startswith(check_value)
+            elif op == "ends with":
+                return cell_value.endswith(check_value)
+            else:
+                return False
 
     def load_all_scenarios(self):
         all_scenarios = {}

@@ -128,35 +128,63 @@ class ScenarioBrowserDialog(QDialog):
 
     # shinguhan/mylogmaster/myLogMaster-main/dialogs/ScenarioBrowserDialog.py
 
+    # shinguhan/mylogmaster/myLogMaster-main/dialogs/ScenarioBrowserDialog.py
+
     def generate_mermaid_code(self, name, details):
-        """모든 고급 문법을 시각화하는 Mermaid 시퀀스 다이어그램 코드를 생성합니다."""
+        """'branch_on_event'를 포함한 모든 고급 문법을 시각화하는 Mermaid 코드를 생성합니다."""
         code = f"sequenceDiagram\n    participant User as Logs\n    participant System as Analyzer\n\n"
         
-        # 1. 주인공(Context) 정의 시각화
         extractors = details.get("context_extractors")
         if extractors:
+            # ... (Context 시각화 로직은 이전과 동일)
             extractor_desc = []
             for key, rules in extractors.items():
                 rule_descs = []
                 for rule in rules:
-                    if "from_column" in rule:
-                        rule_descs.append(f"column '{rule['from_column']}'")
-                    elif "from_regex" in rule:
-                        rule_descs.append(f"regex on '{rule['from_regex']['column']}'")
+                    if "from_column" in rule: rule_descs.append(f"column '{rule['from_column']}'")
+                    elif "from_regex" in rule: rule_descs.append(f"regex on '{rule['from_regex']['column']}'")
                 extractor_desc.append(f"<b>{key}</b> from {' or '.join(rule_descs)}")
             code += f"    note over System: Extracts Context<br/>{'<br/>'.join(extractor_desc)}\n\n"
 
-        # 2. Trigger 조건 시각화
         trigger = details.get("trigger_event", {})
         trigger_desc = self._format_rule_group(trigger)
         code += f"    User->>System: 1. Trigger If<br/>{trigger_desc}\n"
 
-        # 3. 각 Steps 시각화
         for i, step in enumerate(details.get("steps", [])):
             step_name = step.get('name', f'Step {i+2}')
             
-            # 3a. 순서 없는 그룹(Unordered Group) 처리
-            if 'unordered_group' in step:
+            # ✅ --- 분기(Branch) 이벤트 시각화 로직 ---
+            if 'branch_on_event' in step:
+                branch_rule = step['branch_on_event']
+                delay = branch_rule.get('max_delay_seconds')
+                delay_text = f" (wait max {delay}s)" if delay else ""
+
+                branch_event_desc = self._format_rule_group(branch_rule.get('event_match', {}))
+                code += f"    System-->>System: {i+2}. {step_name}{delay_text}\n"
+                code += f"    note right of System: find log where: {branch_event_desc}\n"
+                
+                # Mermaid의 alt/else 구문을 사용하여 분기 표현
+                is_first_case = True
+                for case_value, case_steps in branch_rule.get('cases', {}).items():
+                    keyword = "alt" if is_first_case else "else"
+                    code += f"    {keyword} Case: '{case_value}'\n"
+                    # 분기된 하위 steps를 다시 시각화
+                    for j, sub_step in enumerate(case_steps):
+                        sub_step_name = sub_step.get('name', f'Sub-Step {j+1}')
+                        sub_optional = " (Optional)" if sub_step.get('optional', False) else ""
+                        sub_delay = sub_step.get('max_delay_seconds')
+                        sub_delay_text = f" (wait max {sub_delay}s)" if sub_delay else " (no time limit)"
+                        sub_desc = self._format_rule_group(sub_step.get('event_match', {}))
+                        
+                        code += f"        System-->>System: {sub_step_name}{sub_optional}{sub_delay_text}\n"
+                        code += f"        note right of System: expect: {sub_desc}\n"
+                    is_first_case = False
+                if not is_first_case: # case가 하나라도 있었으면 end 추가
+                    code += "    end\n"
+
+            # --- 순서 없는 그룹(Unordered Group) 처리 ---
+            elif 'unordered_group' in step:
+                # ... (이전과 동일한 로직)
                 delay = step.get('max_delay_seconds')
                 delay_text = f" (within {delay}s)" if delay else ""
                 code += f"\n    par {step_name}{delay_text} [All must occur in any order]\n"
@@ -166,15 +194,14 @@ class ScenarioBrowserDialog(QDialog):
                     code += f"        System-->>System: {sub_name}\n"
                     code += f"        note right of System: expect: {sub_desc}\n"
                 code += "    end\n"
-            
-            # 3b. 일반 단계(Ordered Step) 처리
+
+            # --- 일반 단계(Ordered Step) 처리 ---
             else:
+                # ... (이전과 동일한 로직)
                 optional_text = " (Optional)" if step.get('optional', False) else ""
                 delay = step.get('max_delay_seconds')
                 delay_text = f" (wait max {delay}s)" if delay else " (no time limit)"
-                
                 step_desc = self._format_rule_group(step.get('event_match', {}))
-                
                 code += f"    System-->>System: {i+2}. {step_name}{optional_text}{delay_text}\n"
                 code += f"    note right of System: expect: {step_desc}\n"
                 

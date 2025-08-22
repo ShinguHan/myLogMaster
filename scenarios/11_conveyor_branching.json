@@ -1,0 +1,42 @@
+{
+  "Conveyor Dynamic Work Branching": {
+    "enabled": true,
+    "description": "컨베이어에 작업 할당 후, 상위 명령(LOAD/RETURN/PASS)에 따라 3가지 다른 경로로 분기되는 복잡한 흐름을 검증합니다.",
+    "context_extractors": {
+      "DeviceID": [ { "from_column": "DeviceID" } ],
+      "CarrierID": [ { "from_column": "TrackingID" } ]
+    },
+    "trigger_event": {
+      "column": "MethodID",
+      "operator": "equals",
+      "value": "BaseDispatcher.scheduleWorkItem"
+    },
+    "steps": [
+      {
+        "name": "Branch on Host Command",
+        "branch_on_event": {
+          "event_match": { "column": "MessageName", "operator": "equals", "value": "HOST_COMMAND" },
+          "extract_value_from": [
+            { "from_regex": { "column": "AsciiData", "pattern": "command: (\\w+)" } }
+          ],
+          "max_delay_seconds": 10,
+          "cases": {
+            "LOAD": [
+              { "name": "L1. Location Scan", "event_match": { "column": "MessageName", "operator": "equals", "value": "LOCATION_SCAN" } },
+              { "name": "L2. Carrier Clamp", "event_match": { "column": "MessageName", "operator": "equals", "value": "CARRIER_CLAMP_ON" } },
+              { "name": "L3. Docking", "event_match": { "column": "MessageName", "operator": "equals", "value": "DOCKING_COMPLETE" } },
+              { "name": "L4. Load Complete", "event_match": { "column": "MessageName", "operator": "equals", "value": "LOAD_COMPLETE" } }
+            ],
+            "RETURN": [
+              { "name": "R1. Set Return Path", "event_match": { "column": "AsciiData", "operator": "contains", "value": "setReturnPath" } },
+              { "name": "R2. Carrier Departed", "event_match": { "column": "MessageName", "operator": "equals", "value": "CARRIER_DEPARTED" } }
+            ],
+            "PASS": [
+              { "name": "P1. Carrier Passing", "event_match": { "column": "MessageName", "operator": "equals", "value": "CARRIER_PASSING" } }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}
