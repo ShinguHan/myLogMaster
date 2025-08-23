@@ -1,6 +1,6 @@
 {
     "Smart Factory - Full Process Cycle": {
-        "enabled": true,
+        "enabled": false,
         "description": "유리 기판(Glass)이 로봇에 의해 Pick Up 된 후, 레시피 파라미터 설정, 비전 검사, 최종 Place Down까지의 전체 공정 흐름을 검증합니다. (복합 조건 총망라)",
         "key_columns": [
             "TrackingID"

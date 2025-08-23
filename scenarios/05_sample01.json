@@ -1,6 +1,6 @@
 {
     "Sample 01": {
-        "enabled": true,
+        "enabled": false,
         "description": "테스트 해보자 나의 생각이 맞는지",
         "key_columns": [
             "TrackingID"

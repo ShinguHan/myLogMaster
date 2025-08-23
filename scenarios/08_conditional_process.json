@@ -1,73 +1,77 @@
 {
-  "Conditional Carrier Loading": {
-    "enabled": true,
-    "description": "적재 요청 후, 상위 시스템의 명령('LOAD' 또는 'PASS')에 따라 각각 다른 하위 시나리오를 검증합니다.",
-    "context_extractors": {
-      "CarrierID": [
-        { "from_column": "TrackingID" }
-      ],
-      "DeviceID": [
-        { "from_column": "DeviceID" }
-      ]
-    },
-    "trigger_event": {
-      "column": "MessageName",
-      "operator": "equals",
-      "value": "LOAD_REQUESTED"
-    },
-    "steps": [
-      {
-        "name": "Branch based on Host Command",
-        "branch_on_event": {
-          "event_match": {
+    "Conditional Carrier Loading": {
+        "enabled": false,
+        "description": "적재 요청 후, 상위 시스템의 명령('LOAD' 또는 'PASS')에 따라 각각 다른 하위 시나리오를 검증합니다.",
+        "context_extractors": {
+            "CarrierID": [
+                {
+                    "from_column": "TrackingID"
+                }
+            ],
+            "DeviceID": [
+                {
+                    "from_column": "DeviceID"
+                }
+            ]
+        },
+        "trigger_event": {
             "column": "MessageName",
             "operator": "equals",
-            "value": "HOST_COMMAND"
-          },
-          "extract_value_from": [
+            "value": "LOAD_REQUESTED"
+        },
+        "steps": [
             {
-              "from_regex": {
-                "column": "AsciiData",
-                "pattern": "command: (\\w+)"
-              }
+                "name": "Branch based on Host Command",
+                "branch_on_event": {
+                    "event_match": {
+                        "column": "MessageName",
+                        "operator": "equals",
+                        "value": "HOST_COMMAND"
+                    },
+                    "extract_value_from": [
+                        {
+                            "from_regex": {
+                                "column": "AsciiData",
+                                "pattern": "command: (\\w+)"
+                            }
+                        }
+                    ],
+                    "cases": {
+                        "LOAD": [
+                            {
+                                "name": "Perform Load",
+                                "event_match": {
+                                    "column": "MessageName",
+                                    "operator": "equals",
+                                    "value": "PERFORM_LOAD"
+                                },
+                                "max_delay_seconds": 10
+                            },
+                            {
+                                "name": "Load Complete",
+                                "event_match": {
+                                    "column": "MessageName",
+                                    "operator": "equals",
+                                    "value": "LOAD_COMPLETE"
+                                },
+                                "max_delay_seconds": 30
+                            }
+                        ],
+                        "PASS": [
+                            {
+                                "name": "Perform Pass",
+                                "event_match": {
+                                    "column": "MessageName",
+                                    "operator": "equals",
+                                    "value": "PERFORM_PASS"
+                                },
+                                "max_delay_seconds": 10
+                            }
+                        ]
+                    },
+                    "max_delay_seconds": 5
+                }
             }
-          ],
-          "cases": {
-            "LOAD": [
-              {
-                "name": "Perform Load",
-                "event_match": {
-                  "column": "MessageName",
-                  "operator": "equals",
-                  "value": "PERFORM_LOAD"
-                },
-                "max_delay_seconds": 10
-              },
-              {
-                "name": "Load Complete",
-                "event_match": {
-                  "column": "MessageName",
-                  "operator": "equals",
-                  "value": "LOAD_COMPLETE"
-                },
-                "max_delay_seconds": 30
-              }
-            ],
-            "PASS": [
-              {
-                "name": "Perform Pass",
-                "event_match": {
-                  "column": "MessageName",
-                  "operator": "equals",
-                  "value": "PERFORM_PASS"
-                },
-                "max_delay_seconds": 10
-              }
-            ]
-          },
-          "max_delay_seconds": 5
-        }
-      }
-    ]
-  }
+        ]
+    }
 }

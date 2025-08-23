@@ -1,34 +1,137 @@
 {
-  "Event Broker Health Check": {
-    "enabled": true,
-    "description": "이벤트 브로커가 이벤트를 수신, 발행하고, 최종적으로 작업이 스케줄링되기까지의 10단계 내부 흐름을 검증합니다.",
-    "context_extractors": {
-      "EventSubject": [
-        { "from_regex": { "column": "AsciiData", "pattern": "Subject\\((.*?)\\)" } }
-      ]
-    },
-    "trigger_event": {
-      "logic": "AND",
-      "rules": [
-        { "column": "MethodID", "operator": "equals", "value": "EventPublisher.publishEvent" },
-        { "column": "AsciiData", "operator": "contains", "value": "Received MCSEvent" }
-      ]
-    },
-    "steps": [
-      { "name": "1. Publish Event", "max_delay_seconds": 1, "event_match": {"column": "AsciiData", "operator": "contains", "value": "Publishing event"} },
-      { "name": "2. Send to Subscribers", "max_delay_seconds": 1, "event_match": {"column": "AsciiData", "operator": "contains", "value": "Sending MCSEvent"} },
-      { "name": "3. Subscriber Acknowledged", "optional": true, "max_delay_seconds": 1, "event_match": {"column": "MessageName", "operator": "equals", "value": "SUB_ACK"} },
-      { "name": "4. Event Queued", "max_delay_seconds": 1, "event_match": {"column": "MessageName", "operator": "equals", "value": "EVENT_QUEUED"} },
-      { "name": "5. Event Processing Start", "max_delay_seconds": 1, "event_match": {"column": "MessageName", "operator": "equals", "value": "EVENT_PROC_START"} },
-      { "name": "6. DB Transaction (Unordered)", "unordered_group": [
-          { "name": "DB Begin", "event_match": { "column": "AsciiData", "operator": "contains", "value": "DB_TX_BEGIN" } },
-          { "name": "DB Commit", "event_match": { "column": "AsciiData", "operator": "contains", "value": "DB_TX_COMMIT" } }
-        ], "max_delay_seconds": 2
-      },
-      { "name": "7. Event Processing End", "max_delay_seconds": 1, "event_match": {"column": "MessageName", "operator": "equals", "value": "EVENT_PROC_END"} },
-      { "name": "8. Dispatcher Invoked", "max_delay_seconds": 1, "event_match": {"column": "MethodID", "operator": "contains", "value": "Dispatcher"} },
-      { "name": "9. Work Item Scheduled", "max_delay_seconds": 1, "event_match": {"column": "MethodID", "operator": "equals", "value": "BaseDispatcher.scheduleWorkItem"} },
-      { "name": "10. Schedule Succeeded", "max_delay_seconds": 1, "event_match": {"column": "AsciiData", "operator": "contains", "value": "Schedule succeeded"} }
-    ]
-  }
+    "Event Broker Health Check": {
+        "enabled": false,
+        "description": "이벤트 브로커가 이벤트를 수신, 발행하고, 최종적으로 작업이 스케줄링되기까지의 10단계 내부 흐름을 검증합니다.",
+        "context_extractors": {
+            "EventSubject": [
+                {
+                    "from_regex": {
+                        "column": "AsciiData",
+                        "pattern": "Subject\\((.*?)\\)"
+                    }
+                }
+            ]
+        },
+        "trigger_event": {
+            "logic": "AND",
+            "rules": [
+                {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "EventPublisher.publishEvent"
+                },
+                {
+                    "column": "AsciiData",
+                    "operator": "contains",
+                    "value": "Received MCSEvent"
+                }
+            ]
+        },
+        "steps": [
+            {
+                "name": "1. Publish Event",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "AsciiData",
+                    "operator": "contains",
+                    "value": "Publishing event"
+                }
+            },
+            {
+                "name": "2. Send to Subscribers",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "AsciiData",
+                    "operator": "contains",
+                    "value": "Sending MCSEvent"
+                }
+            },
+            {
+                "name": "3. Subscriber Acknowledged",
+                "optional": true,
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "SUB_ACK"
+                }
+            },
+            {
+                "name": "4. Event Queued",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "EVENT_QUEUED"
+                }
+            },
+            {
+                "name": "5. Event Processing Start",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "EVENT_PROC_START"
+                }
+            },
+            {
+                "name": "6. DB Transaction (Unordered)",
+                "unordered_group": [
+                    {
+                        "name": "DB Begin",
+                        "event_match": {
+                            "column": "AsciiData",
+                            "operator": "contains",
+                            "value": "DB_TX_BEGIN"
+                        }
+                    },
+                    {
+                        "name": "DB Commit",
+                        "event_match": {
+                            "column": "AsciiData",
+                            "operator": "contains",
+                            "value": "DB_TX_COMMIT"
+                        }
+                    }
+                ],
+                "max_delay_seconds": 2
+            },
+            {
+                "name": "7. Event Processing End",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "EVENT_PROC_END"
+                }
+            },
+            {
+                "name": "8. Dispatcher Invoked",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "contains",
+                    "value": "Dispatcher"
+                }
+            },
+            {
+                "name": "9. Work Item Scheduled",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.scheduleWorkItem"
+                }
+            },
+            {
+                "name": "10. Schedule Succeeded",
+                "max_delay_seconds": 1,
+                "event_match": {
+                    "column": "AsciiData",
+                    "operator": "contains",
+                    "value": "Schedule succeeded"
+                }
+            }
+        ]
+    }
 }

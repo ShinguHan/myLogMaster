@@ -1,0 +1,164 @@
+{
+    "System Event Processing Cycle": {
+        "enabled": true,
+        "description": "외부 이벤트가 수신된 후, 내부 브로커를 거쳐 작업이 스케줄링되기까지의 10단계 상세 흐름을 검증합니다.",
+        "context_extractors": {
+            "EventSubject": [
+                {
+                    "from_regex": {
+                        "column": "AsciiData",
+                        "pattern": "Subject\\((.*?)\\)"
+                    }
+                }
+            ]
+        },
+        "trigger_event": {
+            "logic": "AND",
+            "rules": [
+                {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "EventPublisher.publishEvent"
+                },
+                {
+                    "column": "AsciiData",
+                    "operator": "contains",
+                    "value": "Received MCSEvent"
+                }
+            ]
+        },
+        "steps": [
+            {
+                "name": "1. Event Published by Broker",
+                "event_match": {
+                    "logic": "AND",
+                    "rules": [
+                        {
+                            "column": "MethodID",
+                            "operator": "equals",
+                            "value": "Carrier.publishCarrierEvent"
+                        },
+                        {
+                            "column": "AsciiData",
+                            "operator": "contains",
+                            "value": "Publishing event"
+                        }
+                    ]
+                },
+                "max_delay_seconds": 1
+            },
+            {
+                "name": "2. Event Sent to Subscribers",
+                "event_match": {
+                    "logic": "AND",
+                    "rules": [
+                        {
+                            "column": "MethodID",
+                            "operator": "equals",
+                            "value": "EventPublisher.publishEvent"
+                        },
+                        {
+                            "column": "AsciiData",
+                            "operator": "contains",
+                            "value": "Sending MCSEvent"
+                        }
+                    ]
+                },
+                "max_delay_seconds": 1
+            },
+            {
+                "name": "3. Work Item Scheduled by Dispatcher",
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.scheduleWorkItem"
+                },
+                "max_delay_seconds": 1
+            },
+            {
+                "name": "4. Schedule Succeeded",
+                "event_match": {
+                    "logic": "AND",
+                    "rules": [
+                        {
+                            "column": "MethodID",
+                            "operator": "equals",
+                            "value": "BaseDispatcher.scheduleWorkItem"
+                        },
+                        {
+                            "column": "MessageName",
+                            "operator": "equals",
+                            "value": "scheduled"
+                        }
+                    ]
+                },
+                "max_delay_seconds": 1
+            },
+            {
+                "name": "5. Work Execution Started",
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.doWork"
+                },
+                "max_delay_seconds": 1
+            },
+            {
+                "name": "6. Work Found in Queue",
+                "event_match": {
+                    "logic": "AND",
+                    "rules": [
+                        {
+                            "column": "MethodID",
+                            "operator": "equals",
+                            "value": "BaseDispatcher.doWork"
+                        },
+                        {
+                            "column": "AsciiData",
+                            "operator": "contains",
+                            "value": "Found work"
+                        }
+                    ]
+                },
+                "max_delay_seconds": 1
+            },
+            {
+                "name": "7. Optional - Movement Scheduled",
+                "optional": true,
+                "event_match": {
+                    "column": "AsciiData",
+                    "operator": "contains",
+                    "value": "carrier.movement.scheduled"
+                },
+                "max_delay_seconds": 1
+            },
+            {
+                "name": "8. Carrier Arrived at Location",
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "CARRIER_ARRIVED"
+                },
+                "max_delay_seconds": 20
+            },
+            {
+                "name": "9. Carrier Departed from Location",
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "CARRIER_DEPARTED"
+                },
+                "max_delay_seconds": 10
+            },
+            {
+                "name": "10. Work Item Completed",
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.completeWork"
+                },
+                "max_delay_seconds": 5
+            }
+        ]
+    }
+}

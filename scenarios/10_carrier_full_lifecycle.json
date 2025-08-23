@@ -1,73 +1,129 @@
 {
-  "Carrier Full Lifecycle Journey": {
-    "enabled": true,
-    "description": "하나의 Carrier가 생성된 후, 예약, 이동, 작업 수행, 완료까지의 전체 흐름을 10단계 이상으로 상세히 검증합니다.",
-    "context_extractors": {
-      "CarrierID": [
-        { "from_column": "TrackingID" },
-        { "from_regex": { "column": "AsciiData", "pattern": "carrier: (\\w+)" } }
-      ]
-    },
-    "trigger_event": {
-      "column": "AsciiData",
-      "operator": "contains",
-      "value": "carrier.movement.scheduled"
-    },
-    "steps": [
-      {
-        "name": "1. Work Item Scheduled",
-        "event_match": { "column": "MethodID", "operator": "equals", "value": "BaseDispatcher.scheduleWorkItem" },
-        "max_delay_seconds": 5
-      },
-      {
-        "name": "2. Work Execution Started",
-        "event_match": { "column": "MethodID", "operator": "equals", "value": "BaseDispatcher.doWork" },
-        "max_delay_seconds": 5
-      },
-      {
-        "name": "3. Arrived at Source Conveyor",
-        "event_match": { "column": "MessageName", "operator": "equals", "value": "CARRIER_ARRIVED" },
-        "max_delay_seconds": 20
-      },
-      {
-        "name": "4. Departed from Source Conveyor",
-        "event_match": { "column": "MessageName", "operator": "equals", "value": "CARRIER_DEPARTED" },
-        "max_delay_seconds": 10
-      },
-      {
-        "name": "5. Optional - Pass through intermediate CV",
-        "optional": true,
-        "event_match": { "column": "MessageName", "operator": "equals", "value": "CARRIER_PASSING" },
-        "max_delay_seconds": 15
-      },
-      {
-        "name": "6. Arrived at Destination Conveyor",
-        "event_match": { "column": "MessageName", "operator": "equals", "value": "CARRIER_ARRIVED" },
-        "max_delay_seconds": 20
-      },
-      {
-        "name": "7. Unload Scan Started",
-        "event_match": { "column": "MessageName", "operator": "equals", "value": "UNLOAD_SCAN_START" },
-        "max_delay_seconds": 5
-      },
-      {
-        "name": "8. Unload Scan Parameters (Unordered)",
-        "unordered_group": [
-          { "name": "Scan Recipe", "event_match": { "column": "AsciiData", "operator": "contains", "value": "recipe" } },
-          { "name": "Scan Speed", "event_match": { "column": "AsciiData", "operator": "contains", "value": "speed" } }
-        ],
-        "max_delay_seconds": 5
-      },
-      {
-        "name": "9. Unload Scan Completed",
-        "event_match": { "column": "MessageName", "operator": "equals", "value": "UNLOAD_SCAN_COMPLETE" },
-        "max_delay_seconds": 15
-      },
-      {
-        "name": "10. Work Item Completed",
-        "event_match": { "column": "MethodID", "operator": "equals", "value": "BaseDispatcher.completeWork" },
-        "max_delay_seconds": 5
-      }
-    ]
-  }
+    "Carrier Full Lifecycle Journey": {
+        "enabled": false,
+        "description": "하나의 Carrier가 생성된 후, 예약, 이동, 작업 수행, 완료까지의 전체 흐름을 10단계 이상으로 상세히 검증합니다.",
+        "context_extractors": {
+            "CarrierID": [
+                {
+                    "from_column": "TrackingID"
+                },
+                {
+                    "from_regex": {
+                        "column": "AsciiData",
+                        "pattern": "carrier: (\\w+)"
+                    }
+                }
+            ]
+        },
+        "trigger_event": {
+            "column": "AsciiData",
+            "operator": "contains",
+            "value": "carrier.movement.scheduled"
+        },
+        "steps": [
+            {
+                "name": "1. Work Item Scheduled",
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.scheduleWorkItem"
+                },
+                "max_delay_seconds": 5
+            },
+            {
+                "name": "2. Work Execution Started",
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.doWork"
+                },
+                "max_delay_seconds": 5
+            },
+            {
+                "name": "3. Arrived at Source Conveyor",
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "CARRIER_ARRIVED"
+                }
+            },
+            {
+                "name": "4. Departed from Source Conveyor",
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "CARRIER_DEPARTED"
+                },
+                "max_delay_seconds": 10
+            },
+            {
+                "name": "5. Optional - Pass through intermediate CV",
+                "optional": true,
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "CARRIER_PASSING"
+                },
+                "max_delay_seconds": 15
+            },
+            {
+                "name": "6. Arrived at Destination Conveyor",
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "CARRIER_ARRIVED"
+                },
+                "max_delay_seconds": 20
+            },
+            {
+                "name": "7. Unload Scan Started",
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "UNLOAD_SCAN_START"
+                },
+                "max_delay_seconds": 5
+            },
+            {
+                "name": "8. Unload Scan Parameters (Unordered)",
+                "unordered_group": [
+                    {
+                        "name": "Scan Recipe",
+                        "event_match": {
+                            "column": "AsciiData",
+                            "operator": "contains",
+                            "value": "recipe"
+                        }
+                    },
+                    {
+                        "name": "Scan Speed",
+                        "event_match": {
+                            "column": "AsciiData",
+                            "operator": "contains",
+                            "value": "speed"
+                        }
+                    }
+                ],
+                "max_delay_seconds": 5
+            },
+            {
+                "name": "9. Unload Scan Completed",
+                "event_match": {
+                    "column": "MessageName",
+                    "operator": "equals",
+                    "value": "UNLOAD_SCAN_COMPLETE"
+                },
+                "max_delay_seconds": 15
+            },
+            {
+                "name": "10. Work Item Completed",
+                "event_match": {
+                    "column": "MethodID",
+                    "operator": "equals",
+                    "value": "BaseDispatcher.completeWork"
+                },
+                "max_delay_seconds": 5
+            }
+        ]
+    }
 }
