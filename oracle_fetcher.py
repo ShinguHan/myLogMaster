@@ -1,118 +1,145 @@
-# shinguhan/mylogmaster/myLogMaster-main/oracle_fetcher.py
-
 import pandas as pd
 import oracledb
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QThread, Signal, QDateTime, Qt
 import time
 from datetime import datetime, timedelta
 
 class OracleFetcherThread(QThread):
-    # 진행 상황(텍스트), 데이터 Chunk(데이터프레임), 완료, 에러를 알리는 신호
     progress = Signal(str)
     data_fetched = Signal(pd.DataFrame)
     finished = Signal()
     error = Signal(str)
 
-    def __init__(self, connection_info, where_clause, params, chunk_size=1000, use_mock_data=False): # ✅ use_mock_data 기본값을 False로 변경
-        super().__init__()
+    def __init__(self, connection_info, query_conditions, chunk_size=1000, parent=None):
+        super().__init__(parent)
         self.conn_info = connection_info
-        # ✅ WHERE 절과 파라미터를 직접 받도록 수정
-        self.where_clause = where_clause
-        self.params = params
+        self.conditions = query_conditions # '작전명령서'를 통째로 받음
         self.chunk_size = chunk_size
         self._is_running = True
-        self.use_mock_data = use_mock_data
 
     def run(self):
-        """백그라운드에서 실행될 메인 로직"""
-        if self.use_mock_data:
-            self._run_mock_data_generator()
-            return
+        """'작전명령서'를 해석하여 적절한 임무를 수행하는 메인 로직"""
+        try:
+            source = self.conditions.get('data_source')
+            mode = self.conditions.get('analysis_mode')
 
+            if source == 'mock':
+                if mode == 'time_range':
+                    self._run_mock_time_range()
+                else: # real_time
+                    self._run_mock_real_time()
+            else: # real
+                if mode == 'time_range':
+                    self._run_db_time_range()
+                else: # real_time
+                    self._run_db_real_time()
+        except Exception as e:
+            self.error.emit(f"An unexpected error occurred in fetcher: {e}")
+            # 에러 발생 시에도 finished 신호를 보내 UI가 멈추지 않도록 함
+            self.finished.emit()
+
+    # --- 4가지 임무 수행을 위한 개별 메소드들 ---
+
+    def _run_db_time_range(self):
+        """임무 1: Real Database에서 특정 시간 범위의 데이터를 조회합니다."""
         conn = None
         try:
+            # 컨트롤러의 _build_where_clause 메소드를 호출하여 SQL 조건 생성
+            where_clause, params = self.parent()._build_where_clause(self.conditions)
+            
             self.progress.emit("Connecting to Oracle DB...")
-            # ⭐️ 실제 DB 연결 (환경에 맞게 수정)
-            conn = oracledb.connect(
-                user=self.conn_info.get('user'),
-                password=self.conn_info.get('password'),
-                dsn=self.conn_info.get('dsn')
-            )
+            conn = oracledb.connect(**self.conn_info)
             self.progress.emit("Connection successful. Fetching data...")
 
-            # ✅ 1. 동적으로 생성된 WHERE 절을 사용하여 최종 쿼리 생성
             base_query = "SELECT * FROM V_LOG_MESSAGE"
-            final_query = f"{base_query} WHERE {self.where_clause}"
+            final_query = f"{base_query} WHERE {where_clause}" if where_clause else base_query
             
-            self.progress.emit(f"Executing query: {final_query}")
-
             with conn.cursor() as cursor:
-                # ✅ 2. 파라미터를 바인딩하여 SQL Injection을 방지하며 안전하게 실행
-                cursor.execute(final_query, self.params)
-                
+                cursor.execute(final_query, params)
                 while self._is_running:
                     rows = cursor.fetchmany(self.chunk_size)
-                    if not rows:
-                        break
-                    
+                    if not rows: break
                     columns = [desc[0] for desc in cursor.description]
                     df_chunk = pd.DataFrame(rows, columns=columns)
                     self.data_fetched.emit(df_chunk)
-
-            if self._is_running:
-                self.progress.emit("Data fetching complete.")
-            else:
-                self.progress.emit("Fetching cancelled by user.")
-
+            if self._is_running: self.progress.emit("Data fetching complete.")
         except oracledb.DatabaseError as e:
-            # Oracle 에러를 더 사용자 친화적으로 표시
-            error_obj, = e.args
-            self.error.emit(f"DB Error: {error_obj.message}")
-        except Exception as e:
-            self.error.emit(f"An unexpected error occurred: {e}")
+            error_obj, = e.args; self.error.emit(f"DB Error: {error_obj.message}")
         finally:
-            if conn:
-                conn.close()
+            if conn: conn.close()
             self.finished.emit()
 
-    def _run_mock_data_generator(self):
-        """테스트용 가상 데이터를 생성하는 로직"""
+    def _run_db_real_time(self):
+        """임무 2: Real Database에서 새로운 로그를 실시간으로 추적합니다."""
+        conn = None
         try:
-            self.progress.emit("Generating mock data for testing...")
+            self.progress.emit("Connecting to Oracle DB for real-time tailing...")
+            conn = oracledb.connect(**self.conn_info)
+            self.progress.emit("Connection successful. Tailing logs...")
             
-            mock_data = []
-            start_time = datetime(2025, 8, 18, 14, 0, 0)
-            for i in range(500000): # 총 5000개 데이터 생성
-                # ✅ 루프 시작 시점에 항상 실행 여부 체크
-                if not self._is_running:
-                    self.progress.emit("Fetching cancelled by user.")
-                    break
+            cursor = conn.cursor()
+            cursor.execute("SELECT MAX(NumericalTimeStamp) FROM V_LOG_MESSAGE")
+            last_timestamp, = cursor.fetchone()
+            if last_timestamp is None: last_timestamp = 0
 
-                row_time = start_time + timedelta(milliseconds=i * 10)
-                mock_data.append({
-                    "Category": "Info", "LevelID": 7, "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
-                    "DeviceID": "SUPERCAR01", "MethodID": "mock.data", "TrackingID": f"MOCK_{i}",
-                    "AsciiData": f"Mock log entry number {i}", "SourceID": "MockSource",
-                    "MessageName": "mock", "LogParserClassName": None, "BinaryData": None,
-                    "NumericalTimeStamp": int(row_time.timestamp() * 1000), "ParsedBody": None,
-                    "ParsedBodyObject": None, "ParsedType": "Log", "SystemDate_dt": row_time
-                })
-                
-                if len(mock_data) >= self.chunk_size:
-                    df_chunk = pd.DataFrame(mock_data)
+            while self._is_running:
+                time.sleep(2)
+                cursor.execute("SELECT * FROM V_LOG_MESSAGE WHERE NumericalTimeStamp > :ts ORDER BY NumericalTimeStamp", ts=last_timestamp)
+                rows = cursor.fetchall()
+                if rows:
+                    columns = [desc[0] for desc in cursor.description]
+                    df_chunk = pd.DataFrame(rows, columns=columns)
                     self.data_fetched.emit(df_chunk)
-                    mock_data = []
-                    time.sleep(0.01)  # 네트워크 지연 흉내
-
-            if mock_data and self._is_running:
-                df_chunk = pd.DataFrame(mock_data)
-                self.data_fetched.emit(df_chunk)
-            
-            self.progress.emit("Mock data generation complete.")
-        except Exception as e:
-            self.error.emit(f"Mock data generator error: {e}")
+                    last_timestamp = df_chunk['NumericalTimeStamp'].max()
+        except oracledb.DatabaseError as e:
+            error_obj, = e.args; self.error.emit(f"DB Error: {error_obj.message}")
         finally:
+            if conn: conn.close()
             self.finished.emit()
+
+    def _run_mock_time_range(self):
+        """임무 3: 특정 시간 범위의 Mock 데이터를 생성합니다."""
+        self.progress.emit("Generating mock data for the selected time range...")
+        start_dt = QDateTime.fromString(self.conditions['start_time'], Qt.DateFormat.ISODate).toPython()
+        end_dt = QDateTime.fromString(self.conditions['end_time'], Qt.DateFormat.ISODate).toPython()
+        total_seconds = (end_dt - start_dt).total_seconds()
+        num_rows = int(max(1000, min(50000, total_seconds))) # 초당 1개, 최소 1000개, 최대 50000개
+
+        mock_data = []
+        for i in range(num_rows):
+            if not self._is_running: break
+            row_time = start_dt + timedelta(seconds=(total_seconds * i / num_rows))
+            mock_data.append({
+                "Category": "Mock-TimeRange", 
+                "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
+                "DeviceID": f"MOCK_TR_{i}",
+                "NumericalTimeStamp": int(row_time.timestamp() * 1000)
+            })
+            if len(mock_data) >= self.chunk_size:
+                self.data_fetched.emit(pd.DataFrame(mock_data)); mock_data = []
+                time.sleep(0.05)
+        if mock_data: self.data_fetched.emit(pd.DataFrame(mock_data))
+        if self._is_running: self.progress.emit("Mock data generation complete.")
+        self.finished.emit()
+
+    def _run_mock_real_time(self):
+        """임무 4: Mock 데이터를 실시간처럼 계속 생성합니다."""
+        self.progress.emit("Starting real-time mock data generation...")
+        i = 0
+        while self._is_running:
+            time.sleep(0.5)
+            mock_data = []
+            for _ in range(10):
+                row_time = datetime.now()
+                mock_data.append({
+                    "Category": "Mock-RealTime", 
+                    "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
+                    "DeviceID": f"MOCK_RT_{i}",
+                    "NumericalTimeStamp": int(row_time.timestamp() * 1000)
+                })
+                i += 1
+            self.data_fetched.emit(pd.DataFrame(mock_data))
+        self.finished.emit()
 
     def stop(self):
         self._is_running = False

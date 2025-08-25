@@ -109,38 +109,37 @@ class AppController(QObject):
         self.source_model.set_highlighting_rules(self.highlighting_rules)
         self.model_updated.emit(self.source_model)
 
+    # shinguhan/mylogmaster/myLogMaster-32ac0fde18fc7e07d5e70cee360ee943bd9507be/app_controller.py
+
+    # shinguhan/mylogmaster/myLogMaster-32ac0fde18fc7e07d5e70cee360ee943bd9507be/app_controller.py
+
     def start_db_fetch(self, query_conditions):
         if self.fetch_thread and self.fetch_thread.isRunning():
             print("Fetch is already in progress.")
             return
 
-        # ✅ 현재 조회 조건을 인스턴스 변수에 저장
         self.last_query_conditions = query_conditions
-
-                # ✅ 1. 고급 필터 조건을 SQL WHERE 절로 변환
-        where_clause, params = self._build_where_clause(query_conditions)
-        print(f"Generated WHERE clause: {where_clause}")
-        print(f"Parameters: {params}")
+        
+        # [수정] WHERE 절을 미리 만들지 않고, 조건 객체를 그대로 전달합니다.
+        # where_clause, params = self._build_where_clause(query_conditions)
 
         if self.db_manager:
             self.db_manager.clear_logs_from_cache()
 
         self.source_model.update_data(pd.DataFrame())
-        self.original_data = pd.DataFrame() 
+        self.original_data = pd.DataFrame()
 
-        # ✅ 2. 생성된 WHERE 절과 파라미터를 Fetcher 스레드에 전달
-        self.fetch_thread = OracleFetcherThread(self.connection_info, where_clause, params)
+        # [수정] OracleFetcherThread에 조건 객체를 통째로 전달하고, self를 parent로 지정합니다.
+        self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions, parent=self)
         
         self.fetch_thread.data_fetched.connect(self.append_data_chunk)
         self.fetch_thread.finished.connect(self.on_fetch_finished)
-                # ✅ 2. 스레드의 error 신호를 컨트롤러 내부 슬롯에 연결
+        self.fetch_thread.progress.connect(self.fetch_progress)
         self.fetch_thread.error.connect(self._handle_fetch_error)
 
-                # ✅ 1. 대시보드가 열려있으면, 업데이트 시작 명령
         if self.dashboard_dialog and self.dashboard_dialog.isVisible():
             self.dashboard_dialog.start_updates()
 
-        # ✅ 2. 타이머 시작
         self._update_timer.start()
         self.fetch_thread.start()
 
