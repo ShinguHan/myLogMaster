@@ -1,34 +1,24 @@
-import sys, json, os, re
-from PySide6.QtCore import Qt, QSortFilterProxyModel
+import sys, json, os
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QTableView, QFileDialog, QMessageBox, QMenu, QStatusBar,
-    QWidget, QVBoxLayout, QLineEdit, QSplitter, QTextEdit, QDialog, QTextBrowser, QPushButton,
-    QHBoxLayout, QCheckBox
+    QApplication, QMainWindow, QFileDialog, QMessageBox, QTableView, QStatusBar,
+    QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QCheckBox
 )
-from PySide6.QtGui import QAction,  QActionGroup
-# ✅ functools 라이브러리에서 partial을 임포트합니다.
+from PySide6.QtGui import QAction, QActionGroup
 from functools import partial
 
-# ✅ app_controller는 MainWindow의 생성자(__init__)에서 타입 힌팅을 위해 필요합니다.
 from app_controller import AppController
 from dialogs.ScenarioBrowserDialog import ScenarioBrowserDialog
 from dialogs.QueryConditionsDialog import QueryConditionsDialog
 from dialogs.QueryBuilderDialog import QueryBuilderDialog
 from dialogs.DashboardDialog import DashboardDialog
-from dialogs.VisualizationDialog import VisualizationDialog
 from dialogs.TraceDialog import TraceDialog
 from dialogs.ColumnSelectionDialog import ColumnSelectionDialog
-from models.LogTableModel import LogTableModel
-from analysis_result import AnalysisResult
 from dialogs.ScriptEditorDialog import ScriptEditorDialog
-# ⛔️ MainWindow는 시그널을 직접 정의하지 않으므로 이 import는 삭제합니다.
-# from PySide6.QtCore import QObject, Signal 
-from dialogs.DashboardDialog import DashboardDialog # ✅ 직접 임포트
-# ✅ 새로 만든 HighlightingDialog 임포트
 from dialogs.HighlightingDialog import HighlightingDialog
-from dialogs.ValidationResultDialog import ValidationResultDialog # ✅ 새 다이얼로그 임포트
+from dialogs.ValidationResultDialog import ValidationResultDialog
 from dialogs.HistoryBrowserDialog import HistoryBrowserDialog
-
+from widgets.base_log_viewer import BaseLogViewerWidget
 
 CONFIG_FILE = 'config.json'
 
@@ -37,93 +27,67 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.controller = controller
         self.last_query_data = None
+        self.open_trace_dialogs = []
+        self._is_fetching = False
+        self.validation_result_dialog = None
+
         self.setWindowTitle("Log Analyzer")
         self.setGeometry(100, 100, 1200, 800)
 
         main_widget = QWidget()
+        self.setCentralWidget(main_widget)
         layout = QVBoxLayout(main_widget)
-
+        
+        # --- UI 구성 ---
         self.db_connect_button = QPushButton("📡 데이터베이스에 연결하여 로그 조회")
-        self.db_connect_button.clicked.connect(self.start_db_connection)
         layout.addWidget(self.db_connect_button)
         
-        # ✅ 1. 필터 입력창과 자동 스크롤 체크박스를 가로로 배치
-        filter_layout = QHBoxLayout()
-        self.filter_input = QLineEdit()
-        self.filter_input.setPlaceholderText("Filter logs (case-insensitive)...")
-        filter_layout.addWidget(self.filter_input)
+        # BaseLogViewerWidget 인스턴스 생성
+        self.log_viewer = BaseLogViewerWidget(self.controller)
         
+        # 필터 입력창과 자동 스크롤 체크박스를 담을 수평 레이아웃 생성
+        filter_layout = QHBoxLayout()
         self.auto_scroll_checkbox = QCheckBox("Auto Scroll to Bottom")
-        self.auto_scroll_checkbox.setChecked(True) # 기본으로 체크
+        self.auto_scroll_checkbox.setChecked(True)
+        
+        # BaseLogViewer의 필터 입력창을 현재 레이아웃에서 제거
+        filter_input_widget = self.log_viewer.layout().takeAt(0).widget()
+        
+        # 새로 만든 수평 레이아웃에 필터 입력창과 체크박스 추가
+        filter_layout.addWidget(filter_input_widget)
         filter_layout.addWidget(self.auto_scroll_checkbox)
-        layout.addLayout(filter_layout) # QVBoxLayout에 QHBoxLayout을 추가
-
-        self.splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.tableView = QTableView()
-        self.tableView.setSortingEnabled(True)
-        self.tableView.setAlternatingRowColors(True)
-        self.tableView.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
-        self.tableView.setSelectionMode(QTableView.SelectionMode.SingleSelection)
-        self.splitter.addWidget(self.tableView)
-        self.detail_view = QTextEdit()
-        self.detail_view.setReadOnly(True)
-        self.detail_view.setFontFamily("Courier New") 
-        self.detail_view.setVisible(False)
-        self.splitter.addWidget(self.detail_view)
-        self.splitter.setSizes([1, 0])
-        layout.addWidget(self.splitter)
-        self.setCentralWidget(main_widget)
+        
+        # 메인 레이아웃에 수평 레이아웃과 로그 뷰어 추가
+        layout.addLayout(filter_layout)
+        layout.addWidget(self.log_viewer)
         
         self.setStatusBar(QStatusBar())
         self.statusBar().showMessage("Ready. Please open a log file.")
 
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setFilterKeyColumn(-1)
-        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.tableView.setModel(self.proxy_model)
-
         self._create_menu()
-        
-        self.filter_input.textChanged.connect(self.proxy_model.setFilterFixedString)
-        self.tableView.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.tableView.customContextMenuRequested.connect(self.show_table_context_menu)
-        self.tableView.selectionModel().selectionChanged.connect(self.update_detail_view)
-
         self.connect_signals()
         self.setup_ui_for_mode()
-        # ✅ 열려있는 추적 다이얼로그를 저장할 리스트
-        self.open_trace_dialogs = [] 
-
-        # ✅ 1. 버튼의 현재 상태를 저장할 플래그 추가
-        self._is_fetching = False
-        # ✅ 결과 다이얼로그를 저장할 변수 추가
-        self.validation_result_dialog = None
-
-        # ✅ 아래 한 줄을 __init__ 메소드의 맨 마지막에 추가해주세요.
         self.update_table_model(self.controller.source_model)
 
+    # ... (connect_signals 이하 다른 메소드들은 이전과 동일합니다) ...
     def connect_signals(self):
+        self.db_connect_button.clicked.connect(self.start_db_connection)
         self.controller.model_updated.connect(self.update_table_model)
         self.controller.fetch_progress.connect(self.on_fetch_progress)
         self.controller.fetch_completed.connect(self.on_fetch_complete)
-        # ✅ 2. 새로운 신호-슬롯 연결
         self.controller.row_count_updated.connect(self._update_row_count_status)
-                # ✅ 2. 컨트롤러의 에러 신호를 UI의 에러 처리 슬롯에 연결
         self.controller.fetch_error.connect(self.on_fetch_error)
+        self.log_viewer.trace_requested.connect(self.start_event_trace)
 
     def update_table_model(self, source_model):
-        self.proxy_model.setSourceModel(source_model)
+        self.log_viewer.set_model(source_model)
         self.apply_settings(source_model)
 
-        # ✅ 데이터가 있으면 Save 메뉴 활성화, 없으면 비활성화
         is_data_loaded = source_model is not None and not source_model._data.empty
         self.save_action.setEnabled(is_data_loaded)
 
-                # ✅ 3. 모델이 변경될 때 자동 스크롤 실행
         if self.auto_scroll_checkbox.isChecked():
-            # QTimer.singleShot을 사용해 다른 UI 이벤트가 처리된 후 스크롤 실행
-            from PySide6.QtCore import QTimer
-            QTimer.singleShot(0, self.tableView.scrollToBottom)
+            QTimer.singleShot(0, self.log_viewer.tableView.scrollToBottom)
 
         total_rows = source_model.rowCount()
         self.statusBar().showMessage(f"Loaded {total_rows:,} logs.")
@@ -135,10 +99,9 @@ class MainWindow(QMainWindow):
         open_action.triggered.connect(self.open_log_file)
         file_menu.addAction(open_action)
 
-        # ✅ "Save" 액션을 여기에 추가합니다.
         self.save_action = QAction("&Save View as CSV...", self)
         self.save_action.triggered.connect(self.save_log_file)
-        self.save_action.setEnabled(False) # 처음에는 비활성화
+        self.save_action.setEnabled(False)
         file_menu.addAction(self.save_action)
 
         file_menu.addSeparator()
@@ -146,36 +109,27 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
-        # 'View' menu now contains the 'Theme' submenu
         self.view_menu = menu_bar.addMenu("&View")
-        
         theme_menu = self.view_menu.addMenu("Theme")
         theme_group = QActionGroup(self)
-
-        # ✅ 4가지 테마 이름으로 수정
         themes = ["light", "dark", "dracula", "solarized"] 
         for theme in themes:
             action = QAction(theme.capitalize(), self, checkable=True)
             action.triggered.connect(lambda checked, t=theme: self._apply_theme(t))
             theme_group.addAction(action)
             theme_menu.addAction(action)
-            
             if self.controller.get_current_theme() == theme:
                 action.setChecked(True)
 
         self.view_menu.addSeparator()
-
         select_columns_action = QAction("&Select Columns...", self)
         select_columns_action.triggered.connect(self.open_column_selection_dialog)
         self.view_menu.addAction(select_columns_action)
-        
         self.view_menu.addSeparator()
-        
         dashboard_action = QAction("Show Dashboard...", self)
         dashboard_action.triggered.connect(self.show_dashboard)
         self.view_menu.addAction(dashboard_action)
 
-        # 'Tools' menu remains the same
         self.tools_menu = menu_bar.addMenu("&Tools")
         query_builder_action = QAction("Advanced Filter...", self)
         query_builder_action.triggered.connect(self.open_query_builder)
@@ -187,7 +141,6 @@ class MainWindow(QMainWindow):
         
         self.scenario_menu = self.tools_menu.addMenu("Run Scenario Validation")
         self.tools_menu.aboutToShow.connect(self.populate_scenario_menu)
-
         browse_scenarios_action = QAction("Browse Scenarios...", self)
         browse_scenarios_action.triggered.connect(self.open_scenario_browser)
         self.tools_menu.addAction(browse_scenarios_action)
@@ -196,23 +149,72 @@ class MainWindow(QMainWindow):
         script_editor_action.triggered.connect(self.open_script_editor)
         self.tools_menu.addAction(script_editor_action)
 
-        # ✅ 'Tools' 메뉴에 하이라이트 설정 액션 추가
         self.tools_menu.addSeparator()
         highlighting_action = QAction("Conditional Highlighting...", self)
         highlighting_action.triggered.connect(self.open_highlighting_dialog)
         self.tools_menu.addAction(highlighting_action)
 
-        # ✅ 'Tools' 메뉴에 History 메뉴 추가
         self.tools_menu.addSeparator()
         history_action = QAction("Validation History...", self)
         history_action.triggered.connect(self.open_history_browser)
         self.tools_menu.addAction(history_action)
 
-        # 'Help' menu remains the same
         help_menu = menu_bar.addMenu("&Help")
         about_action = QAction("&About...", self)
         about_action.triggered.connect(self.show_about_dialog)
         help_menu.addAction(about_action)
+
+    def start_event_trace(self, trace_id):
+        trace_data = self.controller.get_trace_data(trace_id)
+        if trace_data.empty:
+            QMessageBox.information(self, "Trace Result", f"No logs found containing ID: '{trace_id}'")
+            return
+        
+        rules = self.controller.highlighting_rules
+        trace_dialog = TraceDialog(trace_data, trace_id, rules, self.controller, self)
+        trace_dialog.finished.connect(lambda: self.open_trace_dialogs.remove(trace_dialog))
+        self.open_trace_dialogs.append(trace_dialog)
+        trace_dialog.show()
+
+    def open_column_selection_dialog(self):
+        source_model = self.log_viewer.source_model()
+        if source_model is None or source_model._data.empty:
+            QMessageBox.information(self, "Info", "Please load a log file first.")
+            return
+            
+        all_columns = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
+        visible_columns = [col for i, col in enumerate(all_columns) if not self.log_viewer.tableView.isColumnHidden(i)]
+        self.col_dialog = ColumnSelectionDialog(all_columns, visible_columns, self)
+        if self.col_dialog.exec():
+            new_visible_columns = self.col_dialog.get_selected_columns()
+            for i, col_name in enumerate(all_columns):
+                self.log_viewer.tableView.setColumnHidden(i, col_name not in new_visible_columns)
+
+    def apply_settings(self, source_model):
+        if source_model is None: return
+        try:
+            # 💥 변경점 1: 파일 대신 컨트롤러의 config 객체에서 설정을 읽어옴
+            visible_columns = self.controller.config.get('visible_columns', [])
+            all_columns = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
+            for i, col_name in enumerate(all_columns):
+                # 컬럼 설정이 비어있으면 모든 컬럼을 보여줌 (최초 실행 등)
+                self.log_viewer.tableView.setColumnHidden(i, visible_columns and col_name not in visible_columns)
+        except Exception as e:
+            print(f"Could not apply settings: {e}")
+        
+        for i in range(source_model.columnCount()):
+            self.log_viewer.tableView.setColumnWidth(i, 80)
+
+    def save_settings(self):
+        source_model = self.log_viewer.source_model()
+        if source_model is None or source_model._data.empty: return
+
+        all_columns = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
+        visible_columns = [col for i, col in enumerate(all_columns) if not self.log_viewer.tableView.isColumnHidden(i)]
+        
+        # 💥 변경점 2: 컨트롤러의 config 객체를 업데이트하고 저장 메소드 호출
+        self.controller.config['visible_columns'] = visible_columns
+        self.controller.save_config() # 프로그램 종료 시 최종 설정 저장
 
     def populate_scenario_menu(self):
         self.scenario_menu.clear()
@@ -225,8 +227,6 @@ class MainWindow(QMainWindow):
             if scenario_names and "Error" not in scenario_names:
                 for name in scenario_names:
                     action = QAction(name, self)
-                    # ✅ lambda 대신 partial을 사용하여, 클릭 시 실행될 함수(run_scenario_validation)와
-                    # ✅ 그 함수에 전달할 인자(name)를 명확하게 지정해줍니다.
                     action.triggered.connect(partial(self.run_scenario_validation, name))
                     self.scenario_menu.addAction(action)
             else:
@@ -238,28 +238,22 @@ class MainWindow(QMainWindow):
             action.setEnabled(False)
             self.scenario_menu.addAction(action)
     
-    # shinguhan/mylogmaster/myLogMaster-main/main_window.py
-
     def run_scenario_validation(self, scenario_name=None):
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.log_viewer.source_model()
         if source_model is None or source_model._data.empty:
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
         
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            # ✅ 이제 텍스트가 아닌, '사건 보고서' 리스트를 받습니다.
             validation_reports = self.controller.run_scenario_validation(scenario_name)
-            
             if not validation_reports:
                 QMessageBox.information(self, "Info", "No matching scenarios were attempted.")
                 return
 
-            # ✅ [핵심] 리포트 창을 생성할 때, 원본 로그 데이터(source_model._data)를 함께 전달
             self.validation_result_dialog = ValidationResultDialog(validation_reports, source_model._data, self)
             self.validation_result_dialog.highlight_log_requested.connect(self.highlight_log_row)
             self.validation_result_dialog.show()
-
         finally:
             QApplication.restoreOverrideCursor()
 
@@ -271,18 +265,17 @@ class MainWindow(QMainWindow):
     def open_log_file(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Log File", "", "CSV Files (*.csv);;All Files (*)")
         if filepath:
-            source_model = self.proxy_model.sourceModel()
+            source_model = self.log_viewer.source_model()
             if source_model:
                 source_model.clear_highlights()
             
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             self.statusBar().showMessage(f"Loading {os.path.basename(filepath)}...")
             try:
                 success = self.controller.load_log_file(filepath)
                 if not success:
                     QMessageBox.warning(self, "Load Failed", "No data could be parsed from the selected file.")
                 else:
-                    print(f"Successfully loaded file: {filepath}")
                     self.populate_scenario_menu()
             except Exception as e:
                 QMessageBox.critical(self, "Load Error", f"An error occurred while opening the file:\n{e}")
@@ -290,7 +283,7 @@ class MainWindow(QMainWindow):
                 QApplication.restoreOverrideCursor()
 
     def open_query_builder(self):
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.log_viewer.source_model()
         if source_model is None or source_model._data.empty:
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
@@ -302,12 +295,11 @@ class MainWindow(QMainWindow):
         
         if dialog.exec():
             query_data = dialog.get_query_data()
-            
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             try:
                 self.controller.apply_advanced_filter(query_data)
                 self.last_query_data = query_data
-                self.statusBar().showMessage(f"Filter applied. Showing {self.proxy_model.rowCount():,} of {self.proxy_model.sourceModel().rowCount():,} rows.")
+                self.statusBar().showMessage(f"Filter applied. Showing {self.log_viewer.proxy_model.rowCount():,} of {source_model.rowCount():,} rows.")
             finally:
                 QApplication.restoreOverrideCursor()
         
@@ -315,222 +307,43 @@ class MainWindow(QMainWindow):
             self.controller.save_filter(name, query)
 
     def clear_advanced_filter(self):
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.log_viewer.source_model()
         if source_model:
             source_model.clear_highlights()
         self.controller.clear_advanced_filter()
         self.last_query_data = None
         if source_model:
             self.statusBar().showMessage(f"Filter cleared. Showing {source_model.rowCount():,} rows.")
-        print("Advanced filter cleared.")
 
-        # ✅ 필터 클리어 시 Save 메뉴 상태 업데이트
         is_data_loaded = source_model is not None and not source_model._data.empty
         self.save_action.setEnabled(is_data_loaded)
         
     def show_dashboard(self):
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.log_viewer.source_model()
         if source_model is None or source_model._data.empty:
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
         
-        # ✅ 1. 컨트롤러에 대시보드 객체가 없으면 새로 생성
         if self.controller.dashboard_dialog is None:
-            print("Creating new dashboard instance.")
-            # 컨트롤러가 참조할 수 있도록 self.controller.dashboard_dialog에 할당
             self.controller.dashboard_dialog = DashboardDialog(source_model._data, self)
-            # ✅ 대시보드가 닫힐 때 컨트롤러의 참조를 None으로 초기화하도록 연결
             self.controller.dashboard_dialog.finished.connect(self._on_dashboard_closed)
         
-        # ✅ 2. 이미 생성된 대시보드를 보여주거나, 새로 만든 대시보드를 보여줌
         self.controller.dashboard_dialog.show()
-        self.controller.dashboard_dialog.activateWindow() # 창을 맨 앞으로 가져옴
+        self.controller.dashboard_dialog.activateWindow()
 
-    def show_table_context_menu(self, pos):
-        selected_indexes = self.tableView.selectedIndexes()
-        menu = QMenu(self)
-        source_model = self.proxy_model.sourceModel()
-
-        if selected_indexes and source_model:
-            source_index = self.proxy_model.mapToSource(selected_indexes[0])
-            show_detail_action = QAction("상세 로그 보기", self)
-            show_detail_action.triggered.connect(self.show_detail_pane)
-            menu.addAction(show_detail_action)
-            
-            tracking_id = source_model.get_data_by_col_name(source_index.row(), "TrackingID")
-            if tracking_id and str(tracking_id).strip():
-                menu.addSeparator()
-                trace_action = QAction(f"Trace Event Flow: '{tracking_id}'", self)
-                trace_action.triggered.connect(lambda: self.start_event_trace(str(tracking_id)))
-                menu.addAction(trace_action)
-                visualize_action = QAction(f"Visualize SECS Scenario for '{tracking_id}'", self)
-                visualize_action.triggered.connect(lambda: self.visualize_secs_scenario(str(tracking_id)))
-                menu.addAction(visualize_action)
-
-        if self.detail_view.isVisible():
-            if menu.actions() and not menu.actions()[-1].isSeparator(): menu.addSeparator()
-            hide_detail_action = QAction("원복", self)
-            hide_detail_action.triggered.connect(self.hide_detail_pane)
-            menu.addAction(hide_detail_action)
-        
-        if menu.actions():
-            menu.exec_(self.tableView.viewport().mapToGlobal(pos))
-
-    def visualize_secs_scenario(self, trace_id):
-        com_logs = self.controller.get_scenario_data(trace_id)
-        if com_logs.empty:
-            QMessageBox.information(self, "Info", f"No SECS messages (Com logs) found related to ID: {trace_id}")
-            return
-        mermaid_code = self._generate_mermaid_code(com_logs)
-        self.viz_dialog = VisualizationDialog(mermaid_code, self)
-        self.viz_dialog.exec()
-
-    def _generate_mermaid_code(self, df):
-        code = f"sequenceDiagram\n    participant Host\n    participant Equipment\n\n"
-        for _, row in df.iterrows():
-            ascii_data = row.get('AsciiData', '')
-            parsed_body = row.get('ParsedBody', '')
-            direction = "->>" if "<--" in ascii_data else "-->>"
-            actor_from, actor_to = ("Host", "Equipment") if direction == "->>" else ("Equipment", "Host")
-            msg_content = re.sub(r', loc :.*', '', ascii_data).replace('-->', '').replace('<--', '').strip()
-            code += f"    {actor_from}{direction}{actor_to}: {parsed_body}: {msg_content}\n"
-        return code
-
-    def start_event_trace(self, trace_id):
-        trace_data = self.controller.get_trace_data(trace_id)
-        if trace_data.empty:
-            QMessageBox.information(self, "Trace Result", f"No logs found containing ID: '{trace_id}'")
-            return
-        
-        # ✅ 1. 컨트롤러에서 현재 하이라이트 규칙을 가져옵니다.
-        rules = self.controller.highlighting_rules
-        
-        # ✅ 2. TraceDialog에 필요한 모든 정보를 전달합니다.
-        trace_dialog = TraceDialog(trace_data, trace_id, rules, self.controller, self)
-        
-        # ✅ 3. 다이얼로그가 닫힐 때 리스트에서 제거되도록 연결
-        trace_dialog.finished.connect(lambda: self.open_trace_dialogs.remove(trace_dialog))
-        
-        # ✅ 4. 리스트에 추가하고, 독립적인 창으로 띄웁니다.
-        self.open_trace_dialogs.append(trace_dialog)
-        trace_dialog.show()
-
-    def _display_log_detail(self, source_index):
-        source_model = self.proxy_model.sourceModel()
-        if not source_model: return
-        try:
-            display_object = source_model.get_data_by_col_name(source_index.row(), "ParsedBodyObject")
-            if display_object is None:
-                 display_object = source_model.get_data_by_col_name(source_index.row(), "AsciiData")
-
-            if display_object:
-                if isinstance(display_object, dict):
-                    formatted_text = json.dumps(display_object, indent=4, ensure_ascii=False)
-                    self.detail_view.setText(formatted_text)
-                elif isinstance(display_object, list):
-                    def format_secs_obj(obj, indent=0):
-                        lines = []
-                        indent_str = "    " * indent
-                        for item in obj:
-                            if hasattr(item, 'type') and hasattr(item, 'value'):
-                                if item.type == 'L':
-                                    lines.append(f"{indent_str}<L [{len(item.value)}]>")
-                                    lines.extend(format_secs_obj(item.value, indent + 1))
-                                else:
-                                    lines.append(f"{indent_str}<{item.type} '{item.value}'>")
-                        return lines
-                    formatted_text = "\n".join(format_secs_obj(display_object))
-                    self.detail_view.setText(formatted_text)
-                else:
-                    self.detail_view.setText(str(display_object))
-            else:
-                self.detail_view.setText("")
-        except Exception as e:
-            self.detail_view.setText(f"상세 정보를 표시하는 중 오류가 발생했습니다:\n{e}")
-            print(f"Error displaying detail: {e}")
-
-    def show_detail_pane(self):
-        selected_indexes = self.tableView.selectedIndexes()
-        if not selected_indexes: return
-        source_index = self.proxy_model.mapToSource(selected_indexes[0])
-        self._display_log_detail(source_index)
-        if not self.detail_view.isVisible():
-            self.detail_view.setVisible(True)
-            self.splitter.setSizes([self.width() * 0.6, self.width() * 0.4])
-
-    def update_detail_view(self):
-        if not self.detail_view.isVisible(): return
-        selected_indexes = self.tableView.selectedIndexes()
-        if not selected_indexes:
-            self.detail_view.clear()
-            return
-        source_index = self.proxy_model.mapToSource(selected_indexes[0])
-        self._display_log_detail(source_index)
-        
-    def hide_detail_pane(self):
-        self.detail_view.setVisible(False)
-        self.splitter.setSizes([1, 0])
-
-    def open_column_selection_dialog(self):
-        source_model = self.proxy_model.sourceModel()
-        if source_model is None or source_model._data.empty:
-            QMessageBox.information(self, "Info", "Please load a log file first.")
-            return
-            
-        all_columns = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
-        visible_columns = [col for i, col in enumerate(all_columns) if not self.tableView.isColumnHidden(i)]
-        self.col_dialog = ColumnSelectionDialog(all_columns, visible_columns, self)
-        if self.col_dialog.exec():
-            new_visible_columns = self.col_dialog.get_selected_columns()
-            for i, col_name in enumerate(all_columns):
-                self.tableView.setColumnHidden(i, col_name not in new_visible_columns)
-
-    def apply_settings(self, source_model):
-        if source_model is None: return
-        try:
-            if os.path.exists(CONFIG_FILE):
-                with open(CONFIG_FILE, 'r') as f:
-                    config = json.load(f)
-                    visible_columns = config.get('visible_columns', [])
-                    all_columns = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
-                    for i, col_name in enumerate(all_columns):
-                        self.tableView.setColumnHidden(i, col_name not in visible_columns)
-        except Exception as e:
-            print(f"Could not load settings: {e}")
-        
-        for i in range(source_model.columnCount()):
-            self.tableView.setColumnWidth(i, 80)
-
-    def save_settings(self):
-        source_model = self.proxy_model.sourceModel()
-        if source_model is None or source_model._data.empty: return
-
-        all_columns = [source_model.headerData(i, Qt.Orientation.Horizontal) for i in range(source_model.columnCount())]
-        visible_columns = [col for i, col in enumerate(all_columns) if not self.tableView.isColumnHidden(i)]
-
-                # ✅ 3. 현재 테마를 config에 추가
-        config = {
-            'visible_columns': visible_columns,
-            'theme': self.controller.get_current_theme()
-        }
-        try:
-            with open(CONFIG_FILE, 'w') as f:
-                json.dump(config, f, indent=4)
-        except Exception as e:
-            print(f"Could not save settings: {e}")
-            
     def closeEvent(self, event):
         self.save_settings()
         event.accept()
 
     def open_script_editor(self):
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.log_viewer.source_model()
+        proxy_model = self.log_viewer.proxy_model
         if source_model is None or source_model._data.empty:
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
 
         current_view_df = source_model._data.iloc[
-            [self.proxy_model.mapToSource(self.proxy_model.index(r,0)).row() for r in range(self.proxy_model.rowCount())]
+            [proxy_model.mapToSource(proxy_model.index(r,0)).row() for r in range(proxy_model.rowCount())]
         ]
         dialog = ScriptEditorDialog(self)
         
@@ -544,10 +357,9 @@ class MainWindow(QMainWindow):
             dialog.set_result(final_output.strip())
 
             if result_obj.new_dataframe is not None:
-                df_dialog = TraceDialog(result_obj.new_dataframe, result_obj.new_df_title, self)
+                df_dialog = TraceDialog(result_obj.new_dataframe, result_obj.new_df_title, [], self.controller, self)
                 df_dialog.exec()
             
-            source_model = self.proxy_model.sourceModel()
             if source_model:
                 source_model.set_highlights(result_obj.markers)
 
@@ -555,208 +367,144 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def show_about_dialog(self):
-        QMessageBox.about(self,
-            "About Advanced Log Analyzer",
-            """
-            <b>Advanced Log Analyzer v1.0</b>
-            <p>A professional tool for analyzing complex manufacturing logs.</p>
-            <p>Developed in partnership with a brilliant analyst.</p>
-            <p>Powered by Python and PySide6.</p>
-            """
-        )
+        QMessageBox.about(self, "About Advanced Log Analyzer", "...")
     
     def setup_ui_for_mode(self):
         if self.controller.mode == 'realtime':
             self.db_connect_button.setVisible(True)
-            self.filter_input.setVisible(False) # 실시간 모드에서는 기본 필터 숨김
+            # filter_input은 이제 filter_layout 안에 있으므로 직접 제어하지 않음
+            # self.log_viewer.filter_input.setVisible(False)
             self.auto_scroll_checkbox.setVisible(True)
             self.setWindowTitle(f"Log Analyzer - [DB: {self.controller.connection_name}]")
-            self.statusBar().showMessage("Ready to connect to the database.")
         else: # file mode
             self.db_connect_button.setVisible(False)
-            self.filter_input.setVisible(True)
-            self.auto_scroll_checkbox.setVisible(False) # 파일 모드에서는 자동 스크롤 숨김
+            # self.log_viewer.filter_input.setVisible(True)
+            self.auto_scroll_checkbox.setVisible(False)
             self.setWindowTitle("Log Analyzer - [File Mode]")
-            self.statusBar().showMessage("Ready. Please open a log file.")
 
     def start_db_connection(self):
-        # ✅ 3. 버튼 클릭 시, 현재 상태에 따라 조회 시작 또는 취소를 결정
         if self._is_fetching:
-            # --- 데이터 수신 중일 때 (취소 로직) ---
-            print("Requesting to cancel the fetch operation...")
             self.controller.cancel_db_fetch()
             self.statusBar().showMessage("Cancelling...")
-            # 버튼 상태는 on_fetch_complete 또는 on_fetch_error에서 최종적으로 변경됩니다.
         else:
-            # --- 유휴 상태일 때 (조회 시작 로직) ---
             dialog = QueryConditionsDialog(self)
             if dialog.exec():
                 query_conditions = dialog.get_conditions()
                 self.controller.start_db_fetch(query_conditions)
-                
-                # UI 상태를 '수신 중'으로 변경
                 self._is_fetching = True
                 self.db_connect_button.setText("❌ 데이터 수신 중단")
                 self.db_connect_button.setStyleSheet("background-color: #DA4453; color: white;")
-
-                # ✅ 2. 데이터 수신 중에는 분석/뷰 메뉴 비활성화
                 if self.controller.mode == 'realtime':
                     self.tools_menu.setEnabled(False)
                     self.view_menu.setEnabled(False)
                     
-    def on_fetch_progress(self, message):
-        self.statusBar().showMessage(message)
-
+    def on_fetch_progress(self, message): self.statusBar().showMessage(message)
     def on_fetch_complete(self):
-                # ✅ 4. 작업 완료 시 UI 상태를 원상 복구
         self._is_fetching = False
         self.db_connect_button.setEnabled(True)
         self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
-        self.db_connect_button.setStyleSheet("") # 기본 스타일로 복원
-        # ✅ 3. 작업 완료/취소/에러 시 분석/뷰 메뉴 다시 활성화
+        self.db_connect_button.setStyleSheet("")
         if self.controller.mode == 'realtime':
             self.tools_menu.setEnabled(True)
             self.view_menu.setEnabled(True)        
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.log_viewer.source_model()
         if source_model:
             total_rows = source_model.rowCount()
             if self.statusBar().currentMessage() != "Cancelling...":
                  self.statusBar().showMessage(f"Completed. Total {total_rows:,} logs in view.")
            
-
-        # ✅ 4. 행 개수 업데이트를 위한 새로운 슬롯
     def _update_row_count_status(self, row_count):
-        """상태바에 현재 행 개수를 표시하고 자동 스크롤을 처리합니다."""
         self.statusBar().showMessage(f"Receiving... {row_count:,} rows")
         if self.auto_scroll_checkbox.isChecked():
-            self.tableView.scrollToBottom()
+            self.log_viewer.tableView.scrollToBottom()
 
-        # ✅ 5. 에러 발생 시 호출될 새로운 슬롯
     def on_fetch_error(self, error_message):
-        """컨트롤러로부터 에러 메시지를 받아 사용자에게 대화상자로 보여줍니다."""
-        print(f"UI received error: {error_message}")
         QMessageBox.critical(self, "Error", f"An error occurred:\n{error_message}")
-        
-        # 에러가 발생해도 UI 상태는 원상 복구
         self.on_fetch_complete()
 
-    # ✅ 3. 대시보드가 닫혔을 때 호출될 슬롯
-    def _on_dashboard_closed(self):
-        print("Dashboard closed. Clearing reference in controller.")
+    def _on_dashboard_closed(self): 
         self.controller.dashboard_dialog = None
 
-     # ✅ 2. 테마 적용을 위한 새로운 메소드
     def _apply_theme(self, theme_name):
-        """선택된 테마를 앱에 적용하고 컨트롤러에 저장합니다."""
-        # main.py의 함수를 재사용하기 위해 QApplication 인스턴스에 접근
+        """선택된 테마를 앱에 적용하고 컨트롤러에 저장을 요청합니다."""
         from main import apply_theme
         if apply_theme(QApplication.instance(), theme_name):
             print(f"Applied theme: {theme_name}")
+            # 💥 변경점 3: 컨트롤러의 set_current_theme만 호출하면 자동으로 저장됨
             self.controller.set_current_theme(theme_name)
         else:
             QMessageBox.warning(self, "Theme Error", f"Could not find or apply theme: {theme_name}")
 
-        # ✅ 하이라이트 설정창을 여는 새로운 메소드
     def open_highlighting_dialog(self):
-        source_model = self.proxy_model.sourceModel()
+        source_model = self.log_viewer.source_model()
         if source_model is None or source_model._data.empty:
             QMessageBox.information(self, "Info", "Please load data first.")
             return
 
-        # ✅ 1. 대화상자가 이미 열려있으면 새로 열지 않고 맨 앞으로 가져옵니다.
-        #    이 검사를 하려면 self.highlighting_dialog 변수를 사용해야 합니다.
         if hasattr(self, 'highlighting_dialog') and self.highlighting_dialog.isVisible():
             self.highlighting_dialog.activateWindow()
             return
-
         column_names = source_model._data.columns.tolist()
-        # ✅ 2. 대화상자를 self.highlighting_dialog에 저장하여 사라지지 않게 합니다.
         self.highlighting_dialog = HighlightingDialog(column_names, self)
         self.highlighting_dialog.show()
 
-    # ✅ 아래 메소드를 클래스 맨 끝에 추가해주세요.
     def save_log_file(self):
-        """현재 뷰에 보이는 데이터를 CSV 파일로 저장합니다."""
-        source_model = self.proxy_model.sourceModel()
-        if source_model is None or self.proxy_model.rowCount() == 0:
+        source_model = self.log_viewer.source_model()
+        proxy_model = self.log_viewer.proxy_model
+        if source_model is None or proxy_model.rowCount() == 0:
             QMessageBox.information(self, "Info", "There is no data to save.")
             return
             
-        # 파일 저장 대화상자 열기
-        default_filename = "log_export.csv"
-        filepath, _ = QFileDialog.getSaveFileName(self, "Save Log File", default_filename, "CSV Files (*.csv);;All Files (*)")
-
+        filepath, _ = QFileDialog.getSaveFileName(self, "Save Log File", "log_export.csv", "CSV Files (*.csv);;All Files (*)")
         if filepath:
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             self.statusBar().showMessage("Saving file...")
             try:
-                # 현재 proxy model에 보이는 데이터만 DataFrame으로 재구성
-                visible_rows_indices = [self.proxy_model.mapToSource(self.proxy_model.index(r, 0)).row() for r in range(self.proxy_model.rowCount())]
-                
-                # 원본 데이터에서 보이는 행들만 선택
+                visible_rows_indices = [proxy_model.mapToSource(proxy_model.index(r, 0)).row() for r in range(proxy_model.rowCount())]
                 df_to_save = source_model._data.iloc[visible_rows_indices]
-
-                # 컨트롤러에 저장 요청
                 success, message = self.controller.save_log_to_csv(df_to_save, filepath)
 
-                if success:
-                    self.statusBar().showMessage(message)
-                else:
-                    QMessageBox.critical(self, "Save Error", message)
+                if success: self.statusBar().showMessage(message)
+                else: QMessageBox.critical(self, "Save Error", message)
             finally:
                 QApplication.restoreOverrideCursor()
 
-    # ✅ 아래 메소드를 클래스에 새로 추가해주세요.
     def highlight_log_row(self, original_index):
-        """원본 데이터프레임 인덱스에 해당하는 행을 찾아 테이블 뷰에서 선택 및 하이라이트합니다."""
-        source_model = self.proxy_model.sourceModel()
-        if not source_model or source_model._data.empty:
-            return
+        source_model = self.log_viewer.source_model()
+        proxy_model = self.log_viewer.proxy_model
+        if not source_model or source_model._data.empty: return
             
         try:
-            # 원본 인덱스를 현재 모델의 행 번호(row)로 변환
             model_row = source_model._data.index.get_loc(original_index)
-            
-            # 프록시 모델을 통해 현재 화면에 보이는 행인지 확인하고, 화면상의 인덱스로 변환
-            proxy_index = self.proxy_model.mapFromSource(source_model.index(model_row, 0))
+            proxy_index = proxy_model.mapFromSource(source_model.index(model_row, 0))
             
             if proxy_index.isValid():
-                self.tableView.scrollTo(proxy_index, QTableView.ScrollHint.PositionAtCenter)
-                self.tableView.selectRow(proxy_index.row())
-                self.activateWindow() # 메인 창을 앞으로 가져옴
-        except KeyError:
-            print(f"Could not find original index {original_index} in the current model.")
+                self.log_viewer.tableView.scrollTo(proxy_index, QTableView.ScrollHint.PositionAtCenter)
+                self.log_viewer.tableView.selectRow(proxy_index.row())
+                self.activateWindow()
+        except KeyError: pass
 
-    # ✅ 아래 두 메소드를 클래스 맨 끝에 추가해주세요.
     def open_history_browser(self):
-        """분석 이력 목록 창을 엽니다."""
         history_summary = self.controller.get_history_summary()
         if history_summary.empty:
             QMessageBox.information(self, "Info", "No validation history found.")
             return
-
-        # history_browser는 여러 개 띄울 필요 없으므로 self 변수에 저장하지 않음
         history_browser = HistoryBrowserDialog(history_summary, self)
         history_browser.history_selected.connect(self.show_history_detail)
-        history_browser.exec() # 이 창은 Modal로 띄워 집중하게 함
+        history_browser.exec()
 
     def show_history_detail(self, run_id):
-        """선택된 과거 분석 이력의 상세 리포트를 엽니다."""
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            # 컨트롤러를 통해 상세 데이터를 가져옴
             history_report = self.controller.get_history_detail(run_id)
             if not history_report:
                 QMessageBox.warning(self, "Error", f"Could not load details for Run ID: {run_id}")
                 return
             
-            # ValidationResultDialog를 재사용하여 상세 리포트 표시
-            # report는 단일 항목이므로 리스트로 감싸서 전달
-            source_model = self.proxy_model.sourceModel()
+            source_model = self.log_viewer.source_model()
             detail_dialog = ValidationResultDialog([history_report], source_model._data, self)
             detail_dialog.highlight_log_requested.connect(self.highlight_log_row)
-            # 상세 리포트는 여러 개 띄울 수 있도록 self에 저장하지 않고 직접 show()
             detail_dialog.show()
-
         finally:
             QApplication.restoreOverrideCursor()
+

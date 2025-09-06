@@ -11,6 +11,7 @@ from analysis_result import AnalysisResult
 from database_manager import DatabaseManager
 from oracle_fetcher import OracleFetcherThread
 
+CONFIG_FILE = 'config.json' # 💥 설정 파일 경로를 상수로 정의
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios'
 HIGHLIGHTERS_FILE = 'highlighters.json' # ✅ 파일 경로 추가
@@ -44,6 +45,7 @@ class AppController(QObject):
         self._update_timer.setInterval(200) # 200ms (0.2초) 마다 실행
         self._update_timer.timeout.connect(self._process_update_queue)
 
+        self.config = self._load_config() # 💥 __init__에서 전체 설정을 로드
         self.highlighting_rules = self.load_highlighting_rules() # ✅ 시작 시 규칙 로드
 
         if self.mode == 'realtime':
@@ -57,7 +59,31 @@ class AppController(QObject):
             # 파일 모드에서는 'file_mode'라는 고정된 이름으로 DB 생성
             self.db_manager = DatabaseManager("file_mode")
 
-
+    # 💥 변경점 1: 테마 관련 메소드 전체를 아래 코드로 교체합니다.
+    def _load_config(self):
+        """
+        애플리케이션 시작 시 config.json에서 설정을 한 번만 로드합니다.
+        파일이 없거나 손상된 경우 기본 설정을 반환합니다.
+        """
+        default_config = {'theme': 'light', 'visible_columns': []}
+        if not os.path.exists(CONFIG_FILE):
+            return default_config
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, Exception):
+            print(f"Warning: Could not read {CONFIG_FILE}. Using default config.")
+            return default_config
+        
+    def save_config(self):
+        """현재 설정(self.config)을 config.json 파일에 저장합니다."""
+        try:
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=4, ensure_ascii=False)
+            print("Configuration saved successfully.")
+        except Exception as e:
+            print(f"Error saving configuration: {e}")
+            
     def load_data_from_cache(self):
         """로컬 캐시에서 데이터를 로드하고, 데이터 유무와 상관없이 항상 UI에 모델을 업데이트하도록 신호를 보냅니다."""
         if not self.db_manager: 
@@ -533,19 +559,13 @@ class AppController(QObject):
 
         # ✅ 2. 테마 설정을 위한 새로운 메소드들
     def set_current_theme(self, theme_name):
-        self.current_theme = theme_name
+        """메모리에 현재 테마를 업데이트하고, 즉시 파일에 저장합니다."""
+        self.config['theme'] = theme_name
+        self.save_config() # 💥 테마 변경 시 즉시 저장
 
     def get_current_theme(self):
-        # 시작 시 config.json에서 로드한 값을 반영하기 위해 추가
-        config_path = 'config.json'
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
-                    self.current_theme = config.get('theme', 'light')
-            except (json.JSONDecodeError, KeyError):
-                pass
-        return self.current_theme
+        """메모리에 저장된 현재 테마를 반환합니다."""
+        return self.config.get('theme', 'light')
     
         # ✅ 하이라이트 규칙을 위한 새로운 메소드들
     def load_highlighting_rules(self):
@@ -669,3 +689,19 @@ class AppController(QObject):
         if self.db_manager:
             return self.db_manager.get_validation_history_detail(run_id)
         return None
+    
+    def _load_initial_theme(self):
+        """
+        애플리케이션 시작 시 config.json에서 테마 설정을 한 번만 로드합니다.
+        """
+        config_path = 'config.json'
+        theme_to_load = 'light'  # 기본값
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                    theme_to_load = config.get('theme', 'light')
+            except (json.JSONDecodeError, KeyError):
+                print("Warning: Could not read theme from config.json. Defaulting to 'light'.")
+                pass
+        self.current_theme = theme_to_load
