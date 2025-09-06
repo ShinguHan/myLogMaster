@@ -1,13 +1,21 @@
 {
     "visible_columns": [
         "Category",
+        "LevelID",
         "SystemDate",
         "DeviceID",
         "MethodID",
         "TrackingID",
         "AsciiData",
         "SourceID",
-        "MessageName"
+        "MessageName",
+        "LogParserClassName",
+        "BinaryData",
+        "NumericalTimeStamp",
+        "ParsedBody",
+        "ParsedBodyObject",
+        "ParsedType",
+        "SystemDate_dt"
     ],
     "theme": "dark"
 }

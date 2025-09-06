@@ -4,11 +4,8 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                                QFrame, QLabel, QLineEdit, QComboBox, QCheckBox,
                                QMessageBox, QWidget, QGridLayout)
 from PySide6.QtGui import QColor
-from PySide6.QtCore import Qt, Signal # 💥 Signal을 임포트합니다.
+from PySide6.QtCore import Qt, Signal
 from .ui_components import create_section_label, create_action_button
-
-# 💥 파일 경로는 이제 컨트롤러가 관리하므로 여기서 삭제합니다.
-# HIGHLIGHTERS_FILE = 'highlighters.json'
 
 class ColorButton(QPushButton):
     def __init__(self, color=None, parent=None):
@@ -34,15 +31,13 @@ class ConditionWidget(QWidget):
         return {"column": self.column_combo.currentText(), "operator": self.operator_combo.currentText(), "value": self.value_edit.text()}
 
 class HighlightingDialog(QDialog):
-    # 💥 변경점 1: 수정된 규칙 목록을 외부로 알리는 시그널 정의
     rules_updated = Signal(list)
 
-    # 💥 변경점 2: 생성자에서 rules_data를 직접 받도록 수정
     def __init__(self, column_names, rules_data, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Conditional Highlighting Rules")
         self.column_names = column_names
-        self.rules = rules_data # 파일에서 읽는 대신, 전달받은 데이터를 사용
+        self.rules = rules_data
         self.current_item = None
         self.setMinimumSize(800, 500)
         
@@ -58,7 +53,6 @@ class HighlightingDialog(QDialog):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # Left Panel: Rules List
         left_panel = QFrame()
         left_panel.setObjectName("leftPanel")
         left_panel.setStyleSheet("#leftPanel { background-color: #e8e8e8; border-right: 1px solid #dcdcdc; }")
@@ -78,7 +72,6 @@ class HighlightingDialog(QDialog):
         list_button_layout.addWidget(remove_button)
         left_layout.addLayout(list_button_layout)
         
-        # Right Panel: Rule Editor
         self.editor_widget = QWidget()
         right_layout = QVBoxLayout(self.editor_widget)
         right_layout.setContentsMargins(20, 20, 20, 20)
@@ -111,7 +104,6 @@ class HighlightingDialog(QDialog):
         right_layout.addWidget(format_frame)
         right_layout.addStretch()
 
-        # Bottom Buttons
         bottom_layout = QHBoxLayout()
         ok_button = create_action_button("OK", is_default=True)
         ok_button.clicked.connect(self.accept)
@@ -179,8 +171,7 @@ class HighlightingDialog(QDialog):
         widget.deleteLater(); self.update_rule_data()
 
     def update_rule_data(self):
-        if self._loading_rule: return
-        if not self.current_item: return
+        if self._loading_rule or not self.current_item: return
         row = self.list_widget.row(self.current_item)
         if not (0 <= row < len(self.rules)): return
         
@@ -189,10 +180,12 @@ class HighlightingDialog(QDialog):
         rule['enabled'] = self.enabled_check.isChecked()
         self.current_item.setText(rule['name'])
         
-        conditions = [self.conditions_layout.itemAt(i).widget().get_data() 
-                      for i in range(self.conditions_layout.count()) 
-                      if isinstance(self.conditions_layout.itemAt(i).widget(), ConditionWidget)]
-        rule['conditions'] = conditions
+        # 💥 변경점: for 루프를 리스트 컴프리헨션으로 변경
+        rule['conditions'] = [
+            self.conditions_layout.itemAt(i).widget().get_data()
+            for i in range(self.conditions_layout.count())
+            if isinstance(self.conditions_layout.itemAt(i).widget(), ConditionWidget)
+        ]
 
     def pick_color(self, target):
         if not self.current_item: return
@@ -215,11 +208,6 @@ class HighlightingDialog(QDialog):
         if QMessageBox.question(self, "Confirm", f"Are you sure you want to delete rule '{self.rules[row]['name']}'?") == QMessageBox.StandardButton.Yes:
             del self.rules[row]; self.populate_list()
 
-    # 💥 변경점 3: 파일 처리 메소드 삭제
-    # def load_rules(self): ...
-    # def save_rules(self): ...
-
-    # 💥 변경점 4: accept와 apply_changes는 시그널만 발생시킴
     def accept(self):
         self.update_rule_data()
         self.rules_updated.emit(self.rules)
