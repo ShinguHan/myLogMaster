@@ -1,13 +1,14 @@
 import sys
 import json
 import os
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
-                               QListWidget, QListWidgetItem, QFrame, QLabel,
-                               QLineEdit, QDateTimeEdit, QMessageBox, QWidget,
-                               QTreeView, QMenu, QInputDialog, QRadioButton,
-                               QButtonGroup, QComboBox)
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QListWidget, 
+                               QListWidgetItem, QFrame, QLineEdit, QDateTimeEdit, 
+                               QMessageBox, QWidget, QTreeView, QMenu, QInputDialog, 
+                               QRadioButton, QButtonGroup, QComboBox)
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtCore import QDateTime, Qt
+# 💥 ui_components 모듈에서 공통 함수들을 임포트합니다.
+from .ui_components import create_section_label, create_separator, create_toggle_button, create_action_button
 
 QUERY_PRESETS_FILE = 'query_presets.json'
 
@@ -21,15 +22,6 @@ class QueryConditionsDialog(QDialog):
         self.column_names = ["Category", "DeviceID", "MethodID", "TrackingID", "AsciiData", "MessageName"]
         self.setMinimumSize(800, 600)
         
-        # ✅ 1. 버튼 선택 상태가 보이도록 스타일시트 추가
-        self.setStyleSheet("""
-            QPushButton[checkable=true]:checked {
-                background-color: #a8cce9;
-                border: 1px solid #007aff;
-                font-weight: bold;
-            }
-        """)
-        
         dialog_layout = QVBoxLayout(self)
         top_panel_layout = QHBoxLayout()
 
@@ -37,14 +29,14 @@ class QueryConditionsDialog(QDialog):
         left_frame = QFrame()
         left_frame.setFrameShape(QFrame.Shape.StyledPanel)
         left_layout = QVBoxLayout(left_frame)
-        left_layout.addWidget(QLabel("<b>Saved Presets</b>"))
+        left_layout.addWidget(create_section_label("Saved Presets")) # 💥 변경
         self.list_widget = QListWidget()
         self.list_widget.itemClicked.connect(self.on_preset_selected)
         left_layout.addWidget(self.list_widget)
         list_button_layout = QHBoxLayout()
-        add_button = QPushButton("Save Current")
+        add_button = create_action_button("Save Current") # 💥 변경
         add_button.clicked.connect(self.save_current_preset)
-        remove_button = QPushButton("Remove")
+        remove_button = create_action_button("Remove") # 💥 변경
         remove_button.clicked.connect(self.remove_selected_preset)
         list_button_layout.addWidget(add_button)
         list_button_layout.addWidget(remove_button)
@@ -56,22 +48,19 @@ class QueryConditionsDialog(QDialog):
         right_frame.setFrameShape(QFrame.Shape.StyledPanel)
         right_layout = QVBoxLayout(right_frame)
         
-        right_layout.addWidget(QLabel("<b>1. Data Source</b>"))
+        right_layout.addWidget(create_section_label("1. Data Source")) # 💥 변경
         source_layout = QHBoxLayout()
         self.source_group = QButtonGroup(self)
-        self.real_db_btn = QPushButton("Real Database")
-        self.real_db_btn.setCheckable(True)
-        self.real_db_btn.setChecked(True)
-        self.mock_data_btn = QPushButton("Mock Data")
-        self.mock_data_btn.setCheckable(True)
+        self.real_db_btn = create_toggle_button("Real Database", checked=True) # 💥 변경
+        self.mock_data_btn = create_toggle_button("Mock Data") # 💥 변경
         self.source_group.addButton(self.real_db_btn)
         self.source_group.addButton(self.mock_data_btn)
         source_layout.addWidget(self.real_db_btn)
         source_layout.addWidget(self.mock_data_btn)
         right_layout.addLayout(source_layout)
-        right_layout.addWidget(self.create_separator())
+        right_layout.addWidget(create_separator()) # 💥 변경
 
-        right_layout.addWidget(QLabel("<b>2. Analysis Mode</b>"))
+        right_layout.addWidget(create_section_label("2. Analysis Mode")) # 💥 변경
         mode_layout = QHBoxLayout()
         self.time_range_radio = QRadioButton("Time Range")
         self.time_range_radio.setChecked(True)
@@ -81,7 +70,7 @@ class QueryConditionsDialog(QDialog):
         right_layout.addLayout(mode_layout)
         self.time_range_radio.toggled.connect(self.update_ui_for_mode)
         
-        right_layout.addWidget(QLabel("<b>3. Conditions</b>"))
+        right_layout.addWidget(create_section_label("3. Conditions")) # 💥 변경
         self.time_range_widget = QWidget()
         time_layout = QHBoxLayout(self.time_range_widget)
         time_layout.setContentsMargins(0,0,0,0)
@@ -92,9 +81,9 @@ class QueryConditionsDialog(QDialog):
         time_layout.addWidget(QLabel("End:"))
         time_layout.addWidget(self.end_time_edit)
         right_layout.addWidget(self.time_range_widget)
-        right_layout.addWidget(self.create_separator())
+        right_layout.addWidget(create_separator()) # 💥 변경
 
-        right_layout.addWidget(QLabel("<b>Advanced Conditions</b>"))
+        right_layout.addWidget(create_section_label("Advanced Conditions")) # 💥 변경
         self.tree_model = QStandardItemModel()
         self.tree_model.setHorizontalHeaderLabels(['Filter'])
         self.tree_view = QTreeView()
@@ -106,10 +95,9 @@ class QueryConditionsDialog(QDialog):
         top_panel_layout.addWidget(right_frame, 3)
         
         bottom_button_layout = QHBoxLayout()
-        ok_button = QPushButton("Query")
-        ok_button.setDefault(True)
+        ok_button = create_action_button("Query", is_default=True) # 💥 변경
         ok_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("Cancel")
+        cancel_button = create_action_button("Cancel") # 💥 변경
         cancel_button.clicked.connect(self.reject)
         bottom_button_layout.addStretch()
         bottom_button_layout.addWidget(cancel_button)
@@ -122,13 +110,13 @@ class QueryConditionsDialog(QDialog):
         self.initialize_filter_tree()
         self.update_ui_for_mode(True)
 
-    def create_separator(self):
-        line = QFrame(); line.setFrameShape(QFrame.Shape.HLine); line.setFrameShadow(QFrame.Shadow.Sunken); return line
+    # 💥 create_separator 메소드는 이제 ui_components 모듈을 사용하므로 삭제합니다.
+    # def create_separator(self):
+    #     ...
 
     def update_ui_for_mode(self, is_time_range_checked):
         self.time_range_widget.setEnabled(is_time_range_checked); self.tree_view.setEnabled(is_time_range_checked)
 
-    # ✅ 2. 고급 필터 기능을 위한 헬퍼 메소드들을 모두 추가합니다.
     def initialize_filter_tree(self):
         root_item = self.tree_model.invisibleRootItem()
         and_item = QStandardItem("AND")
@@ -164,7 +152,7 @@ class QueryConditionsDialog(QDialog):
         editor_dialog = QDialog(self); editor_dialog.setWindowTitle("Edit Rule"); layout = QVBoxLayout(editor_dialog)
         col_combo = QComboBox(); col_combo.addItems(self.column_names); col_combo.setCurrentText(item_data.get("column"))
         op_combo = QComboBox(); op_combo.addItems(["Contains", "Does Not Contain", "Equals", "Not Equals", "Matches Regex"]); op_combo.setCurrentText(item_data.get("operator"))
-        val_edit = QLineEdit(item_data.get("value")); button_box = QHBoxLayout(); ok_btn = QPushButton("OK"); cancel_btn = QPushButton("Cancel")
+        val_edit = QLineEdit(item_data.get("value")); button_box = QHBoxLayout(); ok_btn = create_action_button("OK"); cancel_btn = create_action_button("Cancel") # 💥 변경
         ok_btn.clicked.connect(editor_dialog.accept); cancel_btn.clicked.connect(editor_dialog.reject)
         button_box.addStretch(); button_box.addWidget(ok_btn); button_box.addWidget(cancel_btn)
         layout.addWidget(QLabel("Column:")); layout.addWidget(col_combo); layout.addWidget(QLabel("Operator:")); layout.addWidget(op_combo); layout.addWidget(QLabel("Value:")); layout.addWidget(val_edit); layout.addLayout(button_box)
@@ -183,11 +171,11 @@ class QueryConditionsDialog(QDialog):
             return data
         else: return item_data
 
-    # (get_conditions, on_preset_selected 등 나머지 모든 메소드는 이전과 동일합니다)
     def get_conditions(self):
         root_item = self.tree_model.invisibleRootItem().child(0); filter_data = self.build_data_from_tree(root_item) if root_item else None
         data_source = "real" if self.real_db_btn.isChecked() else "mock"; analysis_mode = "time_range" if self.time_range_radio.isChecked() else "real_time"
         self.conditions = {'data_source': data_source, 'analysis_mode': analysis_mode, 'start_time': self.start_time_edit.dateTime().toString(Qt.DateFormat.ISODate), 'end_time': self.end_time_edit.dateTime().toString(Qt.DateFormat.ISODate), 'advanced_filter': filter_data}; return self.conditions
+    
     def on_preset_selected(self, item):
         self.current_preset_name = item.text(); preset_data = self.presets.get(self.current_preset_name, {})
         if 'start_time' in preset_data: self.start_time_edit.setDateTime(QDateTime.fromString(preset_data['start_time'], Qt.DateFormat.ISODate))
@@ -197,27 +185,34 @@ class QueryConditionsDialog(QDialog):
         if filter_data: self.build_tree_from_data(root_item, filter_data)
         else: self.initialize_filter_tree()
         self.tree_view.expandAll()
+
     def build_tree_from_data(self, parent_item, data_group):
         logic = data_group.get("logic", "AND"); item = QStandardItem(logic); item.setData({"type": "logic", "logic": logic}, Qt.ItemDataRole.UserRole); parent_item.appendRow(item)
         for rule in data_group.get("rules", []):
             if "logic" in rule: self.build_tree_from_data(item, rule)
             else: rule_text = f"{rule.get('column','')} {rule.get('operator','')} '{rule.get('value','')}'"; rule_item = QStandardItem(rule_text); rule_item.setData({"type": "rule", **rule}, Qt.ItemDataRole.UserRole); item.appendRow(rule_item)
+    
     def save_current_preset(self):
         preset_name, ok = QInputDialog.getText(self, "Save Preset", "Enter a name for this preset:", text=self.current_preset_name or "")
         if ok and preset_name: self.presets[preset_name] = self.get_conditions(); self.save_presets_to_file(); self.populate_preset_list()
+    
     def remove_selected_preset(self):
         if not self.current_preset_name: QMessageBox.warning(self, "Warning", "Please select a preset to remove."); return
         if QMessageBox.question(self, "Confirm", f"Are you sure you want to delete preset '{self.current_preset_name}'?") == QMessageBox.StandardButton.Yes:
             if self.current_preset_name in self.presets: del self.presets[self.current_preset_name]; self.save_presets_to_file(); self.populate_preset_list(); self.current_preset_name = None
+    
     def load_presets(self):
         if not os.path.exists(QUERY_PRESETS_FILE): return {}
         try:
             with open(QUERY_PRESETS_FILE, 'r', encoding='utf-8') as f: return json.load(f)
         except Exception: return {}
+
     def save_presets_to_file(self):
         try:
             with open(QUERY_PRESETS_FILE, 'w', encoding='utf-8') as f: json.dump(self.presets, f, indent=4, ensure_ascii=False)
         except Exception as e: QMessageBox.critical(self, "Error", f"Could not save presets: {e}")
+
     def accept(self):
         self.get_conditions(); super().accept()
+    
     def populate_preset_list(self): self.list_widget.clear(); [self.list_widget.addItem(QListWidgetItem(name)) for name in self.presets.keys()]

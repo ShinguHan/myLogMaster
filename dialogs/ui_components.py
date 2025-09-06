@@ -19,7 +19,11 @@ def create_toggle_button(text, checked=False):
     button = QPushButton(text)
     button.setCheckable(True)
     button.setChecked(checked)
+    # 체크 상태에 따라 스타일이 동적으로 변경되는 스타일시트
     button.setStyleSheet("""
+        QPushButton[checkable=true] {
+            font-weight: normal;
+        }
         QPushButton[checkable=true]:checked {
             background-color: #a8cce9;
             border: 1px solid #007aff;
