@@ -499,4 +499,9 @@ class AppController(QObject):
 
     def get_history_detail(self, run_id):
         return self.db_manager.get_validation_history_detail(run_id) if self.db_manager else None
+    
+    # 💥💥💥 추가할 부분 💥💥💥
+    def get_config(self):
+        """현재 설정의 복사본을 반환합니다."""
+        return self.config.copy()
 
