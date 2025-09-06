@@ -16,9 +16,9 @@
         "background": "#ffff00",
         "conditions": [
             {
-                "column": "ParsedBody",
+                "column": "MethodID",
                 "operator": "contains",
-                "value": "S6F11"
+                "value": "secs"
             }
         ],
         "enabled": true,
