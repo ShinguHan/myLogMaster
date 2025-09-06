@@ -178,6 +178,8 @@ class BaseLogViewerWidget(QWidget):
             direction = "->>" if "<--" in ascii_data else "-->>"
             actor_from, actor_to = ("Host", "Equipment") if direction == "->>" else ("Equipment", "Host")
             msg_content = re.sub(r', loc :.*', '', ascii_data).replace('-->', '').replace('<--', '').strip()
+            # 2. Mermaid 문법을 깨뜨릴 수 있는 큰따옴표 같은 특수문자를 안전한 코드로 치환합니다.
+            msg_content_safe = msg_content.replace('"', '#quot;')
             code += f"    {actor_from}{direction}{actor_to}: {parsed_body}: {msg_content}\n"
         return code
 

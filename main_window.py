@@ -121,6 +121,12 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(dashboard_action)
 
         self.tools_menu = menu_bar.addMenu("&Tools")
+        # 💥💥💥 신규 메뉴 추가 💥💥💥
+        detailed_trace_action = QAction("Detailed Carrier Trace...", self)
+        detailed_trace_action.triggered.connect(self.open_detailed_trace_dialog)
+        self.tools_menu.addAction(detailed_trace_action)
+        self.tools_menu.addSeparator()
+
         query_builder_action = QAction("Advanced Filter...", self)
         query_builder_action.triggered.connect(self.open_query_builder)
         self.tools_menu.addAction(query_builder_action)
@@ -358,7 +364,7 @@ class MainWindow(QMainWindow):
     def setup_ui_for_mode(self):
         if self.controller.mode == 'realtime':
             self.db_connect_button.setVisible(True)
-            self.filter_input.setVisible(False)
+            self.filter_input.setVisible(True)
             self.auto_scroll_checkbox.setVisible(True)
             self.setWindowTitle(f"Log Analyzer - [DB: {self.controller.connection_name}]")
             self.statusBar().showMessage("Ready to connect to the database.")
@@ -374,14 +380,17 @@ class MainWindow(QMainWindow):
             self.controller.cancel_db_fetch()
             self.statusBar().showMessage("Cancelling...")
         else:
+            # 💥💥💥 수정된 부분 시작 💥💥💥
+            # QueryConditionsDialog를 생성할 때, 더 이상 사용하지 않는 'date_columns' 인자를 제거합니다.
             dialog = QueryConditionsDialog(
                 column_names=self.controller.get_default_column_names(), # 컨트롤러에서 컬럼명 가져오기
-                date_columns=['SystemDate'], 
-                controller=self.controller,
                 parent=self
             )
+            # 💥💥💥 수정된 부분 끝 💥💥💥
             if dialog.exec():
-                query_conditions = dialog.get_query_data()
+                query_conditions = dialog.get_conditions()
+                if not query_conditions:
+                    return 
                 self.controller.start_db_fetch(query_conditions)
                 self._is_fetching = True
                 self.db_connect_button.setText("❌ 데이터 수신 중단")
@@ -507,4 +516,43 @@ class MainWindow(QMainWindow):
 
         finally:
             QApplication.restoreOverrideCursor()
+
+    # 💥💥💥 신규 추가된 함수 💥💥💥
+    def open_detailed_trace_dialog(self):
+        """상세 시나리오 추출을 위한 파라미터 입력 다이얼로그를 엽니다."""
+        if self.controller.original_data.empty:
+            QMessageBox.information(self, "Info", "Please load a log file first.")
+            return
+
+        from dialogs.DetailedTraceDialog import DetailedTraceDialog
+        from dialogs.TraceDialog import TraceDialog
+        
+        dialog = DetailedTraceDialog(self)
+        if dialog.exec():
+            params = dialog.get_trace_parameters()
+            if not params['carrier_id']:
+                QMessageBox.warning(self, "Input Required", "Carrier ID is a required field.")
+                return
+
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            try:
+                trace_data = self.controller.get_carrier_move_scenario(**params)
+                if trace_data.empty:
+                    QMessageBox.information(self, "Trace Result", "No matching logs found for the given criteria.")
+                    return
+
+                # 결과를 새로운 TraceDialog에 담아 보여줍니다.
+                title = f"Trace for {params['carrier_id']}"
+                if params['from_device']: title += f" from {params['from_device']}"
+                if params['to_device']: title += f" to {params['to_device']}"
+
+                rules = self.controller.get_highlighting_rules()
+                trace_dialog = TraceDialog(trace_data, title, rules, self.controller, self)
+                
+                trace_dialog.finished.connect(lambda: self.open_trace_dialogs.remove(trace_dialog))
+                self.open_trace_dialogs.append(trace_dialog)
+                trace_dialog.show()
+
+            finally:
+                QApplication.restoreOverrideCursor()
 

@@ -524,3 +524,34 @@ class AppController(QObject):
         """현재 설정의 복사본을 반환합니다."""
         return self.config.copy()
 
+    # 💥💥💥 신규 추가된 함수 💥💥💥
+    def get_carrier_move_scenario(self, carrier_id, from_device, to_device):
+        """특정 Carrier의 장비 간 이동과 관련된 모든 로그를 추출합니다."""
+        
+        # 1. 필수값인 Carrier ID로 관련된 모든 로그를 먼저 가져옵니다.
+        base_df = self.get_trace_data(carrier_id)
+        if base_df.empty:
+            return pd.DataFrame()
+
+        # 2. From/To Device ID가 둘 다 입력되었는지 확인합니다.
+        if from_device and to_device:
+            # 3. from_device 또는 to_device ID를 포함하는 로그만 추가로 필터링합니다.
+            device_mask = (
+                base_df.astype(str)
+                       .stack()
+                       .str.contains(f"{from_device}|{to_device}", case=False, na=False)
+                       .unstack()
+                       .any(axis=1)
+            )
+            # 4. 두 조건을 모두 만족하는 로그만 시간순으로 정렬하여 반환합니다.
+            return base_df[device_mask].sort_values(by='SystemDate_dt')
+        
+        # 5. From/To Device ID가 없으면, Carrier ID로만 검색한 결과를 반환합니다.
+        return base_df.sort_values(by='SystemDate_dt')
+
+    # 💥💥💥 추가할 부분 💥💥💥
+    def get_default_column_names(self):
+        """고급 필터 등에서 사용할 기본 컬럼 이름 목록을 반환합니다."""
+        # 이 목록은 DB 조회 시 사용되는 컬럼들입니다.
+        # 나중에 DB 스키마가 변경되거나 할 때 이 부분만 수정하면 됩니다.
+        return ["Category", "DeviceID", "MethodID", "TrackingID", "AsciiData", "MessageName"]

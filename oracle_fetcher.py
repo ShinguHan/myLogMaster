@@ -48,7 +48,12 @@ class OracleFetcherThread(QThread):
             where_clause, params = self.parent()._build_where_clause(self.conditions)
             
             self.progress.emit("Connecting to Oracle DB...")
-            conn = oracledb.connect(**self.conn_info)
+            # 💥💥💥 수정된 부분 시작 💥💥💥
+            # oracledb.connect가 모르는 'type' 인자를 제거합니다.
+            db_conn_info = self.conn_info.copy()
+            db_conn_info.pop('type', None)
+            conn = oracledb.connect(**db_conn_info)
+            # 💥💥💥 수정된 부분 끝 💥💥💥
             self.progress.emit("Connection successful. Fetching data...")
 
             base_query = "SELECT * FROM V_LOG_MESSAGE"
@@ -74,7 +79,12 @@ class OracleFetcherThread(QThread):
         conn = None
         try:
             self.progress.emit("Connecting to Oracle DB for real-time tailing...")
-            conn = oracledb.connect(**self.conn_info)
+            # 💥💥💥 수정된 부분 시작 💥💥💥
+            # oracledb.connect가 모르는 'type' 인자를 제거합니다.
+            db_conn_info = self.conn_info.copy()
+            db_conn_info.pop('type', None)
+            conn = oracledb.connect(**db_conn_info)
+            # 💥💥💥 수정된 부분 끝 💥💥💥
             self.progress.emit("Connection successful. Tailing logs...")
             
             cursor = conn.cursor()
@@ -109,10 +119,13 @@ class OracleFetcherThread(QThread):
         for i in range(num_rows):
             if not self._is_running: break
             row_time = start_dt + timedelta(seconds=(total_seconds * i / num_rows))
+            device_id = f"MOCK_TR_{i}"
             mock_data.append({
                 "Category": "Mock-TimeRange", 
                 "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
                 "DeviceID": f"MOCK_TR_{i}",
+                # 💥💥💥 수정된 부분: TrackingID 필드를 추가합니다. 💥💥💥
+                "TrackingID": device_id,
                 "NumericalTimeStamp": int(row_time.timestamp() * 1000)
             })
             if len(mock_data) >= self.chunk_size:
@@ -131,10 +144,13 @@ class OracleFetcherThread(QThread):
             mock_data = []
             for _ in range(10):
                 row_time = datetime.now()
+                device_id = f"MOCK_RT_{i}"
                 mock_data.append({
                     "Category": "Mock-RealTime", 
                     "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
                     "DeviceID": f"MOCK_RT_{i}",
+                    # 💥💥💥 수정된 부분: TrackingID 필드를 추가합니다. 💥💥💥
+                    "TrackingID": device_id, 
                     "NumericalTimeStamp": int(row_time.timestamp() * 1000)
                 })
                 i += 1

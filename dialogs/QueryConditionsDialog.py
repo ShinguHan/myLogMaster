@@ -1,6 +1,6 @@
 import json
 import os
-from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLineEdit,
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                                QListWidget, QFrame, QLabel,
                                QDateTimeEdit, QMessageBox, QWidget,
                                QTreeView, QMenu, QInputDialog, QRadioButton,
@@ -12,13 +12,14 @@ from .ui_components import create_section_label, create_separator, create_toggle
 QUERY_PRESETS_FILE = 'query_presets.json'
 
 class QueryConditionsDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, column_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Query Conditions")
         self.presets = self.load_presets()
         self.current_preset_name = None
         
-        self.column_names = ["Category", "DeviceID", "MethodID", "TrackingID", "AsciiData", "MessageName"]
+        self.column_names = column_names
+        
         self.setMinimumSize(800, 600)
         
         self._init_ui()
@@ -294,4 +295,5 @@ class QueryConditionsDialog(QDialog):
         self.list_widget.clear()
         # 💥 변경점: for 루프 대신 addItems 사용
         self.list_widget.addItems(sorted(self.presets.keys()))
+
 
