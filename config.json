@@ -17,5 +17,5 @@
         "ParsedType",
         "SystemDate_dt"
     ],
-    "theme": "dark"
+    "theme": "dracula"
 }

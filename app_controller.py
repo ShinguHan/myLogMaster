@@ -2,6 +2,8 @@ import pandas as pd
 import json
 import os
 import re
+from functools import reduce # 💥 변경점 1: reduce 임포트
+import operator              # 💥 변경점 2: operator 임포트
 from PySide6.QtCore import QObject, Signal, QTimer
 
 from universal_parser import parse_log_with_profile
@@ -9,12 +11,13 @@ from models.LogTableModel import LogTableModel
 from analysis_result import AnalysisResult
 from database_manager import DatabaseManager
 from oracle_fetcher import OracleFetcherThread
-from utils.event_matcher import EventMatcher # 💥 변경점: EventMatcher 임포트
+from utils.event_matcher import EventMatcher
 
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios'
 
 class AppController(QObject):
+    # ... (이전 __init__ 및 다른 메소드들은 모두 동일) ...
     model_updated = Signal(LogTableModel)
     fetch_completed = Signal()
     fetch_progress = Signal(str)
@@ -42,7 +45,6 @@ class AppController(QObject):
 
         self.highlighting_rules = self._load_highlighting_rules()
         
-        # 💥 변경점: EventMatcher 인스턴스 생성
         self.event_matcher = EventMatcher()
 
         if self.mode == 'realtime':
@@ -53,7 +55,7 @@ class AppController(QObject):
                 self.db_manager = None
         else:
             self.db_manager = DatabaseManager("file_mode")
-            
+
     def _load_config(self):
         try:
             if os.path.exists('config.json'):
@@ -199,8 +201,6 @@ class AppController(QObject):
     def run_analysis_script(self, script_code, dataframe):
         result_obj = AnalysisResult()
         try:
-            # `exec` can be dangerous. Ensure script source is trusted.
-            # A safer approach might involve a restricted execution environment.
             exec_globals = {
                 'logs': dataframe,
                 'result': result_obj,
@@ -230,31 +230,43 @@ class AppController(QObject):
             print(f"Error applying filter: {e}")
             self.update_model_data(self.original_data)
 
+    # 💥 변경점 3: Pandas Boolean Indexing 최적화 적용
     def _build_mask_recursive(self, query_group, df):
+        """
+        functools.reduce와 Pandas의 boolean 연산자를 사용하여 필터 마스크를
+        효율적으로 생성합니다.
+        """
         masks = []
         for rule in query_group.get('rules', []):
             if 'logic' in rule: 
+                # 하위 그룹에 대해 재귀적으로 마스크 생성
                 masks.append(self._build_mask_recursive(rule, df))
             else: 
                 column, op, value = rule['column'], rule['operator'], rule['value']
-                if not all([column, op]): continue
+                if not all([column, op, value is not None]): continue
 
-                mask = pd.Series(True, index=df.index)
-                try:
-                    series = df[column].astype(str)
-                    if op == 'Contains': mask = series.str.contains(value, case=False, na=False)
-                    elif op == 'Does Not Contain': mask = ~series.str.contains(value, case=False, na=False)
-                    elif op == 'Equals': mask = series == value
-                    elif op == 'Not Equals': mask = series != value
-                    elif op == 'Matches Regex': mask = series.str.match(value, na=False)
-                    masks.append(mask)
-                except KeyError:
+                # KeyError를 방지하고, 시리즈를 문자열로 변환
+                if column not in df.columns:
                     continue
+                series = df[column].astype(str)
+                
+                # 연산자에 따른 마스크 생성
+                if op == 'Contains': mask = series.str.contains(value, case=False, na=False)
+                elif op == 'Does Not Contain': mask = ~series.str.contains(value, case=False, na=False)
+                elif op == 'Equals': mask = series.str.lower() == value.lower()
+                elif op == 'Not Equals': mask = series.str.lower() != value.lower()
+                elif op == 'Matches Regex': mask = series.str.match(value, na=False)
+                else:
+                    # 유효하지 않은 연산자는 무시하고 True 마스크(영향 없음) 추가
+                    mask = pd.Series(True, index=df.index)
+                masks.append(mask)
 
         if not masks:
             return pd.Series(True, index=df.index)
 
-        return pd.concat(masks, axis=1).all(axis=1) if query_group['logic'] == 'AND' else pd.concat(masks, axis=1).any(axis=1)
+        # reduce를 사용하여 모든 마스크를 논리 연산자로 결합
+        logic_op = operator.and_ if query_group['logic'] == 'AND' else operator.or_
+        return reduce(logic_op, masks)
 
     def load_filters(self):
         try:
@@ -354,9 +366,7 @@ class AppController(QObject):
         
         return all_completed_scenarios
 
-    # 💥 변경점: 복잡한 로직이 EventMatcher로 위임되어 코드가 극도로 단순해짐
     def _match_event(self, row, rule_group):
-        """이벤트가 규칙과 일치하는지 확인합니다. (EventMatcher에 위임)"""
         return self.event_matcher.match(row, rule_group)
 
     def load_all_scenarios(self):
