@@ -151,6 +151,7 @@ class MainWindow(QMainWindow):
 
         self.tools_menu.addSeparator()
         highlighting_action = QAction("Conditional Highlighting...", self)
+        # 💥 변경점 1: open_highlighting_dialog 호출
         highlighting_action.triggered.connect(self.open_highlighting_dialog)
         self.tools_menu.addAction(highlighting_action)
 
@@ -398,7 +399,9 @@ class MainWindow(QMainWindow):
                     self.tools_menu.setEnabled(False)
                     self.view_menu.setEnabled(False)
                     
-    def on_fetch_progress(self, message): self.statusBar().showMessage(message)
+    def on_fetch_progress(self, message): 
+        self.statusBar().showMessage(message)
+        
     def on_fetch_complete(self):
         self._is_fetching = False
         self.db_connect_button.setEnabled(True)
@@ -435,6 +438,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.warning(self, "Theme Error", f"Could not find or apply theme: {theme_name}")
 
+    # 💥 변경점 2: Highlighting Dialog를 열고 시그널을 연결하는 로직
     def open_highlighting_dialog(self):
         source_model = self.log_viewer.source_model()
         if source_model is None or source_model._data.empty:
@@ -444,8 +448,18 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'highlighting_dialog') and self.highlighting_dialog.isVisible():
             self.highlighting_dialog.activateWindow()
             return
+
         column_names = source_model._data.columns.tolist()
-        self.highlighting_dialog = HighlightingDialog(column_names, self)
+        
+        # 컨트롤러로부터 규칙 데이터의 '복사본'을 가져옴
+        rules_data = self.controller.get_highlighting_rules()
+        
+        # 다이얼로그에 데이터 전달
+        self.highlighting_dialog = HighlightingDialog(column_names, rules_data, self)
+        
+        # 다이얼로그의 'rules_updated' 신호를 컨트롤러의 저장 메소드에 연결
+        self.highlighting_dialog.rules_updated.connect(self.controller.set_and_save_highlighting_rules)
+        
         self.highlighting_dialog.show()
 
     def save_log_file(self):

@@ -1,7 +1,6 @@
 [
     {
-        "name": "ALARM",
-        "enabled": true,
+        "background": null,
         "conditions": [
             {
                 "column": "AsciiData",
@@ -9,12 +8,12 @@
                 "value": "ALARM"
             }
         ],
+        "enabled": true,
         "foreground": "#ff0000",
-        "background": null
+        "name": "ALARM"
     },
     {
-        "name": "MESSAGENAME",
-        "enabled": true,
+        "background": "#ffff00",
         "conditions": [
             {
                 "column": "ParsedBody",
@@ -22,7 +21,8 @@
                 "value": "S6F11"
             }
         ],
+        "enabled": true,
         "foreground": "#000000",
-        "background": "#ffff00"
+        "name": "MESSAGENAME"
     }
 ]

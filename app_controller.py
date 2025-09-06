@@ -705,3 +705,35 @@ class AppController(QObject):
                 print("Warning: Could not read theme from config.json. Defaulting to 'light'.")
                 pass
         self.current_theme = theme_to_load
+
+    # 💥 변경점 1: 하이라이트 규칙 관리 메소드를 컨트롤러에 추가
+    def _load_highlighting_rules(self):
+        """하이라이트 규칙을 파일에서 로드합니다."""
+        if not os.path.exists(HIGHLIGHTERS_FILE):
+            return []
+        try:
+            with open(HIGHLIGHTERS_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, Exception):
+            print(f"Warning: Could not read {HIGHLIGHTERS_FILE}. Using empty rules.")
+            return []
+
+    def _save_highlighting_rules(self):
+        """현재 하이라이트 규칙을 파일에 저장합니다."""
+        try:
+            with open(HIGHLIGHTERS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.highlighting_rules, f, indent=4, ensure_ascii=False)
+            print("Highlighting rules saved successfully.")
+        except Exception as e:
+            print(f"Error saving highlighting rules: {e}")
+
+    def get_highlighting_rules(self):
+        """다이얼로그에 전달할 규칙 데이터의 복사본을 반환합니다."""
+        return [dict(rule) for rule in self.highlighting_rules]
+    
+    def set_and_save_highlighting_rules(self, new_rules):
+        """새로운 규칙을 적용, 저장하고 모델을 업데이트합니다."""
+        self.highlighting_rules = new_rules
+        self._save_highlighting_rules()
+        self.source_model.set_highlighting_rules(self.highlighting_rules)
+        print("New highlighting rules applied.")

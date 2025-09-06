@@ -4,7 +4,7 @@ import os
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QListWidget, 
                                QListWidgetItem, QFrame, QLineEdit, QDateTimeEdit, 
                                QMessageBox, QWidget, QTreeView, QMenu, QInputDialog, 
-                               QRadioButton, QButtonGroup, QComboBox)
+                               QRadioButton, QButtonGroup, QComboBox, QLabel)
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtCore import QDateTime, Qt
 # 💥 ui_components 모듈에서 공통 함수들을 임포트합니다.
