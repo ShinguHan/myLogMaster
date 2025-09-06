@@ -286,10 +286,29 @@ class AppController(QObject):
         except Exception as e:
             print(f"Error saving filter '{name}': {e}")
     
+    # 💥💥💥 수정된 부분 (get_trace_data) 💥💥💥
     def get_trace_data(self, trace_id):
+        """
+        주요 컬럼들에서 trace_id를 검색하여 관련 로그를 추출합니다.
+        .apply 대신 벡터화된 연산을 사용하여 성능을 개선했습니다.
+        """
         df = self.original_data
-        mask = df.apply(lambda r: r.astype(str).str.contains(trace_id, case=False, na=False).any(), axis=1)
-        return df[mask]
+        if df.empty:
+            return pd.DataFrame()
+
+        # 검색할 주요 컬럼들을 명시적으로 지정
+        search_columns = ['TrackingID', 'AsciiData', 'DeviceID', 'MethodID', 'MessageName']
+        
+        # 실제 데이터프레임에 존재하는 컬럼만 필터링
+        valid_search_columns = [col for col in search_columns if col in df.columns]
+
+        # 각 컬럼에 대해 contains 마스크를 생성하고, | (OR) 연산자로 모두 합칩니다.
+        # 이것이 apply보다 훨씬 빠릅니다.
+        final_mask = reduce(
+            operator.or_, 
+            (df[col].astype(str).str.contains(trace_id, case=False, na=False) for col in valid_search_columns)
+        )
+        return df[final_mask]
 
     def get_scenario_data(self, trace_id):
         scenario_df = self.get_trace_data(trace_id)
