@@ -9,12 +9,15 @@ from models.LogTableModel import LogTableModel
 class BaseLogViewerWidget(QWidget):
     trace_requested = Signal(str)
 
-    def __init__(self, controller, parent=None):
+    def __init__(self, controller, model=None, parent=None):
         super().__init__(parent)
         self.controller = controller
         # 💥💥💥 수정된 부분 💥💥💥
-        # 컨트롤러의 source_model을 self.log_table_model 속성에 일관되게 할당합니다.
-        self.log_table_model = self.controller.source_model 
+        # model이 직접 제공되면 그것을 사용하고, 아니면 컨트롤러의 기본 모델을 사용합니다.
+        if model:
+            self.log_table_model = model
+        else:
+            self.log_table_model = self.controller.source_model
         
         self.proxy_model = QSortFilterProxyModel()
         # 프록시 모델의 소스를 self.log_table_model로 설정합니다.

@@ -55,8 +55,10 @@ class MainWindow(QMainWindow):
         self.auto_scroll_checkbox.setChecked(True)
         filter_layout.addWidget(self.auto_scroll_checkbox)
         
-        # BaseLogViewerWidget을 생성하고 MainWindow의 핵심 위젯으로 사용
-        self.log_viewer = BaseLogViewerWidget(self.controller, self)
+        # 💥💥💥 수정된 부분 💥💥💥
+        # 두 번째 인자로 self를 넘기지 않습니다. 대신 parent=self를 명시하여
+        # 위젯의 부모-자식 관계를 올바르게 설정합니다.
+        self.log_viewer = BaseLogViewerWidget(self.controller, parent=self)
         
         main_layout.addLayout(filter_layout)
         main_layout.addWidget(self.log_viewer)
