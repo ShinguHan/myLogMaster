@@ -12,13 +12,14 @@ from .ui_components import create_section_label, create_separator, create_toggle
 QUERY_PRESETS_FILE = 'query_presets.json'
 
 class QueryConditionsDialog(QDialog):
-    def __init__(self, column_names, parent=None):
+    def __init__(self, column_names, template_names, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Query Conditions")
         self.presets = self.load_presets()
         self.current_preset_name = None
         
         self.column_names = column_names
+        self.template_names = template_names
         
         self.setMinimumSize(800, 600)
         
@@ -55,6 +56,15 @@ class QueryConditionsDialog(QDialog):
         right_frame = QFrame()
         right_frame.setFrameShape(QFrame.Shape.StyledPanel)
         right_layout = QVBoxLayout(right_frame)
+
+        # --- 바로 이 부분이 추가된 핵심 UI 코드입니다 ---
+        right_layout.addWidget(create_section_label("1. Query Template"))
+        self.query_template_combo = QComboBox()
+        # 생성자에서 받은 template_names로 드롭다운 목록을 채웁니다.
+        self.query_template_combo.addItems(self.template_names)
+        right_layout.addWidget(self.query_template_combo)
+        right_layout.addWidget(create_separator())
+        # --- 여기까지 ---
         
         right_layout.addWidget(create_section_label("1. Data Source"))
         source_layout = QHBoxLayout()

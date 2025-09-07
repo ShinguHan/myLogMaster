@@ -15,6 +15,7 @@ from utils.event_matcher import EventMatcher
 
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios'
+QUERY_TEMPLATES_FILE = 'query_templates.json' # 템플릿 파일 경로 추가
 
 class AppController(QObject):
     # ... (이전 __init__ 및 다른 메소드들은 모두 동일) ...
@@ -55,6 +56,25 @@ class AppController(QObject):
                 self.db_manager = None
         else:
             self.db_manager = DatabaseManager("file_mode")
+
+    def load_query_templates(self):
+        """query_templates.json 파일에서 템플릿들을 불러옵니다."""
+        if not os.path.exists(QUERY_TEMPLATES_FILE):
+            return {}
+        try:
+            with open(QUERY_TEMPLATES_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"Error loading query templates: {e}")
+            return {}
+
+    def save_query_templates(self, templates_data):
+        """수정된 템플릿 데이터를 query_templates.json 파일에 저장합니다."""
+        try:
+            with open(QUERY_TEMPLATES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(templates_data, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print(f"Error saving query templates: {e}")
 
     def _load_config(self):
         try:
@@ -103,6 +123,12 @@ class AppController(QObject):
         self.highlighting_rules = new_rules
         self._save_highlighting_rules()
         self.source_model.set_highlighting_rules(self.highlighting_rules)
+
+    def get_query_template_names(self):
+        """쿼리 템플릿의 이름 목록을 반환합니다."""
+        templates = self.load_query_templates()
+        # 항상 "Default" 옵션을 맨 앞에 추가해줍니다.
+        return ["Default (SELECT * ...)"] + sorted(templates.keys())
 
     def load_data_from_cache(self):
         if not self.db_manager: 

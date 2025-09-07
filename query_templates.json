@@ -1,0 +1,14 @@
+{
+    "Error Logs Only": {
+        "description": "Category가 'Error'인 로그만 빠르게 조회합니다.",
+        "query": "SELECT SystemDate, DeviceID, MethodID, TrackingID, AsciiData FROM V_LOG_MESSAGE WHERE Category = 'Error'"
+    },
+    "SECS Communication Logs": {
+        "description": "Host와 장비 간의 SECS 통신(Category='Com') 로그만 필터링합니다.",
+        "query": "SELECT * FROM V_LOG_MESSAGE WHERE Category = 'Com'"
+    },
+    "yy": {
+        "description": "",
+        "query": "SELECT * FROM V_LOG_MESSAGE WHERE "
+    }
+}

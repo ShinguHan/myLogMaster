@@ -18,6 +18,7 @@ from dialogs.HighlightingDialog import HighlightingDialog
 from dialogs.ValidationResultDialog import ValidationResultDialog
 from dialogs.HistoryBrowserDialog import HistoryBrowserDialog
 from dialogs.ScriptEditorDialog import ScriptEditorDialog
+from dialogs.TemplateManagerDialog import TemplateManagerDialog # 새 다이얼로그 임포트
 
 
 class MainWindow(QMainWindow):
@@ -127,6 +128,11 @@ class MainWindow(QMainWindow):
         self.tools_menu.addAction(detailed_trace_action)
         self.tools_menu.addSeparator()
 
+        template_manager_action = QAction("Query Template Manager...", self)
+        template_manager_action.triggered.connect(self.open_template_manager)
+        self.tools_menu.addAction(template_manager_action)
+        self.tools_menu.addSeparator()
+
         query_builder_action = QAction("Advanced Filter...", self)
         query_builder_action.triggered.connect(self.open_query_builder)
         self.tools_menu.addAction(query_builder_action)
@@ -174,6 +180,11 @@ class MainWindow(QMainWindow):
             action = QAction(f"Error loading scenarios: {e}", self)
             action.setEnabled(False)
             self.scenario_menu.addAction(action)
+
+    def open_template_manager(self):
+        """쿼리 템플릿 관리 다이얼로그를 엽니다."""
+        dialog = TemplateManagerDialog(self.controller, self)
+        dialog.exec()
 
     def update_table_model(self, source_model):
         self.log_viewer.proxy_model.setSourceModel(source_model)
@@ -380,13 +391,14 @@ class MainWindow(QMainWindow):
             self.controller.cancel_db_fetch()
             self.statusBar().showMessage("Cancelling...")
         else:
-            # 💥💥💥 수정된 부분 시작 💥💥💥
-            # QueryConditionsDialog를 생성할 때, 더 이상 사용하지 않는 'date_columns' 인자를 제거합니다.
+            # 1. 컨트롤러에게 템플릿 이름 목록을 요청합니다.
+            template_names = self.controller.get_query_template_names()
+            
             dialog = QueryConditionsDialog(
-                column_names=self.controller.get_default_column_names(), # 컨트롤러에서 컬럼명 가져오기
+                column_names=self.controller.get_default_column_names(),
+                template_names=template_names, # 2. 받아온 목록을 다이얼로그에 전달합니다.
                 parent=self
             )
-            # 💥💥💥 수정된 부분 끝 💥💥💥
             if dialog.exec():
                 query_conditions = dialog.get_conditions()
                 if not query_conditions:
