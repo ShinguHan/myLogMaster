@@ -2,7 +2,7 @@ import sys, json, os, re
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QMainWindow, QFileDialog, QMessageBox, QMenu, QStatusBar,QApplication,QTableView,
-    QWidget, QVBoxLayout, QLineEdit, QHBoxLayout, QCheckBox, QPushButton
+    QWidget, QVBoxLayout, QLineEdit, QHBoxLayout, QCheckBox, QPushButton, QLabel
 )
 from PySide6.QtGui import QAction, QActionGroup
 from functools import partial
@@ -18,7 +18,7 @@ from dialogs.HighlightingDialog import HighlightingDialog
 from dialogs.ValidationResultDialog import ValidationResultDialog
 from dialogs.HistoryBrowserDialog import HistoryBrowserDialog
 from dialogs.ScriptEditorDialog import ScriptEditorDialog
-from dialogs.TemplateManagerDialog import TemplateManagerDialog # 새 다이얼로그 임포트
+from dialogs.TemplateManagerDialog import TemplateManagerDialog
 
 
 class MainWindow(QMainWindow):
@@ -44,8 +44,15 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(main_widget)
         main_layout = QVBoxLayout(main_widget)
 
+        db_control_layout = QHBoxLayout()
         self.db_connect_button = QPushButton("📡 데이터베이스에 연결하여 로그 조회")
-        main_layout.addWidget(self.db_connect_button)
+        self.status_indicator = QLabel()
+        self.status_indicator.setFixedSize(16, 16)
+        self.status_indicator.setStyleSheet("border-radius: 8px; background-color: gray;")
+        db_control_layout.addWidget(self.db_connect_button)
+        db_control_layout.addWidget(self.status_indicator)
+        db_control_layout.addStretch()
+        main_layout.addLayout(db_control_layout)
         
         filter_layout = QHBoxLayout()
         self.filter_input = QLineEdit()
@@ -56,9 +63,6 @@ class MainWindow(QMainWindow):
         self.auto_scroll_checkbox.setChecked(True)
         filter_layout.addWidget(self.auto_scroll_checkbox)
         
-        # 💥💥💥 수정된 부분 💥💥💥
-        # 두 번째 인자로 self를 넘기지 않습니다. 대신 parent=self를 명시하여
-        # 위젯의 부모-자식 관계를 올바르게 설정합니다.
         self.log_viewer = BaseLogViewerWidget(self.controller, parent=self)
         
         main_layout.addLayout(filter_layout)
@@ -67,15 +71,83 @@ class MainWindow(QMainWindow):
         self.setStatusBar(QStatusBar())
         self.statusBar().showMessage("Ready.")
 
+    def start_db_connection(self):
+        if self._is_fetching:
+            # 실시간 모드일 때
+            if self.controller.is_realtime_tailing():
+                if self.controller.is_paused():
+                    self.controller.resume_db_fetch()
+                    self.db_connect_button.setText("⏸️ 일시정지")
+                    self.db_connect_button.setStyleSheet("background-color: #F39C12; color: white;") # 주황색
+                    self.status_indicator.setStyleSheet("border-radius: 8px; background-color: green;")
+                else:
+                    self.controller.pause_db_fetch()
+                    self.db_connect_button.setText("▶️ 이어하기")
+                    self.db_connect_button.setStyleSheet("background-color: #2ECC71; color: white;") # 녹색
+                    self.status_indicator.setStyleSheet("border-radius: 8px; background-color: orange;")
+            # 시간 범위 조회 중일 때
+            else:
+                self.controller.cancel_db_fetch()
+        else:
+            templates = self.controller.load_query_templates()
+            column_names = self.controller.get_default_column_names()
+
+            dialog = QueryConditionsDialog(
+                column_names=column_names,
+                query_templates=templates,
+                parent=self
+            )
+            
+            if dialog.exec():
+                query_conditions = dialog.get_conditions()
+                if not query_conditions:
+                    return
+                
+                self.controller.start_db_fetch(query_conditions)
+                self._is_fetching = True
+                
+                if query_conditions.get('analysis_mode') == 'real_time':
+                    self.db_connect_button.setText("⏸️ 일시정지")
+                    self.db_connect_button.setStyleSheet("background-color: #F39C12; color: white;")
+                else:
+                    self.db_connect_button.setText("❌ 데이터 수신 중단")
+                    self.db_connect_button.setStyleSheet("background-color: #DA4453; color: white;")
+                
+                self.status_indicator.setStyleSheet("border-radius: 8px; background-color: green;")
+                self.tools_menu.setEnabled(False)
+                self.view_menu.setEnabled(False)
+                    
+    def on_fetch_progress(self, message):
+        self.statusBar().showMessage(message)
+
+    def on_fetch_complete(self):
+        self._is_fetching = False
+        self.db_connect_button.setEnabled(True)
+        self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
+        self.db_connect_button.setStyleSheet("")
+        self.status_indicator.setStyleSheet("border-radius: 8px; background-color: gray;")
+        if self.controller.mode == 'realtime':
+            self.tools_menu.setEnabled(True)
+            self.view_menu.setEnabled(True)        
+        source_model = self.controller.source_model
+        if source_model:
+            total_rows = source_model.rowCount()
+            if "Stopping..." not in self.statusBar().currentMessage():
+                 self.statusBar().showMessage(f"Completed. Total {total_rows:,} logs in view.")
+           
+    def on_fetch_error(self, error_message):
+        QMessageBox.critical(self, "Error", f"An error occurred:\n{error_message}")
+        self.status_indicator.setStyleSheet("border-radius: 8px; background-color: red;")
+        self.on_fetch_complete()
+
+    # --- 이하 기존 메소드들은 생략 (변경 없음) ---
     def connect_signals(self):
-        # 컨트롤러 신호 연결
         self.controller.model_updated.connect(self.update_table_model)
         self.controller.fetch_progress.connect(self.on_fetch_progress)
         self.controller.fetch_completed.connect(self.on_fetch_complete)
         self.controller.row_count_updated.connect(self._update_row_count_status)
         self.controller.fetch_error.connect(self.on_fetch_error)
 
-        # UI 위젯 신호 연결
         self.db_connect_button.clicked.connect(self.start_db_connection)
         self.filter_input.textChanged.connect(self.log_viewer.set_filter_fixed_string)
         self.log_viewer.trace_requested.connect(self.start_event_trace)
@@ -84,8 +156,6 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("&File")
         
-        # 💥💥💥 수정된 부분 💥💥💥
-        # self.log_viewer.open_log_file이 아닌 self.open_log_file에 연결합니다.
         open_action = QAction("&Open Log File...", self)
         open_action.triggered.connect(self.open_log_file)
         file_menu.addAction(open_action)
@@ -122,15 +192,9 @@ class MainWindow(QMainWindow):
         self.view_menu.addAction(dashboard_action)
 
         self.tools_menu = menu_bar.addMenu("&Tools")
-        # 💥💥💥 신규 메뉴 추가 💥💥💥
         detailed_trace_action = QAction("Detailed Carrier Trace...", self)
         detailed_trace_action.triggered.connect(self.open_detailed_trace_dialog)
         self.tools_menu.addAction(detailed_trace_action)
-        self.tools_menu.addSeparator()
-
-        template_manager_action = QAction("Query Template Manager...", self)
-        template_manager_action.triggered.connect(self.open_template_manager)
-        self.tools_menu.addAction(template_manager_action)
         self.tools_menu.addSeparator()
 
         query_builder_action = QAction("Advanced Filter...", self)
@@ -147,6 +211,11 @@ class MainWindow(QMainWindow):
         browse_scenarios_action.triggered.connect(self.open_scenario_browser)
         self.tools_menu.addAction(browse_scenarios_action)
         self.tools_menu.addSeparator()
+
+        template_manager_action = QAction("Query Template Manager...", self)
+        template_manager_action.triggered.connect(self.open_template_manager)
+        self.tools_menu.addAction(template_manager_action)
+        
         script_editor_action = QAction("Analysis Script Editor...", self)
         script_editor_action.triggered.connect(self.open_script_editor)
         self.tools_menu.addAction(script_editor_action)
@@ -164,6 +233,11 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about_dialog)
         help_menu.addAction(about_action)
 
+    def open_template_manager(self):
+        """쿼리 템플릿 관리 다이얼로그를 엽니다."""
+        dialog = TemplateManagerDialog(self.controller, self)
+        dialog.exec()
+
     def populate_scenario_menu(self):
         self.scenario_menu.clear()
         run_all_action = QAction("Run All Scenarios", self)
@@ -180,11 +254,6 @@ class MainWindow(QMainWindow):
             action = QAction(f"Error loading scenarios: {e}", self)
             action.setEnabled(False)
             self.scenario_menu.addAction(action)
-
-    def open_template_manager(self):
-        """쿼리 템플릿 관리 다이얼로그를 엽니다."""
-        dialog = TemplateManagerDialog(self.controller, self)
-        dialog.exec()
 
     def update_table_model(self, source_model):
         self.log_viewer.proxy_model.setSourceModel(source_model)
@@ -215,10 +284,7 @@ class MainWindow(QMainWindow):
             finally:
                 QApplication.restoreOverrideCursor()
 
-    # ... 이하 모든 다른 메소드들은 그대로 유지됩니다 ...
-    # (start_event_trace, save_log_file, run_scenario_validation 등)
     def start_event_trace(self, trace_id):
-        # TraceDialog를 지연 임포트하여 순환 참조를 방지합니다.
         from dialogs.TraceDialog import TraceDialog
         
         trace_data = self.controller.get_trace_data(trace_id)
@@ -264,9 +330,7 @@ class MainWindow(QMainWindow):
             return
             
         column_names = self.controller.source_model._data.columns.tolist()
-        date_columns = ['SystemDate']
-        # saved_filters = self.controller.load_filters() # 컨트롤러가 직접 관리
-        dialog = QueryConditionsDialog(column_names, date_columns, self.controller, self)
+        dialog = QueryConditionsDialog(column_names, self.controller, self)
         
         if dialog.exec():
             query_data = dialog.get_query_data()
@@ -330,7 +394,7 @@ class MainWindow(QMainWindow):
     def save_settings(self):
         source_model = self.controller.source_model
         if source_model is None or source_model._data.empty:
-            self.controller.save_config() # 테마만이라도 저장
+            self.controller.save_config()
             return
 
         all_columns = source_model._data.columns.tolist()
@@ -355,7 +419,6 @@ class MainWindow(QMainWindow):
         dialog = ScriptEditorDialog(self)
         
         def handle_run_request(script_code):
-            # ... (이전과 동일)
             pass
 
         dialog.run_script_requested.connect(handle_run_request)
@@ -385,62 +448,17 @@ class MainWindow(QMainWindow):
             self.auto_scroll_checkbox.setVisible(False)
             self.setWindowTitle("Log Analyzer - [File Mode]")
             self.statusBar().showMessage("Ready. Please open a log file.")
-
-    def start_db_connection(self):
-        if self._is_fetching:
-            self.controller.cancel_db_fetch()
-            self.statusBar().showMessage("Cancelling...")
-        else:
-            # 1. 컨트롤러에게 템플릿 이름 목록을 요청합니다.
-            template_names = self.controller.get_query_template_names()
-            
-            dialog = QueryConditionsDialog(
-                column_names=self.controller.get_default_column_names(),
-                template_names=template_names, # 2. 받아온 목록을 다이얼로그에 전달합니다.
-                parent=self
-            )
-            if dialog.exec():
-                query_conditions = dialog.get_conditions()
-                if not query_conditions:
-                    return 
-                self.controller.start_db_fetch(query_conditions)
-                self._is_fetching = True
-                self.db_connect_button.setText("❌ 데이터 수신 중단")
-                self.db_connect_button.setStyleSheet("background-color: #DA4453; color: white;")
-                self.tools_menu.setEnabled(False)
-                self.view_menu.setEnabled(False)
                     
-    def on_fetch_progress(self, message):
-        self.statusBar().showMessage(message)
-
-    def on_fetch_complete(self):
-        self._is_fetching = False
-        self.db_connect_button.setEnabled(True)
-        self.db_connect_button.setText("📡 데이터베이스에 연결하여 로그 조회")
-        self.db_connect_button.setStyleSheet("")
-        if self.controller.mode == 'realtime':
-            self.tools_menu.setEnabled(True)
-            self.view_menu.setEnabled(True)        
-        source_model = self.controller.source_model
-        if source_model:
-            total_rows = source_model.rowCount()
-            if self.statusBar().currentMessage() != "Cancelling...":
-                 self.statusBar().showMessage(f"Completed. Total {total_rows:,} logs in view.")
-           
     def _update_row_count_status(self, row_count):
         self.statusBar().showMessage(f"Receiving... {row_count:,} rows")
         if self.auto_scroll_checkbox.isChecked():
             self.log_viewer.tableView.scrollToBottom()
 
-    def on_fetch_error(self, error_message):
-        QMessageBox.critical(self, "Error", f"An error occurred:\n{error_message}")
-        self.on_fetch_complete()
-
     def _on_dashboard_closed(self):
         self.controller.dashboard_dialog = None
 
     def _apply_theme(self, theme_name):
-        from main import apply_theme # main.py에서 함수 가져오기
+        from main import apply_theme
         if apply_theme(QApplication.instance(), theme_name):
             self.controller.set_current_theme(theme_name)
         else:
@@ -459,7 +477,6 @@ class MainWindow(QMainWindow):
         rules_data = self.controller.get_highlighting_rules()
         self.highlighting_dialog = HighlightingDialog(column_names, rules_data, self)
         
-        # 다이얼로그의 신호를 컨트롤러의 메소드에 연결
         self.highlighting_dialog.rules_updated.connect(self.controller.set_and_save_highlighting_rules)
         self.highlighting_dialog.show()
 
@@ -529,9 +546,7 @@ class MainWindow(QMainWindow):
         finally:
             QApplication.restoreOverrideCursor()
 
-    # 💥💥💥 신규 추가된 함수 💥💥💥
     def open_detailed_trace_dialog(self):
-        """상세 시나리오 추출을 위한 파라미터 입력 다이얼로그를 엽니다."""
         if self.controller.original_data.empty:
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
@@ -553,7 +568,6 @@ class MainWindow(QMainWindow):
                     QMessageBox.information(self, "Trace Result", "No matching logs found for the given criteria.")
                     return
 
-                # 결과를 새로운 TraceDialog에 담아 보여줍니다.
                 title = f"Trace for {params['carrier_id']}"
                 if params['from_device']: title += f" from {params['from_device']}"
                 if params['to_device']: title += f" to {params['to_device']}"

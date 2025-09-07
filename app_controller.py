@@ -2,8 +2,8 @@ import pandas as pd
 import json
 import os
 import re
-from functools import reduce # 💥 변경점 1: reduce 임포트
-import operator              # 💥 변경점 2: operator 임포트
+from functools import reduce
+import operator
 from PySide6.QtCore import QObject, Signal, QTimer
 
 from universal_parser import parse_log_with_profile
@@ -15,10 +15,9 @@ from utils.event_matcher import EventMatcher
 
 FILTERS_FILE = 'filters.json'
 SCENARIOS_DIR = 'scenarios'
-QUERY_TEMPLATES_FILE = 'query_templates.json' # 템플릿 파일 경로 추가
+QUERY_TEMPLATES_FILE = 'query_templates.json'
 
 class AppController(QObject):
-    # ... (이전 __init__ 및 다른 메소드들은 모두 동일) ...
     model_updated = Signal(LogTableModel)
     fetch_completed = Signal()
     fetch_progress = Signal(str)
@@ -33,6 +32,11 @@ class AppController(QObject):
         self.original_data = pd.DataFrame()
         self.source_model = LogTableModel(max_rows=20000)
         self.fetch_thread = None
+        
+        # --- 상태 관리 변수 추가 ---
+        self._is_paused = False
+        self._is_realtime_tailing = False
+        
         self.last_query_conditions = None
         self.dashboard_dialog = None
         
@@ -57,25 +61,93 @@ class AppController(QObject):
         else:
             self.db_manager = DatabaseManager("file_mode")
 
-    def load_query_templates(self):
-        """query_templates.json 파일에서 템플릿들을 불러옵니다."""
-        if not os.path.exists(QUERY_TEMPLATES_FILE):
-            return {}
-        try:
-            with open(QUERY_TEMPLATES_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, Exception) as e:
-            print(f"Error loading query templates: {e}")
-            return {}
+    def start_db_fetch(self, query_conditions):
+        if self.fetch_thread and self.fetch_thread.isRunning():
+            return
 
-    def save_query_templates(self, templates_data):
-        """수정된 템플릿 데이터를 query_templates.json 파일에 저장합니다."""
-        try:
-            with open(QUERY_TEMPLATES_FILE, 'w', encoding='utf-8') as f:
-                json.dump(templates_data, f, indent=4, ensure_ascii=False)
-        except Exception as e:
-            print(f"Error saving query templates: {e}")
+        self.last_query_conditions = query_conditions
+        
+        # --- 상태 초기화 ---
+        self._is_paused = False
+        self._is_realtime_tailing = (query_conditions.get('analysis_mode') == 'real_time')
 
+        if self.db_manager:
+            self.db_manager.clear_logs_from_cache()
+
+        self.source_model.update_data(pd.DataFrame())
+        self.original_data = pd.DataFrame()
+
+        # --- 모든 조회 조건을 OracleFetcherThread에 전달 ---
+        templates = self.load_query_templates()
+        self.fetch_thread = OracleFetcherThread(
+            self.connection_info, 
+            query_conditions, 
+            templates, # 템플릿 전체 내용 전달
+            parent=self
+        )
+        
+        self.fetch_thread.data_fetched.connect(self.append_data_chunk)
+        self.fetch_thread.finished.connect(self.on_fetch_finished)
+        self.fetch_thread.progress.connect(self.fetch_progress)
+        self.fetch_thread.error.connect(self._handle_fetch_error)
+
+        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
+            self.dashboard_dialog.start_updates()
+
+        self._update_timer.start()
+        self.fetch_thread.start()
+
+    def on_fetch_finished(self):
+        # --- 상태 초기화 ---
+        self._is_realtime_tailing = False
+        self._is_paused = False
+        
+        if self._update_queue:
+            self._process_update_queue()
+        
+        if self._update_timer.isActive():
+            self._update_timer.stop()
+
+        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
+            self.dashboard_dialog.stop_updates()
+            
+        self.fetch_completed.emit()
+
+        if self.db_manager and self.last_query_conditions and self.last_query_conditions.get('analysis_mode') == 'time_range':
+            start_time = self.last_query_conditions.get('start_time', '')
+            end_time = self.last_query_conditions.get('end_time', '')
+            filters = {k: v for k, v in self.last_query_conditions.items() if k not in ['start_time', 'end_time']}
+            self.db_manager.add_fetch_history(start_time, end_time, filters)
+
+    def cancel_db_fetch(self):
+        if self.fetch_thread and self.fetch_thread.isRunning():
+            self.fetch_thread.stop()
+            self._is_realtime_tailing = False
+
+    # --- 실시간 제어 메소드 추가 ---
+    def pause_db_fetch(self):
+        if self.fetch_thread and self.fetch_thread.isRunning():
+            self._is_paused = True
+            self.fetch_thread.pause()
+
+    def resume_db_fetch(self):
+        if self.fetch_thread and self.fetch_thread.isRunning():
+            self._is_paused = False
+            self.fetch_thread.resume()
+
+    def is_realtime_tailing(self):
+        return self._is_realtime_tailing
+
+    def is_paused(self):
+        return self._is_paused
+
+    def get_query_template_names(self):
+        """쿼리 템플릿의 이름 목록을 반환합니다."""
+        templates = self.load_query_templates()
+        # 항상 "Default" 옵션을 맨 앞에 추가해줍니다.
+        return ["Default (SELECT * ...)"] + sorted(templates.keys())
+
+    # --- 이하 기존 메소드들은 생략 (변경 없음) ---
     def _load_config(self):
         try:
             if os.path.exists('config.json'):
@@ -124,12 +196,6 @@ class AppController(QObject):
         self._save_highlighting_rules()
         self.source_model.set_highlighting_rules(self.highlighting_rules)
 
-    def get_query_template_names(self):
-        """쿼리 템플릿의 이름 목록을 반환합니다."""
-        templates = self.load_query_templates()
-        # 항상 "Default" 옵션을 맨 앞에 추가해줍니다.
-        return ["Default (SELECT * ...)"] + sorted(templates.keys())
-
     def load_data_from_cache(self):
         if not self.db_manager: 
             self.update_model_data(pd.DataFrame())
@@ -177,53 +243,10 @@ class AppController(QObject):
         self.source_model.set_highlighting_rules(self.highlighting_rules)
         self.model_updated.emit(self.source_model)
 
-    def start_db_fetch(self, query_conditions):
-        if self.fetch_thread and self.fetch_thread.isRunning():
-            return
-
-        self.last_query_conditions = query_conditions
-        
-        if self.db_manager:
-            self.db_manager.clear_logs_from_cache()
-
-        self.source_model.update_data(pd.DataFrame())
-        self.original_data = pd.DataFrame()
-
-        self.fetch_thread = OracleFetcherThread(self.connection_info, query_conditions, parent=self)
-        
-        self.fetch_thread.data_fetched.connect(self.append_data_chunk)
-        self.fetch_thread.finished.connect(self.on_fetch_finished)
-        self.fetch_thread.progress.connect(self.fetch_progress)
-        self.fetch_thread.error.connect(self._handle_fetch_error)
-
-        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
-            self.dashboard_dialog.start_updates()
-
-        self._update_timer.start()
-        self.fetch_thread.start()
-
     def append_data_chunk(self, df_chunk):
         if not df_chunk.empty:
             self._update_queue.append(df_chunk)
-
-    def on_fetch_finished(self):
-        if self._update_queue:
-            self._process_update_queue()
-        
-        if self._update_timer.isActive():
-            self._update_timer.stop()
-
-        if self.dashboard_dialog and self.dashboard_dialog.isVisible():
-            self.dashboard_dialog.stop_updates()
-            
-        self.fetch_completed.emit()
-
-        if self.db_manager and self.last_query_conditions:
-            start_time = self.last_query_conditions.get('start_time', '')
-            end_time = self.last_query_conditions.get('end_time', '')
-            filters = {k: v for k, v in self.last_query_conditions.items() if k not in ['start_time', 'end_time']}
-            self.db_manager.add_fetch_history(start_time, end_time, filters)
-        
+    
     def run_analysis_script(self, script_code, dataframe):
         result_obj = AnalysisResult()
         try:
@@ -256,41 +279,31 @@ class AppController(QObject):
             print(f"Error applying filter: {e}")
             self.update_model_data(self.original_data)
 
-    # 💥 변경점 3: Pandas Boolean Indexing 최적화 적용
     def _build_mask_recursive(self, query_group, df):
-        """
-        functools.reduce와 Pandas의 boolean 연산자를 사용하여 필터 마스크를
-        효율적으로 생성합니다.
-        """
         masks = []
         for rule in query_group.get('rules', []):
             if 'logic' in rule: 
-                # 하위 그룹에 대해 재귀적으로 마스크 생성
                 masks.append(self._build_mask_recursive(rule, df))
             else: 
                 column, op, value = rule['column'], rule['operator'], rule['value']
                 if not all([column, op, value is not None]): continue
 
-                # KeyError를 방지하고, 시리즈를 문자열로 변환
                 if column not in df.columns:
                     continue
                 series = df[column].astype(str)
                 
-                # 연산자에 따른 마스크 생성
                 if op == 'Contains': mask = series.str.contains(value, case=False, na=False)
                 elif op == 'Does Not Contain': mask = ~series.str.contains(value, case=False, na=False)
                 elif op == 'Equals': mask = series.str.lower() == value.lower()
                 elif op == 'Not Equals': mask = series.str.lower() != value.lower()
                 elif op == 'Matches Regex': mask = series.str.match(value, na=False)
                 else:
-                    # 유효하지 않은 연산자는 무시하고 True 마스크(영향 없음) 추가
                     mask = pd.Series(True, index=df.index)
                 masks.append(mask)
 
         if not masks:
             return pd.Series(True, index=df.index)
 
-        # reduce를 사용하여 모든 마스크를 논리 연산자로 결합
         logic_op = operator.and_ if query_group['logic'] == 'AND' else operator.or_
         return reduce(logic_op, masks)
 
@@ -312,24 +325,14 @@ class AppController(QObject):
         except Exception as e:
             print(f"Error saving filter '{name}': {e}")
     
-    # 💥💥💥 수정된 부분 (get_trace_data) 💥💥💥
     def get_trace_data(self, trace_id):
-        """
-        주요 컬럼들에서 trace_id를 검색하여 관련 로그를 추출합니다.
-        .apply 대신 벡터화된 연산을 사용하여 성능을 개선했습니다.
-        """
         df = self.original_data
         if df.empty:
             return pd.DataFrame()
 
-        # 검색할 주요 컬럼들을 명시적으로 지정
         search_columns = ['TrackingID', 'AsciiData', 'DeviceID', 'MethodID', 'MessageName']
-        
-        # 실제 데이터프레임에 존재하는 컬럼만 필터링
         valid_search_columns = [col for col in search_columns if col in df.columns]
 
-        # 각 컬럼에 대해 contains 마스크를 생성하고, | (OR) 연산자로 모두 합칩니다.
-        # 이것이 apply보다 훨씬 빠릅니다.
         final_mask = reduce(
             operator.or_, 
             (df[col].astype(str).str.contains(trace_id, case=False, na=False) for col in valid_search_columns)
@@ -459,10 +462,6 @@ class AppController(QObject):
 
         if self.dashboard_dialog and self.dashboard_dialog.isVisible():
             self.dashboard_dialog.update_dashboard(self.original_data)
-
-    def cancel_db_fetch(self):
-        if self.fetch_thread and self.fetch_thread.isRunning():
-            self.fetch_thread.stop()
     
     def _handle_fetch_error(self, error_message):
         self.fetch_error.emit(error_message)
@@ -477,14 +476,35 @@ class AppController(QObject):
             return True, f"Successfully saved to {os.path.basename(file_path)}"
         except Exception as e:
             return False, f"Could not save file: {e}"
+
+    def load_query_templates(self):
+        """query_templates.json 파일에서 템플릿들을 불러옵니다."""
+        if not os.path.exists(QUERY_TEMPLATES_FILE):
+            return {}
+        try:
+            with open(QUERY_TEMPLATES_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, Exception) as e:
+            print(f"Error loading query templates: {e}")
+            return {}
+
+    def save_query_templates(self, templates_data):
+        """수정된 템플릿 데이터를 query_templates.json 파일에 저장합니다."""
+        try:
+            with open(QUERY_TEMPLATES_FILE, 'w', encoding='utf-8') as f:
+                json.dump(templates_data, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print(f"Error saving query templates: {e}")
         
     def _build_where_clause(self, query_conditions):
         clauses = []
         params = {}
         
-        params['p_start_time'] = pd.to_datetime(query_conditions['start_time']).strftime('%Y-%m-%d %H:%M:%S')
-        params['p_end_time'] = pd.to_datetime(query_conditions['end_time']).strftime('%Y-%m-%d %H:%M:%S')
-        clauses.append("SystemDate BETWEEN TO_DATE(:p_start_time, 'YYYY-MM-DD HH24:MI:SS') AND TO_DATE(:p_end_time, 'YYYY-MM-DD HH24:MI:SS')")
+        # 'time_range' 모드일 때만 시간 조건을 추가합니다.
+        if query_conditions.get('analysis_mode') == 'time_range':
+            params['p_start_time'] = pd.to_datetime(query_conditions['start_time']).strftime('%Y-%m-%d %H:%M:%S')
+            params['p_end_time'] = pd.to_datetime(query_conditions['end_time']).strftime('%Y-%m-%d %H:%M:%S')
+            clauses.append("SystemDate BETWEEN TO_DATE(:p_start_time, 'YYYY-MM-DD HH24:MI:SS') AND TO_DATE(:p_end_time, 'YYYY-MM-DD HH24:MI:SS')")
         
         adv_filter = query_conditions.get('advanced_filter')
         if adv_filter and adv_filter.get('rules'):
@@ -545,23 +565,18 @@ class AppController(QObject):
     def get_history_detail(self, run_id):
         return self.db_manager.get_validation_history_detail(run_id) if self.db_manager else None
     
-    # 💥💥💥 추가할 부분 💥💥💥
     def get_config(self):
         """현재 설정의 복사본을 반환합니다."""
         return self.config.copy()
 
-    # 💥💥💥 신규 추가된 함수 💥💥💥
     def get_carrier_move_scenario(self, carrier_id, from_device, to_device):
         """특정 Carrier의 장비 간 이동과 관련된 모든 로그를 추출합니다."""
         
-        # 1. 필수값인 Carrier ID로 관련된 모든 로그를 먼저 가져옵니다.
         base_df = self.get_trace_data(carrier_id)
         if base_df.empty:
             return pd.DataFrame()
 
-        # 2. From/To Device ID가 둘 다 입력되었는지 확인합니다.
         if from_device and to_device:
-            # 3. from_device 또는 to_device ID를 포함하는 로그만 추가로 필터링합니다.
             device_mask = (
                 base_df.astype(str)
                        .stack()
@@ -569,15 +584,11 @@ class AppController(QObject):
                        .unstack()
                        .any(axis=1)
             )
-            # 4. 두 조건을 모두 만족하는 로그만 시간순으로 정렬하여 반환합니다.
             return base_df[device_mask].sort_values(by='SystemDate_dt')
         
-        # 5. From/To Device ID가 없으면, Carrier ID로만 검색한 결과를 반환합니다.
         return base_df.sort_values(by='SystemDate_dt')
 
-    # 💥💥💥 추가할 부분 💥💥💥
     def get_default_column_names(self):
         """고급 필터 등에서 사용할 기본 컬럼 이름 목록을 반환합니다."""
-        # 이 목록은 DB 조회 시 사용되는 컬럼들입니다.
-        # 나중에 DB 스키마가 변경되거나 할 때 이 부분만 수정하면 됩니다.
         return ["Category", "DeviceID", "MethodID", "TrackingID", "AsciiData", "MessageName"]
+

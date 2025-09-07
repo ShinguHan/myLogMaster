@@ -2,7 +2,7 @@ import json
 import os
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
                                QListWidget, QFrame, QLabel,
-                               QDateTimeEdit, QMessageBox, QWidget,
+                               QDateTimeEdit, QMessageBox, QWidget, QLineEdit,
                                QTreeView, QMenu, QInputDialog, QRadioButton,
                                QButtonGroup, QComboBox)
 from PySide6.QtGui import QStandardItemModel, QStandardItem
@@ -12,14 +12,14 @@ from .ui_components import create_section_label, create_separator, create_toggle
 QUERY_PRESETS_FILE = 'query_presets.json'
 
 class QueryConditionsDialog(QDialog):
-    def __init__(self, column_names, template_names, parent=None):
+    def __init__(self, column_names, query_templates, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Query Conditions")
         self.presets = self.load_presets()
         self.current_preset_name = None
         
         self.column_names = column_names
-        self.template_names = template_names
+        self.query_templates = query_templates
         
         self.setMinimumSize(800, 600)
         
@@ -61,7 +61,7 @@ class QueryConditionsDialog(QDialog):
         right_layout.addWidget(create_section_label("1. Query Template"))
         self.query_template_combo = QComboBox()
         # 생성자에서 받은 template_names로 드롭다운 목록을 채웁니다.
-        self.query_template_combo.addItems(self.template_names)
+        self.query_template_combo.addItems(self.query_templates)
         right_layout.addWidget(self.query_template_combo)
         right_layout.addWidget(create_separator())
         # --- 여기까지 ---

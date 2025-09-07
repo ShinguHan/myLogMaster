@@ -10,17 +10,20 @@ class OracleFetcherThread(QThread):
     finished = Signal()
     error = Signal(str)
 
-    def __init__(self, connection_info, query_conditions, chunk_size=1000, parent=None):
+    def __init__(self, connection_info, query_conditions, templates, chunk_size=1000, parent=None):
         super().__init__(parent)
         self.conn_info = connection_info
-        self.conditions = query_conditions # '작전명령서'를 통째로 받음
+        self.conditions = query_conditions
+        self.templates = templates
         self.chunk_size = chunk_size
         self._is_running = True
+        self._is_paused = False
 
     def run(self):
         """'작전명령서'를 해석하여 적절한 임무를 수행하는 메인 로직"""
         try:
-            source = self.conditions.get('data_source')
+            # --- 데이터 소스에 따라 DB 조회 또는 Mock 데이터 생성 분기 ---
+            source = self.conditions.get('data_source', 'real') # 기본값 real
             mode = self.conditions.get('analysis_mode')
 
             if source == 'mock':
@@ -33,59 +36,84 @@ class OracleFetcherThread(QThread):
                     self._run_db_time_range()
                 else: # real_time
                     self._run_db_real_time()
+
         except Exception as e:
             self.error.emit(f"An unexpected error occurred in fetcher: {e}")
-            # 에러 발생 시에도 finished 신호를 보내 UI가 멈추지 않도록 함
-            self.finished.emit()
+        finally:
+            if self._is_running:
+                self.finished.emit()
 
-    # --- 4가지 임무 수행을 위한 개별 메소드들 ---
+    def stop(self):
+        self._is_running = False
+    
+    def pause(self):
+        self._is_paused = True
+        self.progress.emit("Paused.")
+
+    def resume(self):
+        self._is_paused = False
+        self.progress.emit("Resuming...")
 
     def _run_db_time_range(self):
         """임무 1: Real Database에서 특정 시간 범위의 데이터를 조회합니다."""
         conn = None
         try:
-            # 컨트롤러의 _build_where_clause 메소드를 호출하여 SQL 조건 생성
+            # --- 1. 기본 쿼리 결정 (템플릿 기반) ---
+            template_name = self.conditions.get('query_template', 'Default (SELECT * ...)')
+            base_query = "SELECT * FROM V_LOG_MESSAGE" # 기본값
+            if template_name != 'Default (SELECT * ...)' and template_name in self.templates:
+                template_body = self.templates[template_name].get('query')
+                if template_body:
+                    base_query = template_body
+            
+            # --- 2. WHERE 절 동적 생성 ---
             where_clause, params = self.parent()._build_where_clause(self.conditions)
             
+            if ' where ' in base_query.lower() and where_clause:
+                final_query = f"{base_query} AND ({where_clause})"
+            elif where_clause:
+                final_query = f"{base_query} WHERE {where_clause}"
+            else:
+                final_query = base_query
+            
             self.progress.emit("Connecting to Oracle DB...")
-            # 💥💥💥 수정된 부분 시작 💥💥💥
-            # oracledb.connect가 모르는 'type' 인자를 제거합니다.
             db_conn_info = self.conn_info.copy()
             db_conn_info.pop('type', None)
             conn = oracledb.connect(**db_conn_info)
-            # 💥💥💥 수정된 부분 끝 💥💥💥
             self.progress.emit("Connection successful. Fetching data...")
-
-            base_query = "SELECT * FROM V_LOG_MESSAGE"
-            final_query = f"{base_query} WHERE {where_clause}" if where_clause else base_query
             
             with conn.cursor() as cursor:
                 cursor.execute(final_query, params)
                 while self._is_running:
+                    if self._is_paused: time.sleep(0.5); continue
                     rows = cursor.fetchmany(self.chunk_size)
                     if not rows: break
                     columns = [desc[0] for desc in cursor.description]
                     df_chunk = pd.DataFrame(rows, columns=columns)
                     self.data_fetched.emit(df_chunk)
-            if self._is_running: self.progress.emit("Data fetching complete.")
+
+            if self._is_running and self.conditions.get('tail_after_query'):
+                self.progress.emit("Initial data fetched. Starting real-time tailing...")
+                self._run_db_real_time(connection=conn, initial_where_clause=where_clause, initial_params=params)
+            else:
+                if self._is_running: self.progress.emit("Data fetching complete.")
+
         except oracledb.DatabaseError as e:
             error_obj, = e.args; self.error.emit(f"DB Error: {error_obj.message}")
         finally:
-            if conn: conn.close()
-            self.finished.emit()
+            if conn and not (self._is_running and self.conditions.get('tail_after_query')):
+                conn.close()
 
-    def _run_db_real_time(self):
+    def _run_db_real_time(self, connection=None, initial_where_clause=None, initial_params=None):
         """임무 2: Real Database에서 새로운 로그를 실시간으로 추적합니다."""
-        conn = None
+        conn = connection
         try:
-            self.progress.emit("Connecting to Oracle DB for real-time tailing...")
-            # 💥💥💥 수정된 부분 시작 💥💥💥
-            # oracledb.connect가 모르는 'type' 인자를 제거합니다.
-            db_conn_info = self.conn_info.copy()
-            db_conn_info.pop('type', None)
-            conn = oracledb.connect(**db_conn_info)
-            # 💥💥💥 수정된 부분 끝 💥💥💥
-            self.progress.emit("Connection successful. Tailing logs...")
+            if not conn:
+                self.progress.emit("Connecting to Oracle DB for real-time tailing...")
+                db_conn_info = self.conn_info.copy()
+                db_conn_info.pop('type', None)
+                conn = oracledb.connect(**db_conn_info)
+                self.progress.emit("Connection successful. Tailing logs...")
             
             cursor = conn.cursor()
             cursor.execute("SELECT MAX(NumericalTimeStamp) FROM V_LOG_MESSAGE")
@@ -93,8 +121,26 @@ class OracleFetcherThread(QThread):
             if last_timestamp is None: last_timestamp = 0
 
             while self._is_running:
+                if self._is_paused:
+                    time.sleep(1); continue
+                
                 time.sleep(2)
-                cursor.execute("SELECT * FROM V_LOG_MESSAGE WHERE NumericalTimeStamp > :ts ORDER BY NumericalTimeStamp", ts=last_timestamp)
+                
+                clauses = ["NumericalTimeStamp > :ts"]
+                params = {'ts': last_timestamp}
+                base_query = "SELECT * FROM V_LOG_MESSAGE"
+                keyword = self.conditions.get('realtime_keyword')
+
+                if initial_where_clause:
+                    clauses.append(f"({initial_where_clause})")
+                    params.update(initial_params)
+                elif keyword:
+                    clauses.append("INSTR(LOWER(AsciiData), LOWER(:keyword)) > 0")
+                    params['keyword'] = keyword
+
+                final_query = f"{base_query} WHERE {' AND '.join(clauses)} ORDER BY NumericalTimeStamp"
+                
+                cursor.execute(final_query, params)
                 rows = cursor.fetchall()
                 if rows:
                     columns = [desc[0] for desc in cursor.description]
@@ -105,7 +151,6 @@ class OracleFetcherThread(QThread):
             error_obj, = e.args; self.error.emit(f"DB Error: {error_obj.message}")
         finally:
             if conn: conn.close()
-            self.finished.emit()
 
     def _run_mock_time_range(self):
         """임무 3: 특정 시간 범위의 Mock 데이터를 생성합니다."""
@@ -113,7 +158,7 @@ class OracleFetcherThread(QThread):
         start_dt = QDateTime.fromString(self.conditions['start_time'], Qt.DateFormat.ISODate).toPython()
         end_dt = QDateTime.fromString(self.conditions['end_time'], Qt.DateFormat.ISODate).toPython()
         total_seconds = (end_dt - start_dt).total_seconds()
-        num_rows = int(max(1000, min(50000, total_seconds))) # 초당 1개, 최소 1000개, 최대 50000개
+        num_rows = int(max(1000, min(50000, total_seconds)))
 
         mock_data = []
         for i in range(num_rows):
@@ -124,7 +169,6 @@ class OracleFetcherThread(QThread):
                 "Category": "Mock-TimeRange", 
                 "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
                 "DeviceID": f"MOCK_TR_{i}",
-                # 💥💥💥 수정된 부분: TrackingID 필드를 추가합니다. 💥💥💥
                 "TrackingID": device_id,
                 "NumericalTimeStamp": int(row_time.timestamp() * 1000)
             })
@@ -133,13 +177,15 @@ class OracleFetcherThread(QThread):
                 time.sleep(0.05)
         if mock_data: self.data_fetched.emit(pd.DataFrame(mock_data))
         if self._is_running: self.progress.emit("Mock data generation complete.")
-        self.finished.emit()
 
     def _run_mock_real_time(self):
         """임무 4: Mock 데이터를 실시간처럼 계속 생성합니다."""
         self.progress.emit("Starting real-time mock data generation...")
         i = 0
         while self._is_running:
+            if self._is_paused:
+                time.sleep(1)
+                continue
             time.sleep(0.5)
             mock_data = []
             for _ in range(10):
@@ -149,13 +195,9 @@ class OracleFetcherThread(QThread):
                     "Category": "Mock-RealTime", 
                     "SystemDate": row_time.strftime('%d-%b-%Y %H:%M:%S:%f')[:-3],
                     "DeviceID": f"MOCK_RT_{i}",
-                    # 💥💥💥 수정된 부분: TrackingID 필드를 추가합니다. 💥💥💥
                     "TrackingID": device_id, 
                     "NumericalTimeStamp": int(row_time.timestamp() * 1000)
                 })
                 i += 1
             self.data_fetched.emit(pd.DataFrame(mock_data))
-        self.finished.emit()
 
-    def stop(self):
-        self._is_running = False
