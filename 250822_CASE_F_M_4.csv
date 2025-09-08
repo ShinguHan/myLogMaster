@@ -1,0 +1,976 @@
+LogReader Generated Export
+
+PROPERTIES
+Version=2
+CLASS Version=5.14_005
+Loaded Jars=ClassMCS Command Station(null-5.14-27),5.14.1P005.001_RegularPatch_202502(null-1.0-1.0_20250205140739),5.14.1P005.002_RegularPatch_202502(null-1.0-1.0_20250228145629),5.14.1P005.003_RegularPatch_202503(null-1.0-1.0_20250313103435),5.14.1P005.004_RegularPatch_202505(null-1.0-1.0_20250513173946),5.14.1P005.005_RegularPatch_202506(null-1.0-1.0_20250521100446),5.14.1P005.006_HotFix_202506(null-1.0-1.0_20250605142834),5.14.1P005.007_RegularPatch_202506(null-1.0-1.0_20250618092714),CLASS MCS 5.14 ServicePack(null-5.14 001-24),CLASS MCS 5.14 ServicePack(null-5.14 002-1),CLASS MCS 5.14 CommandStation(null-5.14 003-24),CLASS MCS 5.14 ServicePack(null-5.14 003-5),CLASS MCS 5.14 ServicePack(null-5.14 004-4),CLASS MCS 5.14 ServicePack(null-5.14 005-5),classlgmcs(null-1.0-1.0_20250217152123),ClassMCS(null-5.14-27),ClassMCS open source library(null-5.14-27),itext(null-1.4.6-UNKNOWN),JCommon(null-1.0.6-UNKNOWN),JFreeChart(null-1.0.3-UNKNOWN),Oracle JDBC(null-Oracle JDBC Driver version - 19.23.0.0.0-UNKNOWN),Oracle JDBC(null-Oracle JDBC Driver version - 19.0.0.0.0-UNKNOWN),
+Time Zone=America/New_York
+Export Type=Hexadecimal
+Mark Count=0
+
+MARKS
+
+HEADERS
+"Category","LevelID","SystemDate","DeviceID","SourceID","TrackingID","AsciiData","MessageName","MethodID","LogParserClassName","BinaryData","NumericalTimeStamp"
+
+DATA
+"Debug","2","22-Aug-2025 10:21:27:254","","CarrierServer:ORBWorkerThread-49","MSD:Car::PTAJFP000124:1755872324764","MSD:Car::PTAJFP000124:1755872324764 MSD:Car::CAR:PTAJFP000124:Move_Summary. [CarrierMoveSummaryData [
+	MoveSummaryData [
+	trackingId=MSD:Car::PTAJFP000124:1755872324764
+	carrierId=PTAJFP000124
+	jobId=1755872324764
+	completionType=Completed
+	completionTime=1755872486227
+	closed=true
+	failure=false
+	reported=true
+]
+	priority=50
+	moveRequestType=Normal
+	moveRequestReason=
+	moveRequestorType=ExternalRequest
+	requestor=AUTO
+	sourceDeviceType=StorageDevice
+	sourceDevice=J1FSTO13301
+	sourceLocation=D_PTT01
+	requestedDeviceType=StorageDevice
+	requestedDestination=J1FCNV13301
+	requestedLocation=J1FCNV13301-CP0C01
+	requestTime=1755872324764
+	deadlineTime=0
+	timeMoveRequestCompleted=1755872487254
+	deliveredDevice=J1FCNV13301
+	deliveredLocation=J1FCNV13301-CP0C01
+	deliveredLocationType=Port
+	durationTransferWait=null
+	durationTransferInitiateWait=null
+	durationResourceAssignWait=null
+	durationRetrieve=null
+	durationRetrieveWait=null
+	durationResourceUtil=null
+	durationTransport=null
+	durationDelivery=null
+	durationMove=162490
+	deviceMoveCount=2
+	deviceMoveCommandCount=0
+	deviceMoveCommandResourceCount=0
+	failureCount=0
+	alternateDeviceCount=0
+]]","MSD:Car::CAR:PTAJFP000124:Move_Summary","CarrierMoveSummaryData.fireMoveSummaryDataTrigger","","","1755872487254"
+"Debug","2","22-Aug-2025 10:21:27:253","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","MSD:Dev::PTAJFP000124:1755872324764::J1FCNV13301","MSD:Dev::PTAJFP000124:1755872324764::J1FCNV13301 MSD:Dev::DEV:J1FCNV13301:Move_Summary. [DeviceMoveSummaryData [
+	MoveSummaryData [
+	trackingId=MSD:Dev::PTAJFP000124:1755872324764::J1FCNV13301
+	carrierId=PTAJFP000124
+	jobId=1755872324764
+	completionType=Completed
+	completionTime=1755872487253
+	closed=true
+	failure=false
+	reported=true
+]
+	deviceType=StorageDevice
+	deviceId=J1FCNV13301
+	priority=50
+	sourceDevice=J1FCNV13301
+	sourceLocation=J1FCNV13301-306
+	destinationDevice=J1FCNV13301
+	destinationLocation=J1FCNV13301-CP0C01
+	timeMoveRequested=1755872388338
+	timeMoveCompleted=null
+	deliveredDevice=J1FCNV13301
+	deliveredLocation=J1FCNV13301-CP0C01
+	deliveredLocationType=Port
+	durationTransferWait=null
+	durationTransferInitiateWait=null
+	durationResourceAssignWait=null
+	durationRetrieve=null
+	durationRetrieveWait=null
+	durationTransport=null
+	durationResourceUtil=null
+	durationDelivery=null
+	durationMove=null
+	failureCount=0
+	durationMove=null
+	transferSummaryDataList=[]
+]]","MSD:Dev::DEV:J1FCNV13301:Move_Summary","DeviceMoveSummaryData.fireMoveSummaryDataTrigger","","","1755872487253"
+"Info","1","22-Aug-2025 10:21:27:243","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","PTAJFP000124 is not in  J1FCNV13301 Locations","info","LGCnvSEM.carrierRemoved","","","1755872487243"
+"Debug","9","22-Aug-2025 10:21:27:242","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872487242"
+"Debug","9","22-Aug-2025 10:21:27:242","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872487242"
+"Debug","7","22-Aug-2025 10:21:27:241","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: J1FCNV13301-CP0C01","debug","Device.removeCarrier","","","1755872487241"
+"Info","6","22-Aug-2025 10:21:27:241","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","clearJob",">>> PTAJFP000124 , location : J1FCNV13301-CP0C01, at : J1FCNV13301","info","LGCnvSEM.carrierRemoved","","","1755872487241"
+"Debug","8","22-Aug-2025 10:21:27:241","","CarrierServer:ORBWorkerThread-76","PTAJFP000124","Publishing Event: theSubject=carrier.movement.locationUpdated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=,previousStartedJobId=1755872324764,deadlineProcessed=true,jobLateProcessed=false,needsReroute=false,moveStatus=NoMove,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),currentLocationInfo=(,,),arrivalTime=22-Aug-2025 10:21:27:241,requestor=,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(,,),assignedDestinationId=,bufferedDestinationId=,bufferedFlag=false,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:26:227), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872487241"
+"Debug","5","22-Aug-2025 10:21:27:239","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","PTAJFP000124 is removed and publish lgcarrierRemoved event","Debug","LGCnvSEM.carrierRemoved","","","1755872487239"
+"Info","9","22-Aug-2025 10:21:27:239","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Access Mode Check - isManual : false","Info","LGCnvSEM.lgCarrierRemoved","","","1755872487239"
+"Info","9","22-Aug-2025 10:21:27:239","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Access Mode Check - accessMode : 1, carrierLoc : J1FCNV13301-CP0C01","Info","LGCnvSEM.lgCarrierRemoved","","","1755872487239"
+"Com","1","22-Aug-2025 10:21:27:239","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","","--> Event Report Send CEID:153 - CarrierRemoved   CarrierID: PTAJFP000124, Loc : J1FCNV13301-CP0C01, Handoff : 1","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001860b0000000085b40103a9020000a902009901010102a902000f0103410c5054414a465030303031323441124a3146434e5631333330312d435030433031a9020001","1755872487239"
+"Debug","8","22-Aug-2025 10:21:27:239","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super1 Event Report Send CEID:153 - CarrierRemoved   CarrierID: PTAJFP000124, Loc : J1FCNV13301-CP0C01, Handoff : 1","DEBUG","COMLogParser.parseComLog","","","1755872487239"
+"Info","9","22-Aug-2025 10:21:27:239","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super Event Report Send CEID:153 - CarrierRemoved   CarrierID: PTAJFP000124","INFO","COMLogParser.parseComLog","","","1755872487239"
+"Debug","9","22-Aug-2025 10:21:26:235","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.dataChanged.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872486235"
+"Debug","9","22-Aug-2025 10:21:26:235","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.dataChanged.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872486235"
+"Debug","8","22-Aug-2025 10:21:26:235","","CarrierServer:ORBWorkerThread-82","PTAJFP000124","Publishing Event: theSubject=carrier.movement.dataChanged.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=,previousStartedJobId=1755872324764,deadlineProcessed=true,jobLateProcessed=false,needsReroute=false,moveStatus=NoMove,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-117,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),arrivalTime=22-Aug-2025 10:21:26:197,requestor=,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(,,),assignedDestinationId=,bufferedDestinationId=,bufferedFlag=false,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:26:227), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872486235"
+"Info","3","22-Aug-2025 10:21:26:234","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_ReportDurableMovingEvent 
+{
+  "TXN_ID": "1755872486232",
+  "inDTName": "IN_DATA",
+  "refDS": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "SHELF_ID": "",
+        "TO_PORT_ID": "J1FCNV13301-CP0C01",
+        "EVENT_TYPE_CODE": "B",
+        "FROM_EQUIPMENT_ID": "J1FCNV13301",
+        "USER_ID": "MCS",
+        "FROM_PORT_ID": "J1FCNV13301-CP0C01",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "TO_EQUIPMENT_ID": "J1FCNV13301",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "PORT_ID": "J1FCNV13301-CP0C01",
+        "TRANSPORT_END_CODE": "0",
+        "MCS_TXN_ID": "1755872486232",
+        "LOT_ID": "T1F007976",
+        "ERROR_DETAIL": "",
+        "ERROR_DURABLE_FLAG": "N",
+        "EQUIPMENT_ID": "J1FCNV13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_ReportDurableMovingEvent",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872486234"
+"Debug","3","22-Aug-2025 10:21:26:230","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","MesServer_J1F:Primary:Active","[CVNT-B] ReportCarrierLocationUpdate >> Exception  ::Custom Property(SHELF) not found on Carrier (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872486230"
+"Debug","7","22-Aug-2025 10:21:26:229","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, +1.changed the current location : J1FCNV13301/J1FCNV13301-CP0C01","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872486229"
+"Debug","7","22-Aug-2025 10:21:26:229","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, -1.changed the current location : J1FCNV13301/J1FCNV13301-CP0C01","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872486229"
+"Debug","6","22-Aug-2025 10:21:26:229","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> J1FCNV13301 // DEVICE_TYPE : CONVEYER","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872486229"
+"Debug","6","22-Aug-2025 10:21:26:229","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> MoveStatus -> No Move (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872486229"
+"Debug","6","22-Aug-2025 10:21:26:228","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >>  LOC:  cur : J1FCNV13301/J1FCNV13301-CP0C01(), from : J1FCNV13301/J1FCNV13301-CP0C01, to : J1FCNV13301/J1FCNV13301-CP0C01 : B","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872486228"
+"Debug","9","22-Aug-2025 10:21:26:227","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.jobCompleted.PTAJFP000124) to 4 Subscribers.","debug","EventPublisher.publishEvent","","","1755872486227"
+"Debug","9","22-Aug-2025 10:21:26:227","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.jobCompleted.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872486227"
+"Debug","9","22-Aug-2025 10:21:26:227","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.completed.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872486227"
+"Debug","9","22-Aug-2025 10:21:26:227","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.completed.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872486227"
+"Debug","9","22-Aug-2025 10:21:26:227","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.dataChanged.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872486227"
+"Debug","9","22-Aug-2025 10:21:26:227","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.dataChanged.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872486227"
+"Debug","7","22-Aug-2025 10:21:26:227","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportTransferComplete >> DeviceType CONVEYER","debug","ReportTransferComplete.processEvent","","","1755872486227"
+"Debug","5","22-Aug-2025 10:21:26:227","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportTransferComplete >> LGMoveCompleteEvent J1FCNV13301 [ J1FCNV13301-CP0C01: ] ","debug","ReportTransferComplete.processEvent","","","1755872486227"
+"Debug","8","22-Aug-2025 10:21:26:227","","CarrierServer:ORBWorkerThread-74","PTAJFP000124","Publishing Event: theSubject=carrier.movement.jobCompleted.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=true,jobLateProcessed=false,needsReroute=false,moveStatus=NoMove,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-117,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),arrivalTime=22-Aug-2025 10:21:26:197,requestor=,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(,,),assignedDestinationId=,bufferedDestinationId=,bufferedFlag=false,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:26:227), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872486227"
+"Debug","8","22-Aug-2025 10:21:26:227","","CarrierServer:ORBWorkerThread-74","PTAJFP000124","Publishing Event: theSubject=carrier.movement.completed.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=true,jobLateProcessed=false,needsReroute=false,moveStatus=NoMove,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-117,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),arrivalTime=22-Aug-2025 10:21:26:197,requestor=,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(,,),assignedDestinationId=,bufferedDestinationId=,bufferedFlag=false,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:26:227), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872486227"
+"Debug","8","22-Aug-2025 10:21:26:227","","CarrierServer:ORBWorkerThread-77","PTAJFP000124","Publishing Event: theSubject=carrier.movement.dataChanged.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=Requested,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-117,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),arrivalTime=22-Aug-2025 10:21:26:197,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:26:224), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872486227"
+"Debug","6","22-Aug-2025 10:21:26:226","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-47","PTAJFP000124","Unreserve location for carrier: PTAJFP000124","debug","Device.unreserveLocation","","","1755872486226"
+"Debug","5","22-Aug-2025 10:21:26:225","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","[CVNT] ReportTransferComplete >> LGMoveCompleteEvent theSubject=device.moveMoveComplete.J1FCNV13301 DeviceId=J1FCNV13301 : carrier=PTAJFP000124, current=J1FCNV13301-CP0C01/, from=J1FCNV13301-CP0C01, to=J1FCNV13301-CP0C01, result=0","debug","ReportTransferComplete.processEvent","","","1755872486225"
+"Debug","5","22-Aug-2025 10:21:26:225","","TravelAgentServer:TravelAgentServer.unbook-PTAJFP000124","PTAJFP000124","Unreserving Itinerary for Carrier: PTAJFP000124","debug","TravelAgentServer.unbook","","","1755872486225"
+"Debug","6","22-Aug-2025 10:21:26:225","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-38","PTAJFP000124","Unreserve location for carrier: PTAJFP000124","debug","Device.unreserveLocation","","","1755872486225"
+"Debug","7","22-Aug-2025 10:21:26:224","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Cancelling... PTAJFP000124:J1FCNV13301:J1FCNV13301-CP0C01-- J1FCNV13301:J1FCNV13301-CP0C01 - reg : J1FCNV13301","Debug","LGCnvSEM.transferCompleted","","","1755872486224"
+"Debug","7","22-Aug-2025 10:21:26:224","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","PTAJFP000124:J1FCNV13301:J1FCNV13301-CP0C01-- J1FCNV13301:J1FCNV13301-CP0C01 - reg : J1FCNV13301","Debug","LGCnvSEM.transferCompleted","","","1755872486224"
+"Debug","7","22-Aug-2025 10:21:26:224","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","theSubject=device.moveMoveComplete.J1FCNV13301 DeviceId=J1FCNV13301 : carrier=PTAJFP000124, current=J1FCNV13301-CP0C01/, from=J1FCNV13301-CP0C01, to=J1FCNV13301-CP0C01, result=0","Debug","LGCnvSEM.transferCompleted","","","1755872486224"
+"Debug","9","22-Aug-2025 10:21:26:224","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGCnvSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872486224"
+"Info","5","22-Aug-2025 10:21:26:223","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","WorkIemInfo : WorkItem
+  State:       Waitout
+  Carrier:     PTAJFP000124
+  Source:      J1FCNV13301-CP0C01
+  Next:        J1FCNV13301-CP0C01
+  Priority:    50
+  Interface:   
+  Itinerary:   J1FSTO13301.J1FCNV13301.2
+  Comment:     Carrier Waiting for Manual Removal
+","info","LGCnvSEM.transferCompleted","","","1755872486223"
+"Debug","7","22-Aug-2025 10:21:26:223","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","workItemByCommandId is null. so getWorkItem(carrierId)","Debug","LGCnvSEM.transferCompleted","","","1755872486223"
+"Debug","5","22-Aug-2025 10:21:26:223","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","commandId : 304, carrierId : PTAJFP000124, equipmentAddress : J1FCNV13301-CP0C01, resultCode : 0","Debug","LGCnvSEM.transferCompleted","","","1755872486223"
+"Com","1","22-Aug-2025 10:21:26:223","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","","--> Event Report Send CEID:107 - TransferCompleted  CarrierID: PTAJFP000124, Loc : J1FCNV13301-CP0C01, Result : 0","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001860b0000000085b30103a9020000a902006b01010102a902000901044103333034410c5054414a465030303031323441124a3146434e5631333330312d435030433031a9020000","1755872486223"
+"Debug","8","22-Aug-2025 10:21:26:223","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super1 Event Report Send CEID:107 - TransferCompleted  CarrierID: PTAJFP000124, Loc : J1FCNV13301-CP0C01, Result : 0","DEBUG","COMLogParser.parseComLog","","","1755872486223"
+"Info","9","22-Aug-2025 10:21:26:223","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super Event Report Send CEID:107 - TransferCompleted  CarrierID: PTAJFP000124","INFO","COMLogParser.parseComLog","","","1755872486223"
+"Debug","9","22-Aug-2025 10:21:26:200","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.manual.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872486200"
+"Debug","9","22-Aug-2025 10:21:26:200","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.manual.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872486200"
+"Debug","8","22-Aug-2025 10:21:26:199","","CarrierServer:ORBWorkerThread-43","PTAJFP000124","Publishing Event: theSubject=carrier.movement.manual.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=ManualMove,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-117,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),arrivalTime=22-Aug-2025 10:21:26:197,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:26:199), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872486199"
+"Debug","9","22-Aug-2025 10:21:26:198","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.completed.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872486198"
+"Debug","9","22-Aug-2025 10:21:26:198","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.completed.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872486198"
+"Debug","9","22-Aug-2025 10:21:26:198","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872486198"
+"Debug","9","22-Aug-2025 10:21:26:198","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872486198"
+"Debug","7","22-Aug-2025 10:21:26:197","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Device: J1FCNV13301 adding carrier: PTAJFP000124 at location: J1FCNV13301-CP0C01","debug","LGCnvSEM.addCarrier","","","1755872486197"
+"Debug","7","22-Aug-2025 10:21:26:197","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: J1FCNV13301-117","debug","Device.removeCarrier","","","1755872486197"
+"Debug","7","22-Aug-2025 10:21:26:197","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: J1FCNV13301-CP0C01","debug","Device.removeCarrier","","","1755872486197"
+"Debug","7","22-Aug-2025 10:21:26:197","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: D_PTT01","debug","Device.removeCarrier","","","1755872486197"
+"Debug","5","22-Aug-2025 10:21:26:197","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Removing carrier: PTAJFP000124","debug","Device.removeCarrier","","","1755872486197"
+"Debug","7","22-Aug-2025 10:21:26:197","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","carrierId : PTAJFP000124, equipmentAddress : J1FCNV13301-CP0C01, carrierZoneName : ","Debug","LGCnvSEM.carrierWaitOut","","","1755872486197"
+"Com","1","22-Aug-2025 10:21:26:197","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","","--> Event Report Send CEID:159 - CarrierWaitOut  CarrierID: PTAJFP000124, loc : J1FCNV13301-CP0C01","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001860b0000000085b20103a9020000a902009f01010102a90200120102410c5054414a465030303031323441124a3146434e5631333330312d435030433031","1755872486197"
+"Debug","8","22-Aug-2025 10:21:26:197","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super1 Event Report Send CEID:159 - CarrierWaitOut  CarrierID: PTAJFP000124, loc : J1FCNV13301-CP0C01","DEBUG","COMLogParser.parseComLog","","","1755872486197"
+"Info","9","22-Aug-2025 10:21:26:197","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super Event Report Send CEID:159 - CarrierWaitOut  CarrierID: PTAJFP000124","INFO","COMLogParser.parseComLog","","","1755872486197"
+"Debug","8","22-Aug-2025 10:21:26:197","","CarrierServer:ORBWorkerThread-76","PTAJFP000124","Publishing Event: theSubject=carrier.movement.completed.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=MovePending,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-117,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),arrivalTime=22-Aug-2025 10:21:26:197,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:26:197), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872486197"
+"Debug","8","22-Aug-2025 10:21:26:197","","CarrierServer:ORBWorkerThread-76","PTAJFP000124","Publishing Event: theSubject=carrier.movement.locationUpdated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=Moving,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-117,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),arrivalTime=22-Aug-2025 10:21:26:197,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:24:639), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872486197"
+"Debug","7","22-Aug-2025 10:21:24:642","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124",">>>2. carrierMoved - 1. reportedLoc : J1FCNV13301-117 2. oldLoc : J1FCNV13301-306 3. carrier Loc : J1FCNV13301/J1FCNV13301-117 4. carrier oldLoc : J1FCNV13301/J1FCNV13301-306","debug","LGCnvSEM.carrierMoved","","","1755872484642"
+"Debug","9","22-Aug-2025 10:21:24:641","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.initiated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872484641"
+"Debug","9","22-Aug-2025 10:21:24:641","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.initiated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872484641"
+"Debug","7","22-Aug-2025 10:21:24:641","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","carrier Moving From : J1FSTO13301-401 TO : J1FCNV13301-117","debug","LGCnvSEM.carrierMoved","","","1755872484641"
+"Debug","8","22-Aug-2025 10:21:24:641","","CarrierServer:ORBWorkerThread-74","PTAJFP000124","Publishing Event: theSubject=carrier.movement.initiated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=Moving,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-306,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-117,),arrivalTime=22-Aug-2025 10:21:24:638,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:21:24:639), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872484641"
+"Debug","9","22-Aug-2025 10:21:24:638","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872484638"
+"Debug","9","22-Aug-2025 10:21:24:638","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872484638"
+"Debug","8","22-Aug-2025 10:21:24:638","","CarrierServer:ORBWorkerThread-82","PTAJFP000124","Publishing Event: theSubject=carrier.movement.locationUpdated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=MovePending,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FCNV13301,J1FCNV13301-306,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-117,),arrivalTime=22-Aug-2025 10:21:24:638,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:19:43:073), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(PLT_STATUS,0),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872484638"
+"Debug","7","22-Aug-2025 10:21:24:637","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Device: J1FCNV13301 adding carrier: PTAJFP000124 at location: J1FCNV13301-117","debug","LGCnvSEM.addCarrier","","","1755872484637"
+"Debug","7","22-Aug-2025 10:21:24:637","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: J1FCNV13301-306","debug","Device.removeCarrier","","","1755872484637"
+"Debug","7","22-Aug-2025 10:21:24:637","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124",">>>[carrierMoved] removeCarrier  : PTAJFP000124 contains Location : J1FCNV13301-306","debug","LGCnvSEM.carrierMoved","","","1755872484637"
+"Debug","7","22-Aug-2025 10:21:24:636","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124",">>>1. carrierMoved - 1. reportedLoc : J1FCNV13301-117 2. oldLoc : J1FCNV13301-306 3. carrier Loc : J1FCNV13301/J1FCNV13301-306 4. carrier oldLoc : J1FSTO13301/J1FSTO13301-401","debug","LGCnvSEM.carrierMoved","","","1755872484636"
+"Debug","9","22-Aug-2025 10:21:24:635","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","carrierTransferring, workItem is not null..","Debug","LGCnvSEM.carrierMoved","","","1755872484635"
+"Debug","7","22-Aug-2025 10:21:24:634","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","carrierId : PTAJFP000124, locationId : J1FCNV13301-117","Debug","LGCnvSEM.lgCarrierTransferring","","","1755872484634"
+"Com","1","22-Aug-2025 10:21:24:634","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","","--> Event Report Send CEID:157 - CarrierTransferring  CarrierID: PTAJFP000124, loc : J1FCNV13301-117","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001860b0000000085b10103a9020000a902009d01010102a90200100102410c5054414a4650303030313234410f4a3146434e5631333330312d313137","1755872484634"
+"Debug","8","22-Aug-2025 10:21:24:634","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super1 Event Report Send CEID:157 - CarrierTransferring  CarrierID: PTAJFP000124, loc : J1FCNV13301-117","DEBUG","COMLogParser.parseComLog","","","1755872484634"
+"Info","9","22-Aug-2025 10:21:24:634","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super Event Report Send CEID:157 - CarrierTransferring  CarrierID: PTAJFP000124","INFO","COMLogParser.parseComLog","","","1755872484634"
+"Info","3","22-Aug-2025 10:19:48:671","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_ReportDurableMovingEvent 
+{
+  "TXN_ID": "1755872388670",
+  "inDTName": "IN_DATA",
+  "refDS": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "SHELF_ID": "",
+        "TO_PORT_ID": "J1FCNV13301-CP0C01",
+        "EVENT_TYPE_CODE": "A",
+        "FROM_EQUIPMENT_ID": "J1FSTO13301",
+        "USER_ID": "MCS",
+        "FROM_PORT_ID": "J1FSTO13301-401",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "TO_EQUIPMENT_ID": "J1FCNV13301",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "PORT_ID": "J1FCNV13301-306",
+        "TRANSPORT_END_CODE": "1",
+        "MCS_TXN_ID": "1755872388670",
+        "LOT_ID": "T1F007976",
+        "ERROR_DETAIL": "",
+        "ERROR_DURABLE_FLAG": "N",
+        "EQUIPMENT_ID": "J1FCNV13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_ReportDurableMovingEvent",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872388671"
+"Debug","6","22-Aug-2025 10:19:48:667","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, 2.changed the from location : J1FSTO13301/J1FSTO13301-401","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388667"
+"Debug","7","22-Aug-2025 10:19:48:666","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, +1.changed the current location : J1FCNV13301/J1FCNV13301-306","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388666"
+"Debug","7","22-Aug-2025 10:19:48:666","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, -1.changed the current location : J1FCNV13301/J1FCNV13301-306","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388666"
+"Debug","6","22-Aug-2025 10:19:48:666","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> J1FCNV13301 // DEVICE_TYPE : CONVEYER","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388666"
+"Debug","6","22-Aug-2025 10:19:48:665","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> ChangeCheck -> Move Pending : A, current  - J1FCNV13301:J1FCNV13301-306, to  - J1FCNV13301:J1FCNV13301-CP0C01, travelinfo  - J1FCNV13301:J1FCNV13301-CP0C01, endflag - 1","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388665"
+"Debug","6","22-Aug-2025 10:19:48:665","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> MoveStatus -> Move Pending (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388665"
+"Debug","6","22-Aug-2025 10:19:48:664","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >>  LOC:  cur : J1FCNV13301/J1FCNV13301-306(), from : J1FCNV13301/J1FCNV13301-306, to : J1FCNV13301/J1FCNV13301-CP0C01 : A","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388664"
+"Debug","8","22-Aug-2025 10:19:48:663","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","USE_ALLOCATION_STAGE_CALL not used.","debug","LGCnvSEM.allocationStageCall","","","1755872388663"
+"Info","5","22-Aug-2025 10:19:48:663","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Publishing event : theSubject=device.move.lgTransferInitiated.J1FCNV13301 DeviceId=J1FCNV13301","info","LGCnvSEM.transferInitiated","","","1755872388663"
+"Debug","5","22-Aug-2025 10:19:48:663","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT-A] ReportTransferStart >> device.move.lgTransferInitiated.J1FCNV13301 [ PTAJFP000124:J1FCNV13301-306 -> J1FCNV13301-CP0C01 ]","debug","ReportTransferStart.processEvent","","","1755872388663"
+"Debug","9","22-Aug-2025 10:19:48:662","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGCnvSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872388662"
+"Debug","7","22-Aug-2025 10:19:48:662","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","carrierId : PTAJFP000124, sourceLoc : J1FCNV13301-755, destLoc : J1FCNV13301-CP0C01","Debug","LGCnvSEM.transferInitiated","","","1755872388662"
+"Com","1","22-Aug-2025 10:19:48:662","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","","--> Event Report Send CEID:108 - TransferInitiated  CarrierID: PTAJFP000124","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001860b0000000085ad0103a9020000a902006c01010102a902000a01044103333034410c5054414a4650303030313234410f4a3146434e5631333330312d37353541124a3146434e5631333330312d435030433031","1755872388662"
+"Debug","8","22-Aug-2025 10:19:48:662","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super1 Event Report Send CEID:108 - TransferInitiated  CarrierID: PTAJFP000124","DEBUG","COMLogParser.parseComLog","","","1755872388662"
+"Info","9","22-Aug-2025 10:19:48:662","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super Event Report Send CEID:108 - TransferInitiated  CarrierID: PTAJFP000124","INFO","COMLogParser.parseComLog","","","1755872388662"
+"Info","3","22-Aug-2025 10:19:48:369","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_ReportDurableMovingEvent 
+{
+  "TXN_ID": "1755872388368",
+  "inDTName": "IN_DATA",
+  "refDS": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "SHELF_ID": "J1FSTO13301-10601",
+        "TO_PORT_ID": "J1FCNV13301-CP0C01",
+        "EVENT_TYPE_CODE": "R",
+        "FROM_EQUIPMENT_ID": "J1FSTO13301",
+        "USER_ID": "MCS",
+        "FROM_PORT_ID": "J1FSTO13301-401",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "TO_EQUIPMENT_ID": "J1FCNV13301",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "PORT_ID": "J1FCNV13301-306",
+        "TRANSPORT_END_CODE": "1",
+        "MCS_TXN_ID": "1755872388368",
+        "LOT_ID": "T1F007976",
+        "ERROR_DETAIL": "",
+        "ERROR_DURABLE_FLAG": "N",
+        "EQUIPMENT_ID": "J1FCNV13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_ReportDurableMovingEvent",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872388369"
+"Debug","6","22-Aug-2025 10:19:48:365","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, 2.changed the from location : J1FSTO13301/J1FSTO13301-401","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388365"
+"Debug","7","22-Aug-2025 10:19:48:364","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, +1.changed the current location : J1FCNV13301/J1FCNV13301-306","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388364"
+"Debug","7","22-Aug-2025 10:19:48:364","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> PTAJFP000124, -1.changed the current location : J1FCNV13301/J1FCNV13301-306","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388364"
+"Debug","6","22-Aug-2025 10:19:48:364","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> J1FCNV13301 // DEVICE_TYPE : CONVEYER","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388364"
+"Debug","6","22-Aug-2025 10:19:48:363","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> ChangeCheck -> Move Pending : R, current  - J1FCNV13301:J1FCNV13301-306, to  - J1FCNV13301:J1FCNV13301-CP0C01, travelinfo  - J1FCNV13301:J1FCNV13301-CP0C01, endflag - 1","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388363"
+"Debug","6","22-Aug-2025 10:19:48:363","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> MoveStatus -> Move Pending (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388363"
+"Debug","6","22-Aug-2025 10:19:48:362","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >>  LOC:  cur : J1FCNV13301/J1FCNV13301-306(J1FSTO13301-10601), from : J1FCNV13301/J1FCNV13301-306, to : J1FCNV13301/J1FCNV13301-CP0C01 : R","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872388362"
+"Debug","5","22-Aug-2025 10:19:48:361","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-6","PTAJFP000124","[CVNT-R] ReserveTransferCommand >> device.move.lgSendTransfer.J1FCNV13301 [ PTAJFP000124:J1FCNV13301-306 -> J1FCNV13301-CP0C01 ]","debug","ReserveTransferCommand.processEvent","","","1755872388361"
+"Debug","9","22-Aug-2025 10:19:48:360","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGCnvSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872388360"
+"Com","1","22-Aug-2025 10:19:48:355","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsSend/10.228.115.223:30059","","<-- Enhanced Host Command Send RCMD:TRANSFER  CarrierID: PTAJFP000124  CommandID: 304  Source: J1FCNV13301-306  Destination: J1FCNV13301-CP0C01","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001823100000006ae6f0104b10400000000410041085452414e5346455201040102410b434f4d4d414e44494e464f010201024109434f4d4d414e4449444103333034010241085052494f52495459a90200320102410c5452414e53464552494e464f010301024109434152524945524944410c5054414a465030303031323401024106534f55524345410f4a3146434e5631333330312d333036010241044445535441124a3146434e5631333330312d435030433031010241104341525249455241545452494255544501020102410b454d505459535441545553a90200000102410c4d4154455249414c434f44454100010241104348494c4443415252494552494e464f0100","1755872388355"
+"Debug","8","22-Aug-2025 10:19:48:355","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsSend/10.228.115.223:30059","",">>> super1 Enhanced Host Command Send RCMD:TRANSFER  CarrierID: PTAJFP000124  CommandID: 304  Source: J1FCNV13301-306  Destination: J1FCNV13301-CP0C01","DEBUG","COMLogParser.parseComLog","","","1755872388355"
+"Info","9","22-Aug-2025 10:19:48:355","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsSend/10.228.115.223:30059","",">>> super Enhanced Host Command Send RCMD:TRANSFER  CarrierID: PTAJFP000124  CommandID: 304  Source: J1FCNV13301-306  Destination: J1FCNV13301-CP0C01","INFO","COMLogParser.parseComLog","","","1755872388355"
+"Debug","5","22-Aug-2025 10:19:48:355","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124","child List : []","Debug","LGCnvSEM.sendTransferCommand","","","1755872388355"
+"Info","1","22-Aug-2025 10:19:48:354","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124","could not found carrier type of PTAJFP000124","info","LGCnvSEM.sendTransferCommand","","","1755872388354"
+"Debug","7","22-Aug-2025 10:19:48:354","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124","priority after getTransferPriorityByPortCustomProperties is 50","Debug","LGCnvSEM.sendTransferCommand","","","1755872388354"
+"Debug","7","22-Aug-2025 10:19:48:354","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124","priority of host command is 50","Debug","LGCnvSEM.sendTransferCommand","","","1755872388354"
+"Error","9","22-Aug-2025 10:19:48:354","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","delete AREAGROUP","NotFound | Value=AREAGROUP | Reason=Custom Property(AREAGROUP) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.lgDeleteCustomPropertyList(LGCnvSEM.java:6485)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.sendTransferCommand(LGCnvSEM.java:4368)
+	at classmcs.device.mcs.storage.StockerSEM.issueMove(StockerSEM.java:765)
+	at classmcs.device.mcs.storage.BaseDispatcher.G(BaseDispatcher.java:4335)
+	at classmcs.device.mcs.storage.BaseDispatcher.doWork(BaseDispatcher.java:4173)
+	at classmcs.device.mcs.storage.BaseDispatcher.D(BaseDispatcher.java:3898)
+	at classmcs.device.mcs.storage.BaseDispatcher.prepareNewWork(BaseDispatcher.java:2540)
+	at classmcs.device.mcs.storage.BaseDispatcher.checkWork(BaseDispatcher.java:913)
+	at classmcs.device.mcs.AbstractDispatcher.run(AbstractDispatcher.java:782)
+	at java.lang.Thread.run(Thread.java:750)
+Caused by: NotFound | Value=AREAGROUP | Reason=Custom Property(AREAGROUP) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGCnvSEM.lgDeleteCustomPropertyist","","","1755872388354"
+"Error","9","22-Aug-2025 10:19:48:353","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","delete TC_CODE","NotFound | Value=TC_CODE | Reason=Custom Property(TC_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.lgDeleteCustomPropertyList(LGCnvSEM.java:6485)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.sendTransferCommand(LGCnvSEM.java:4368)
+	at classmcs.device.mcs.storage.StockerSEM.issueMove(StockerSEM.java:765)
+	at classmcs.device.mcs.storage.BaseDispatcher.G(BaseDispatcher.java:4335)
+	at classmcs.device.mcs.storage.BaseDispatcher.doWork(BaseDispatcher.java:4173)
+	at classmcs.device.mcs.storage.BaseDispatcher.D(BaseDispatcher.java:3898)
+	at classmcs.device.mcs.storage.BaseDispatcher.prepareNewWork(BaseDispatcher.java:2540)
+	at classmcs.device.mcs.storage.BaseDispatcher.checkWork(BaseDispatcher.java:913)
+	at classmcs.device.mcs.AbstractDispatcher.run(AbstractDispatcher.java:782)
+	at java.lang.Thread.run(Thread.java:750)
+Caused by: NotFound | Value=TC_CODE | Reason=Custom Property(TC_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGCnvSEM.lgDeleteCustomPropertyist","","","1755872388353"
+"Debug","7","22-Aug-2025 10:19:48:353","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","",">>>PTAJFP000124:cldc:null","Debug","LGCnvSEM.sendTransferCommand","","","1755872388353"
+"Debug","7","22-Aug-2025 10:19:48:353","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","",">>>PTAJFP000124:cper:null","Debug","LGCnvSEM.sendTransferCommand","","","1755872388353"
+"Info","7","22-Aug-2025 10:19:48:353","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124",">>> - 10. Move OK PTAJFP000124 has CMD_CD : HPTAJFP0001240822101844","INFO","LGCnvSEM.getProceedWithMoveAction ","","","1755872388353"
+"Info","7","22-Aug-2025 10:19:48:352","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124",">>> isMesOnline : true","INFO","LGCnvSEM.isMesOnline","","","1755872388352"
+"Info","5","22-Aug-2025 10:19:48:351","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124",">>> WorkItem
+  State:       Move Pending
+  Carrier:     PTAJFP000124
+  Source:      J1FCNV13301-306
+  Next:        J1FCNV13301-CP0C01
+  Priority:    50
+  Interface:   
+  Itinerary:   J1FSTO13301.J1FCNV13301.2
+  Comment:     New Item
+
+J1FCNV13301-CP0C01","INFO","LGCnvSEM.getProceedWithMoveAction ","","","1755872388351"
+"Debug","7","22-Aug-2025 10:19:48:351","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):AbstractDispatcher-J1FCNV13301","PTAJFP000124","Found work: carrier: PTAJFP000124 sourceLoc: J1FCNV13301-306 nextLoc: J1FCNV13301-CP0C01","debug","BaseDispatcher.doWork","","","1755872388351"
+"Debug","7","22-Aug-2025 10:19:48:339","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Carrier Requestor : AUTO","debug","LGCnvSEM.isMCSMove","","","1755872388339"
+"Error","8","22-Aug-2025 10:19:48:338","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124",">>istackLoc : FALSE REQUESTMOVE : FALSE","ERROR","LGCnvSEM.updateMoveAtInput","","","1755872388338"
+"Debug","7","22-Aug-2025 10:19:48:337","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Device: J1FCNV13301 adding carrier: PTAJFP000124 at location: J1FCNV13301-306","debug","LGCnvSEM.addCarrier","","","1755872388337"
+"Debug","7","22-Aug-2025 10:19:48:337","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","Checking for older carriers at Location: J1FCNV13301-306","debug","AutomatedStorageDevice.cleanupOtherCarriers","","","1755872388337"
+"Debug","9","22-Aug-2025 10:19:48:335","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGCnvSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872388335"
+"Com","1","22-Aug-2025 10:19:48:334","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","","--> Event Report Send CEID:158 - CarrierWaitIn  CarrierID: PTAJFP000124, loc : PTAJFP000124","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001860b0000000085ac0103a9020000a902009e01010102a90200110103410c5054414a4650303030313234410f4a3146434e5631333330312d333036a9020000","1755872388334"
+"Debug","8","22-Aug-2025 10:19:48:334","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super1 Event Report Send CEID:158 - CarrierWaitIn  CarrierID: PTAJFP000124, loc : PTAJFP000124","DEBUG","COMLogParser.parseComLog","","","1755872388334"
+"Info","9","22-Aug-2025 10:19:48:334","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super Event Report Send CEID:158 - CarrierWaitIn  CarrierID: PTAJFP000124","INFO","COMLogParser.parseComLog","","","1755872388334"
+"Debug","9","22-Aug-2025 10:19:48:293","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGCnvSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872388293"
+"Info","7","22-Aug-2025 10:19:48:293","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","after super - Carrier type of PTAJFP000124, is UNKNOWN, readStatus Id Success","info","LGCnvSEM.carrierIDRead","","","1755872388293"
+"Info","8","22-Aug-2025 10:19:48:293","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","before - Carrier type of PTAJFP000124, is UNKNOWN, readStatus Id Success","info","LGCnvSEM.carrierIDRead","","","1755872388293"
+"Error","9","22-Aug-2025 10:19:48:291","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","delete COVER_FLAG","NotFound | Value=COVER_FLAG | Reason=Custom Property(COVER_FLAG) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.lgDeleteCustomPropertyList(LGCnvSEM.java:6485)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.carrierIDRead_updateDetailInfo(LGCnvSEM.java:6275)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.processEventReport(LGCnvSEM.java:674)
+	at classmcs.device.mcs.EventReportThread$MyThread.run(EventReportThread.java:189)
+Caused by: NotFound | Value=COVER_FLAG | Reason=Custom Property(COVER_FLAG) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGCnvSEM.lgDeleteCustomPropertyist","","","1755872388291"
+"Error","9","22-Aug-2025 10:19:48:291","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","delete SMPL_CLCT_CMPL_CODE","NotFound | Value=SMPL_CLCT_CMPL_CODE | Reason=Custom Property(SMPL_CLCT_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.lgDeleteCustomPropertyList(LGCnvSEM.java:6485)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.carrierIDRead_updateDetailInfo(LGCnvSEM.java:6275)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.processEventReport(LGCnvSEM.java:674)
+	at classmcs.device.mcs.EventReportThread$MyThread.run(EventReportThread.java:189)
+Caused by: NotFound | Value=SMPL_CLCT_CMPL_CODE | Reason=Custom Property(SMPL_CLCT_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGCnvSEM.lgDeleteCustomPropertyist","","","1755872388291"
+"Error","9","22-Aug-2025 10:19:48:290","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","delete CST_CLEAN_CODE","NotFound | Value=CST_CLEAN_CODE | Reason=Custom Property(CST_CLEAN_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.lgDeleteCustomPropertyList(LGCnvSEM.java:6485)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.carrierIDRead_updateDetailInfo(LGCnvSEM.java:6275)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.processEventReport(LGCnvSEM.java:674)
+	at classmcs.device.mcs.EventReportThread$MyThread.run(EventReportThread.java:189)
+Caused by: NotFound | Value=CST_CLEAN_CODE | Reason=Custom Property(CST_CLEAN_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGCnvSEM.lgDeleteCustomPropertyist","","","1755872388290"
+"Error","9","22-Aug-2025 10:19:48:290","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","delete PET_WINDING_CMPL_CODE","NotFound | Value=PET_WINDING_CMPL_CODE | Reason=Custom Property(PET_WINDING_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.lgDeleteCustomPropertyList(LGCnvSEM.java:6485)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.carrierIDRead_updateDetailInfo(LGCnvSEM.java:6275)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.processEventReport(LGCnvSEM.java:674)
+	at classmcs.device.mcs.EventReportThread$MyThread.run(EventReportThread.java:189)
+Caused by: NotFound | Value=PET_WINDING_CMPL_CODE | Reason=Custom Property(PET_WINDING_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGCnvSEM.lgDeleteCustomPropertyist","","","1755872388290"
+"Error","9","22-Aug-2025 10:19:48:290","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","delete IS_PROHIBITED","NotFound | Value=IS_PROHIBITED | Reason=Custom Property(IS_PROHIBITED) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.lgDeleteCustomPropertyList(LGCnvSEM.java:6485)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.carrierIDRead_updateDetailInfo(LGCnvSEM.java:6275)
+	at classlgmcs.device.mcs.storage.lgcnvSEM.LGCnvSEM.processEventReport(LGCnvSEM.java:674)
+	at classmcs.device.mcs.EventReportThread$MyThread.run(EventReportThread.java:189)
+Caused by: NotFound | Value=IS_PROHIBITED | Reason=Custom Property(IS_PROHIBITED) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGCnvSEM.lgDeleteCustomPropertyist","","","1755872388290"
+"Debug","7","22-Aug-2025 10:19:48:288","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","PTAJFP000124","locationId : J1FCNV13301-306, carrierId : PTAJFP000124, readStatus : 0, emptyFlag : 0, carrierTypeCode : 4, requestedDestination : , childInfoList.count : 0, bobbinStatus : 0, pltStatus : 0","Debug","LGCnvSEM.carrierIDRead_updateDetailInfo","","","1755872388288"
+"Com","1","22-Aug-2025 10:19:48:288","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","","--> Event Report Send CEID:251 - CarrierIDRead, PTAJFP000124, loc : J1FCNV13301-306, carrierTypeCode : 4, childlist : ","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgcnvSEM.ComLogParser","0001860b0000000085ab0103a9020000a90200fb01010102a902001301010109410f4a3146434e5631333330312d333036410c5054414a4650303030313234a9020000a9020000a902000441000100a9020000a9020000","1755872388288"
+"Debug","8","22-Aug-2025 10:19:48:288","","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):HsmsRecv/10.228.115.223:30059","",">>> super1 Event Report Send CEID:251 - CarrierIDRead, PTAJFP000124, loc : J1FCNV13301-306, carrierTypeCode : 4, childlist : ","DEBUG","COMLogParser.parseComLog","","","1755872388288"
+"Info","3","22-Aug-2025 10:19:48:129","MesServer_J1F","MesServer_J1F:StatusChangeListenerMCSEventThreadPool-9","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_REG_EQPT_SCAN_RSLT 
+{
+  "TXN_ID": "1755872388128",
+  "inDTName": "IN_DATA,IN_SCAN_LIST",
+  "refDS": {
+    "IN_SCAN_LIST": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "STACK_NO": "1",
+        "SCAN_RSLT": "OK",
+        "SCAN_TYPE": "FB"
+      }
+    ],
+    "IN_DATA": [
+      {
+        "PORT_ID": "J1FCNV13301-306",
+        "EQUIPMENT_ID": "J1FCNV13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_REG_EQPT_SCAN_RSLT",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872388129"
+"Info","8","22-Aug-2025 10:19:48:126","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","J1FCNV13301-306",">>> IDreadReport 0:<L[4] <U2 1> <A 'PTAJFP000124'> <U2 0> <A 'FB'> >","info","LGCnvSEM.reportIDRead","","","1755872388126"
+"Info","7","22-Aug-2025 10:19:48:126","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):EventReportThreadP-J1FCNV13301","J1FCNV13301-306",">>> IDreadReportEvent - DeviceId J1FCNV13301, PortId :  J1FCNV13301-306, idreadInfoList : <L[1] <L[4] <U2 1> <A 'PTAJFP000124'> <U2 0> <A 'FB'> > >","info","LGCnvSEM.reportIDRead","","","1755872388126"
+"Debug","7","22-Aug-2025 10:19:44:475","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-32","PTAJFP000124","Device: J1FCNV13301 adding carrier: PTAJFP000124 at location: J1FCNV13301-306","debug","LGCnvSEM.addCarrier","","","1755872384475"
+"Debug","2","22-Aug-2025 10:19:44:475","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","MSD:Dev::PTAJFP000124:1755872324764::J1FSTO13301","MSD:Dev::PTAJFP000124:1755872324764::J1FSTO13301 MSD:Dev::DEV:J1FSTO13301:Move_Summary. [DeviceMoveSummaryData [
+	MoveSummaryData [
+	trackingId=MSD:Dev::PTAJFP000124:1755872324764::J1FSTO13301
+	carrierId=PTAJFP000124
+	jobId=1755872324764
+	completionType=Completed
+	completionTime=1755872384475
+	closed=true
+	failure=false
+	reported=true
+]
+	deviceType=StorageDevice
+	deviceId=J1FSTO13301
+	priority=50
+	sourceDevice=J1FSTO13301
+	sourceLocation=D_PTT01
+	destinationDevice=J1FCNV13301
+	destinationLocation=J1FCNV13301-CP0C01
+	timeMoveRequested=1755872324767
+	timeMoveCompleted=null
+	deliveredDevice=J1FSTO13301
+	deliveredLocation=J1FSTO13301-401
+	deliveredLocationType=Port
+	durationTransferWait=null
+	durationTransferInitiateWait=null
+	durationResourceAssignWait=null
+	durationRetrieve=null
+	durationRetrieveWait=null
+	durationTransport=null
+	durationResourceUtil=null
+	durationDelivery=null
+	durationMove=null
+	failureCount=0
+	durationMove=null
+	transferSummaryDataList=[]
+]]","MSD:Dev::DEV:J1FSTO13301:Move_Summary","DeviceMoveSummaryData.fireMoveSummaryDataTrigger","","","1755872384475"
+"Debug","7","22-Aug-2025 10:19:44:475","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGStockerSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872384475"
+"Debug","5","22-Aug-2025 10:19:44:475","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","carrier current location : J1FSTO13301-401","debug","LGStockerSEM.carrierRemoved","","","1755872384475"
+"Debug","7","22-Aug-2025 10:19:44:475","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: J1FSTO13301-401","debug","Device.removeCarrier","","","1755872384475"
+"Debug","7","22-Aug-2025 10:19:44:475","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124",">>> PTAJFP000124::J1FCNV13301:J1FCNV13301-306/J1FSTO13301-401","debug","LGStockerSEM.carrierRemoved","","","1755872384475"
+"Debug","5","22-Aug-2025 10:19:44:473","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","PTAJFP000124 exist in J1FSTO13301-401","debug","LGStockerSEM.carrierRemoved","","","1755872384473"
+"Debug","5","22-Aug-2025 10:19:44:471","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","PTAJFP000124 is removed and publish lgcarrierRemove event","debug","LGStockerSEM.carrierRemoved","","","1755872384471"
+"Com","1","22-Aug-2025 10:19:44:471","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","","--> Event Report Send CEID:153 - CarrierRemoved  CarrierID: PTAJFP000124","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgstockerSEM.ComLogParser","0001860b00000000097d0103b10400000000a902009901010102a90200100102410c5054414a4650303030313234a9020002","1755872384471"
+"Info","9","22-Aug-2025 10:19:44:471","","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","",">>> super Event Report Send CEID:153 - CarrierRemoved  CarrierID: PTAJFP000124","INFO","COMLogParser.parseComLog","","","1755872384471"
+"Debug","9","22-Aug-2025 10:19:44:116","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","workItem is not null, fire static","debug","LGStockerSEM.carrierWaitOut","","","1755872384116"
+"Debug","7","22-Aug-2025 10:19:44:116","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGStockerSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872384116"
+"Com","1","22-Aug-2025 10:19:44:113","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","","--> Event Report Send CEID:159 - CarrierWaitOut  CarrierID: PTAJFP000124  Location: J1FSTO13301-401","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgstockerSEM.ComLogParser","0001860b00000000097b0103b10400000000a902009f01010102a90200160104410c5054414a4650303030313234410f4a314653544f31333330312d343031410f4a314653544f31333330312d343031410130","1755872384113"
+"Info","9","22-Aug-2025 10:19:44:113","","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","",">>> super Event Report Send CEID:159 - CarrierWaitOut  CarrierID: PTAJFP000124  Location: J1FSTO13301-401","INFO","COMLogParser.parseComLog","","","1755872384113"
+"Info","7","22-Aug-2025 10:19:43:764","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","",">>> forkType : 1-1, TrayCount : 1, Floor : , cmd_id1 : 562,empty, carrier_id1 : PTAJFP000124,empty","INFO","LGStockerSEM.PatternReportEvent","","","1755872383764"
+"Com","1","22-Aug-2025 10:19:43:764","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","","--> Event Report Send CEID:636 - PatternReport, carrierId_1 : PTAJFP000124, carrierId_2 : ","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgstockerSEM.ComLogParser","0001860b00000000097a0103b10400000000a902027c01010102a902003d010101074103312d31a9020001410041033536324100410c5054414a46503030303132344100","1755872383764"
+"Info","3","22-Aug-2025 10:19:43:092","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_ReportDurableMovingEvent 
+{
+  "TXN_ID": "1755872383091",
+  "inDTName": "IN_DATA",
+  "refDS": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "SHELF_ID": "J1FSTO13301-10601",
+        "TO_PORT_ID": "J1FSTO13301-401",
+        "EVENT_TYPE_CODE": "B",
+        "FROM_EQUIPMENT_ID": "J1FSTO13301",
+        "USER_ID": "MCS",
+        "FROM_PORT_ID": "J1FSTO13301-SN0",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "TO_EQUIPMENT_ID": "J1FSTO13301",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "PORT_ID": "J1FSTO13301-401",
+        "TRANSPORT_END_CODE": "1",
+        "MCS_TXN_ID": "1755872383091",
+        "LOT_ID": "T1F007976",
+        "ERROR_DETAIL": "",
+        "ERROR_DURABLE_FLAG": "N",
+        "EQUIPMENT_ID": "J1FSTO13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_ReportDurableMovingEvent",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872383092"
+"Debug","4","22-Aug-2025 10:19:43:087","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> do ending Exception=Custom Property(SHOP_END) not found on Location (J1FSTO13301/J1FSTO13301-401)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872383087"
+"Debug","6","22-Aug-2025 10:19:43:085","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> J1FSTO13301 // DEVICE_TYPE : STOCKER","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872383085"
+"Debug","6","22-Aug-2025 10:19:43:085","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> ChangeCheck -> Move Pending : B, current  - J1FSTO13301:J1FSTO13301-401, to  - J1FSTO13301:J1FSTO13301-401, travelinfo  - J1FCNV13301:J1FCNV13301-CP0C01, endflag - 1","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872383085"
+"Debug","6","22-Aug-2025 10:19:43:085","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> MoveStatus -> Move Pending (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872383085"
+"Debug","6","22-Aug-2025 10:19:43:084","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >>  LOC:  cur : J1FSTO13301/J1FSTO13301-401(), from : J1FSTO13301/D_PTT01, to : J1FSTO13301/J1FSTO13301-401 : B","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872383084"
+"Debug","7","22-Aug-2025 10:19:43:084","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","--->Completed STROAGE EVENT_TYPE_OUTPUT_COMPLETE::B","debug","ReportTransferComplete.processEvent","","","1755872383084"
+"Debug","6","22-Aug-2025 10:19:43:083","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT-B] ReportTransferComplete >> deviceType(OUTPUT) STOCKER","debug","ReportTransferComplete.processEvent","","","1755872383083"
+"Debug","6","22-Aug-2025 10:19:43:083","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportTransferComplete >> port type : Automated Loading Port","debug","ReportTransferComplete.processEvent","","","1755872383083"
+"Debug","7","22-Aug-2025 10:19:43:081","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportTransferComplete >> isStockerZone(J1FSTO13301-401) false, isPartition false","debug","ReportTransferComplete.processEvent","","","1755872383081"
+"Debug","7","22-Aug-2025 10:19:43:080","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportTransferComplete >> DeviceType STOCKER","debug","ReportTransferComplete.processEvent","","","1755872383080"
+"Debug","5","22-Aug-2025 10:19:43:080","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportTransferComplete >> LGMoveCompleteEvent J1FCNV13301 [ J1FCNV13301-306: ] ","debug","ReportTransferComplete.processEvent","","","1755872383080"
+"Debug","5","22-Aug-2025 10:19:43:079","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-8","PTAJFP000124","[CVNT] ReportTransferComplete >> LGMoveCompleteEvent theSubject=device.moveMoveComplete.J1FSTO13301 DeviceId=J1FSTO13301 : carrier=PTAJFP000124, current=J1FSTO13301-401/, from=D_PTT01, to=J1FSTO13301-401, result=0","debug","ReportTransferComplete.processEvent","","","1755872383079"
+"Debug","7","22-Aug-2025 10:19:43:079","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","theSubject=device.moveMoveComplete.J1FSTO13301 DeviceId=J1FSTO13301 : carrier=PTAJFP000124, current=J1FSTO13301-401/, from=D_PTT01, to=J1FSTO13301-401, result=0","debug","LGStockerSEM.transferCompleted","","","1755872383079"
+"Debug","7","22-Aug-2025 10:19:43:078","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-32","PTAJFP000124","Device: J1FCNV13301 queuing carrier: PTAJFP000124 at location: J1FCNV13301-306","debug","AutomatedStorageDevice.queueCarrier","","","1755872383078"
+"Debug","7","22-Aug-2025 10:19:43:078","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGStockerSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872383078"
+"Debug","9","22-Aug-2025 10:19:43:077","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872383077"
+"Debug","9","22-Aug-2025 10:19:43:077","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872383077"
+"Debug","8","22-Aug-2025 10:19:43:077","","CarrierServer:ORBWorkerThread-49","PTAJFP000124","Publishing Event: theSubject=carrier.movement.locationUpdated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=MovePending,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FSTO13301,J1FSTO13301-401,),currentLocationInfo=(J1FCNV13301,J1FCNV13301-306,),arrivalTime=22-Aug-2025 10:19:43:077,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:19:43:073), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(AREAGROUP,2L),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872383077"
+"Debug","7","22-Aug-2025 10:19:43:076","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-32","PTAJFP000124","Accepting Carrier at Port J1FCNV13301-306","debug","AutomatedStorageDevice.externalPlacementOfCarrier","","","1755872383076"
+"Debug","7","22-Aug-2025 10:19:43:075","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-32","","Device: J1FCNV13301 assigning carrier: PTAJFP000124 at location: J1FCNV13301-306","debug","AutomatedStorageDevice.assignCarrier","","","1755872383075"
+"Debug","9","22-Aug-2025 10:19:43:074","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.completed.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872383074"
+"Debug","9","22-Aug-2025 10:19:43:074","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.completed.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872383074"
+"Debug","9","22-Aug-2025 10:19:43:074","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872383074"
+"Debug","9","22-Aug-2025 10:19:43:073","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872383073"
+"Debug","8","22-Aug-2025 10:19:43:073","","CarrierServer:ORBWorkerThread-43","PTAJFP000124","Publishing Event: theSubject=carrier.movement.completed.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=MovePending,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FSTO13301,J1FSTO13301-101,),currentLocationInfo=(J1FSTO13301,J1FSTO13301-401,),arrivalTime=22-Aug-2025 10:19:43:073,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:19:43:073), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(AREAGROUP,2L),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872383073"
+"Debug","8","22-Aug-2025 10:19:43:073","","CarrierServer:ORBWorkerThread-43","PTAJFP000124","Publishing Event: theSubject=carrier.movement.locationUpdated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=Moving,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FSTO13301,J1FSTO13301-101,),currentLocationInfo=(J1FSTO13301,J1FSTO13301-401,),arrivalTime=22-Aug-2025 10:19:43:073,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:19:10:087), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(AREAGROUP,2L),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872383073"
+"Debug","7","22-Aug-2025 10:19:43:073","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","Device: J1FSTO13301 adding carrier: PTAJFP000124 at location: J1FSTO13301-401","debug","Device.addCarrier","","","1755872383073"
+"Debug","7","22-Aug-2025 10:19:43:073","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: J1FSTO13301-101","debug","Device.removeCarrier","","","1755872383073"
+"Debug","7","22-Aug-2025 10:19:43:073","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","Custom Property(IMMEDIATE_LOCAL_FLAG) not found on Carrier (PTAJFP000124)","debug","LGStockerSEM.deleteCarrierProperty","","","1755872383073"
+"Info","7","22-Aug-2025 10:19:43:072","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124",">>> resultCode :0 , creatTypeFlag : R","info","LGStockerSEM.transferCompleted","","","1755872383072"
+"Info","7","22-Aug-2025 10:19:43:071","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","TC Data : carrierId PTAJFP000124,currentLocation : J1FSTO13301-401,currentSublocation:,sourceId:D_PTT01,nextLocId:J1FSTO13301-401,resultCode:0","info","LGStockerSEM.transferCompleted","","","1755872383071"
+"Info","5","22-Aug-2025 10:19:43:070","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","WorkItemInfo : WorkItem
+  State:       Moving
+  Carrier:     PTAJFP000124
+  Source:      D_PTT01
+  Next:        J1FSTO13301-401
+  CommandId:   562
+  Priority:    50
+  Interface:   
+  Itinerary:   J1FSTO13301.J1FCNV13301.2
+  Comment:     Command Sent to Device
+","info","LGStockerSEM.transferCompleted","","","1755872383070"
+"Debug","5","22-Aug-2025 10:19:43:070","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","commandId : 562, carrierId : PTAJFP000124, equipmentAddress : J1FSTO13301-401, resultCode : 0, zoneName : J1FSTO13301-401","debug","LGStockerSEM.transferCompleted","","","1755872383070"
+"Com","1","22-Aug-2025 10:19:43:070","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","","--> Event Report Send CEID:107 - TransferCompleted  CarrierID: PTAJFP000124  CommandID: 562  Location: J1FSTO13301-401","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgstockerSEM.ComLogParser","0001860b0000000009790103b10400000000a902006b01010102a902000901064103353632410c5054414a4650303030313234410f4a314653544f31333330312d343031a9020000410f4a314653544f31333330312d34303141014e","1755872383070"
+"Info","9","22-Aug-2025 10:19:43:070","","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","",">>> super Event Report Send CEID:107 - TransferCompleted  CarrierID: PTAJFP000124  CommandID: 562  Location: J1FSTO13301-401","INFO","COMLogParser.parseComLog","","","1755872383070"
+"Info","3","22-Aug-2025 10:19:10:096","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_ReportDurableMovingEvent 
+{
+  "TXN_ID": "1755872350095",
+  "inDTName": "IN_DATA",
+  "refDS": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "SHELF_ID": "J1FSTO13301-10601",
+        "TO_PORT_ID": "J1FSTO13301-401",
+        "EVENT_TYPE_CODE": "E",
+        "FROM_EQUIPMENT_ID": "J1FSTO13301",
+        "USER_ID": "MCS",
+        "FROM_PORT_ID": "J1FSTO13301-SN0",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "TO_EQUIPMENT_ID": "J1FSTO13301",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "PORT_ID": "J1FSTO13301-101",
+        "TRANSPORT_END_CODE": "1",
+        "MCS_TXN_ID": "1755872350095",
+        "LOT_ID": "T1F007976",
+        "ERROR_DETAIL": "",
+        "ERROR_DURABLE_FLAG": "N",
+        "EQUIPMENT_ID": "J1FSTO13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_ReportDurableMovingEvent",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872350096"
+"Debug","6","22-Aug-2025 10:19:10:091","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> J1FSTO13301 // DEVICE_TYPE : STOCKER","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872350091"
+"Debug","6","22-Aug-2025 10:19:10:090","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> ChangeCheck -> Moving : E, current  - J1FSTO13301:J1FSTO13301-101, to  - J1FSTO13301:J1FSTO13301-401, travelinfo  - J1FCNV13301:J1FCNV13301-CP0C01, endflag - 1","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872350090"
+"Debug","6","22-Aug-2025 10:19:10:090","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> MoveStatus -> Moving (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872350090"
+"Debug","8","22-Aug-2025 10:19:10:090","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT ]>> J1FSTO13301-101 is not port","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872350090"
+"Debug","9","22-Aug-2025 10:19:10:089","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.initiated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872350089"
+"Debug","9","22-Aug-2025 10:19:10:089","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.initiated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872350089"
+"Debug","6","22-Aug-2025 10:19:10:089","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >>  LOC:  cur : J1FSTO13301/J1FSTO13301-101(), from : J1FSTO13301/D_PTT01, to : J1FSTO13301/J1FSTO13301-401 : E","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872350089"
+"Debug","9","22-Aug-2025 10:19:10:088","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.jobStarted.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872350088"
+"Debug","9","22-Aug-2025 10:19:10:088","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.jobStarted.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872350088"
+"Debug","5","22-Aug-2025 10:19:10:088","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-10","PTAJFP000124","[CVNT-A] ReportTransferStart >> device.move.start.J1FSTO13301 [ PTAJFP000124:D_PTT01 -> J1FSTO13301-401 ]","debug","ReportTransferStart.processEvent","","","1755872350088"
+"Debug","8","22-Aug-2025 10:19:10:088","","CarrierServer:ORBWorkerThread-49","PTAJFP000124","Publishing Event: theSubject=carrier.movement.initiated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755872324764,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=Moving,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),currentLocationInfo=(J1FSTO13301,J1FSTO13301-101,),arrivalTime=22-Aug-2025 10:19:10:085,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:19:10:087), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(AREAGROUP,2L),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872350088"
+"Debug","8","22-Aug-2025 10:19:10:087","","CarrierServer:ORBWorkerThread-49","PTAJFP000124","Publishing Event: theSubject=carrier.movement.jobStarted.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755869158796,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=Moving,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),currentLocationInfo=(J1FSTO13301,J1FSTO13301-101,),arrivalTime=22-Aug-2025 10:19:10:085,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:19:10:087), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(AREAGROUP,2L),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872350087"
+"Debug","7","22-Aug-2025 10:19:10:087","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","Device: J1FSTO13301 adding carrier: PTAJFP000124 at location: J1FSTO13301-101","debug","Device.addCarrier","","","1755872350087"
+"Debug","7","22-Aug-2025 10:19:10:087","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","Removing carrier: PTAJFP000124 from location: D_PTT01","debug","Device.removeCarrier","","","1755872350087"
+"Debug","9","22-Aug-2025 10:19:10:086","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872350086"
+"Debug","9","22-Aug-2025 10:19:10:086","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.locationUpdated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872350086"
+"Debug","8","22-Aug-2025 10:19:10:085","","CarrierServer:ORBWorkerThread-18","PTAJFP000124","Publishing Event: theSubject=carrier.movement.locationUpdated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755869158796,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=MovePending,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),currentLocationInfo=(J1FSTO13301,J1FSTO13301-101,),arrivalTime=22-Aug-2025 10:19:10:085,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:18:44:773), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(AREAGROUP,2L),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872350085"
+"Error","7","22-Aug-2025 10:19:10:084","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","","Custom Property(DDAPORT) not found on Carrier (PTAJFP000124)","error","LGStockerSEM.carrierTransferring","","","1755872350084"
+"Debug","7","22-Aug-2025 10:19:10:082","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGStockerSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872350082"
+"Com","1","22-Aug-2025 10:19:10:082","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","","--> Event Report Send CEID:157 - CarrierTransferring  CarrierID: PTAJFP000124  Location: J1FSTO13301-101","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgstockerSEM.ComLogParser","0001860b0000000009760103b10400000000a902009d01010102a90200140105410c5054414a4650303030313234410f4a314653544f31333330312d313031410f4a314653544f31333330312d313031410f4a314653544f31333330312d313031410131","1755872350082"
+"Info","9","22-Aug-2025 10:19:10:082","","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","",">>> super Event Report Send CEID:157 - CarrierTransferring  CarrierID: PTAJFP000124  Location: J1FSTO13301-101","INFO","COMLogParser.parseComLog","","","1755872350082"
+"Info","3","22-Aug-2025 10:18:44:821","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-9","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_ReportDurableMovingEvent 
+{
+  "TXN_ID": "1755872324820",
+  "inDTName": "IN_DATA",
+  "refDS": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "SHELF_ID": "J1FSTO13301-10601",
+        "TO_PORT_ID": "J1FSTO13301-401",
+        "EVENT_TYPE_CODE": "A",
+        "FROM_EQUIPMENT_ID": "J1FSTO13301",
+        "USER_ID": "MCS",
+        "FROM_PORT_ID": "J1FSTO13301-SN0",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "TO_EQUIPMENT_ID": "J1FSTO13301",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "PORT_ID": "J1FSTO13301-SN0",
+        "TRANSPORT_END_CODE": "1",
+        "MCS_TXN_ID": "1755872324820",
+        "LOT_ID": "T1F007976",
+        "ERROR_DETAIL": "",
+        "ERROR_DURABLE_FLAG": "N",
+        "EQUIPMENT_ID": "J1FSTO13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_ReportDurableMovingEvent",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872324821"
+"Debug","6","22-Aug-2025 10:18:44:816","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-9","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> J1FSTO13301 // DEVICE_TYPE : STOCKER","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324816"
+"Debug","6","22-Aug-2025 10:18:44:816","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-9","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> ChangeCheck -> Move Pending : A, current  - J1FSTO13301:D_PTT01, to  - J1FSTO13301:J1FSTO13301-401, travelinfo  - J1FCNV13301:J1FCNV13301-CP0C01, endflag - 1","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324816"
+"Debug","6","22-Aug-2025 10:18:44:816","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-9","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> MoveStatus -> Move Pending (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324816"
+"Debug","8","22-Aug-2025 10:18:44:816","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-9","PTAJFP000124","[CVNT ]>> D_PTT01 is not port","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324816"
+"Debug","6","22-Aug-2025 10:18:44:815","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-9","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >>  LOC:  cur : J1FSTO13301/D_PTT01(), from : J1FSTO13301/D_PTT01, to : J1FSTO13301/J1FSTO13301-401 : A","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324815"
+"Debug","5","22-Aug-2025 10:18:44:814","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-9","PTAJFP000124","[CVNT-A] ReportTransferStart >> device.move.lgTransferInitiated.J1FSTO13301 [ PTAJFP000124:D_PTT01 -> J1FSTO13301-401 ]","debug","ReportTransferStart.processEvent","","","1755872324814"
+"Debug","5","22-Aug-2025 10:18:44:813","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","Publishing event : theSubject=device.move.lgTransferInitiated.J1FSTO13301 DeviceId=J1FSTO13301","debug","LGStockerSEM.transferInitiated","","","1755872324813"
+"Debug","7","22-Aug-2025 10:18:44:813","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGStockerSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872324813"
+"Debug","7","22-Aug-2025 10:18:44:813","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124","carrierId : PTAJFP000124, sourceLoc : J1FSTO13301-10601, destLoc : J1FSTO13301-401","debug","LGStockerSEM.transferInitiated","","","1755872324813"
+"Com","1","22-Aug-2025 10:18:44:813","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","","--> Event Report Send CEID:108 - TransferInitiated  CarrierID: PTAJFP000124  CommandID: 562","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgstockerSEM.ComLogParser","0001860b0000000009720103b10400000000a902006c01010102a902000a01054103353632410c5054414a465030303031323441114a314653544f31333330312d31303630314103534e30410f4a314653544f31333330312d343031","1755872324813"
+"Info","9","22-Aug-2025 10:18:44:813","","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsRecv/10.228.115.165:30061","",">>> super Event Report Send CEID:108 - TransferInitiated  CarrierID: PTAJFP000124  CommandID: 562","INFO","COMLogParser.parseComLog","","","1755872324813"
+"Info","3","22-Aug-2025 10:18:44:803","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-2","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_ReportDurableMovingEvent 
+{
+  "TXN_ID": "1755872324802",
+  "inDTName": "IN_DATA",
+  "refDS": {
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "SHELF_ID": "J1FSTO13301-10601",
+        "TO_PORT_ID": "J1FSTO13301-401",
+        "EVENT_TYPE_CODE": "R",
+        "FROM_EQUIPMENT_ID": "J1FSTO13301",
+        "USER_ID": "MCS",
+        "FROM_PORT_ID": "J1FSTO13301-SN0",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "TO_EQUIPMENT_ID": "J1FSTO13301",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "PORT_ID": "J1FSTO13301-SN0",
+        "TRANSPORT_END_CODE": "1",
+        "MCS_TXN_ID": "1755872324802",
+        "LOT_ID": "T1F007976",
+        "ERROR_DETAIL": "",
+        "ERROR_DURABLE_FLAG": "N",
+        "EQUIPMENT_ID": "J1FSTO13301"
+      }
+    ]
+  },
+  "actID": "BR_MHS_ReportDurableMovingEvent",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872324803"
+"Debug","6","22-Aug-2025 10:18:44:798","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-2","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> J1FSTO13301 // DEVICE_TYPE : STOCKER","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324798"
+"Debug","6","22-Aug-2025 10:18:44:798","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-2","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> ChangeCheck -> Move Pending : R, current  - J1FSTO13301:D_PTT01, to  - J1FSTO13301:J1FSTO13301-401, travelinfo  - J1FCNV13301:J1FCNV13301-CP0C01, endflag - 1","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324798"
+"Debug","6","22-Aug-2025 10:18:44:798","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-2","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >> MoveStatus -> Move Pending (PTAJFP000124)","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324798"
+"Debug","8","22-Aug-2025 10:18:44:797","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-2","PTAJFP000124","[CVNT ]>> D_PTT01 is not port","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324797"
+"Debug","6","22-Aug-2025 10:18:44:796","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-2","PTAJFP000124","[CVNT] ReportCarrierLocationUpdate >>  LOC:  cur : J1FSTO13301/D_PTT01(J1FSTO13301-10601), from : J1FSTO13301/D_PTT01, to : J1FSTO13301/J1FSTO13301-401 : R","debug","ReportCarrierLocationUpdate.reportCarrierMovingLocationInfo","","","1755872324796"
+"Debug","5","22-Aug-2025 10:18:44:796","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-2","PTAJFP000124","[CVNT-R] ReserveTransferCommand >> device.move.lgSendTransfer.J1FSTO13301 [ PTAJFP000124:D_PTT01 -> J1FSTO13301-401 ]","debug","ReserveTransferCommand.processEvent","","","1755872324796"
+"Debug","7","22-Aug-2025 10:18:44:795","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","","statistical data for the carrier PTAJFP000124 are gathered trigger is 0","debug","LGStockerSEM.fireLGMoveStatisticalDataStatisticTrigger","","","1755872324795"
+"Com","1","22-Aug-2025 10:18:44:782","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsSend/10.228.115.165:30061","","<-- Enhanced Host Command Send RCMD:TRANSFER  CarrierID: PTAJFP000124  CommandID: 562  Source:   Destination: J1FSTO13301-401","commessage","SecsProtocolLogger.logMessage","classlgmcs.device.mcs.storage.lgstockerSEM.ComLogParser","000182310000000125d10104b10400000000410041085452414e5346455201040102410b434f4d4d414e44494e464f010201024109434f4d4d414e4449444103353632010241085052494f52495459a90200320102410c5452414e53464552494e464f010401024109434152524945524944410c5054414a465030303031323401024106534f5552434541000102410444455354410f4a314653544f31333330312d343031010241084e4558544445535441000102410c4353544154545249425554450107010241074f555454494d45410e32303235303832393039323535330102410b454d505459535441545553a9020002010241074d455344455354410b4a3146434e563133333031010241054c4f54494441095431463030373937360102410c424f4242494e53544154555341000102410c4d4154455249414c434f44454100010241125452414e5346455243524541544554595045410152010241104348494c4443415252494552494e464f0100","1755872324782"
+"Info","9","22-Aug-2025 10:18:44:782","","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):HsmsSend/10.228.115.165:30061","",">>> super Enhanced Host Command Send RCMD:TRANSFER  CarrierID: PTAJFP000124  CommandID: 562  Source:   Destination: J1FSTO13301-401","INFO","COMLogParser.parseComLog","","","1755872324782"
+"Debug","8","22-Aug-2025 10:18:44:782","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>> childList Size - 0, ChildList - []","debug","LGStockerSEM.sendTransferCommand","","","1755872324782"
+"Error","9","22-Aug-2025 10:18:44:780","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","delete SMPL_CLCT_CMPL_CODE","NotFound | Value=SMPL_CLCT_CMPL_CODE | Reason=Custom Property(SMPL_CLCT_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgstockerSEM.LGStockerSEM.lgDeleteCustomPropertyList(LGStockerSEM.java:2341)
+	at classlgmcs.device.mcs.storage.lgstockerSEM.LGStockerSEM.sendTransferCommand(LGStockerSEM.java:7887)
+	at classmcs.device.mcs.storage.StockerSEM.issueMove(StockerSEM.java:765)
+	at classmcs.device.mcs.storage.BaseDispatcher.G(BaseDispatcher.java:4335)
+	at classmcs.device.mcs.storage.BaseDispatcher.doWork(BaseDispatcher.java:4173)
+	at classmcs.device.mcs.storage.BaseDispatcher.D(BaseDispatcher.java:3898)
+	at classmcs.device.mcs.storage.BaseDispatcher.prepareNewWork(BaseDispatcher.java:2540)
+	at classmcs.device.mcs.storage.BaseDispatcher.checkWork(BaseDispatcher.java:913)
+	at classmcs.device.mcs.AbstractDispatcher.run(AbstractDispatcher.java:782)
+	at java.lang.Thread.run(Thread.java:750)
+Caused by: NotFound | Value=SMPL_CLCT_CMPL_CODE | Reason=Custom Property(SMPL_CLCT_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGStockerSEM.lgDeleteCustomPropertyist","","","1755872324780"
+"Error","9","22-Aug-2025 10:18:44:780","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","delete CST_CLEAN_CODE","NotFound | Value=CST_CLEAN_CODE | Reason=Custom Property(CST_CLEAN_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgstockerSEM.LGStockerSEM.lgDeleteCustomPropertyList(LGStockerSEM.java:2341)
+	at classlgmcs.device.mcs.storage.lgstockerSEM.LGStockerSEM.sendTransferCommand(LGStockerSEM.java:7887)
+	at classmcs.device.mcs.storage.StockerSEM.issueMove(StockerSEM.java:765)
+	at classmcs.device.mcs.storage.BaseDispatcher.G(BaseDispatcher.java:4335)
+	at classmcs.device.mcs.storage.BaseDispatcher.doWork(BaseDispatcher.java:4173)
+	at classmcs.device.mcs.storage.BaseDispatcher.D(BaseDispatcher.java:3898)
+	at classmcs.device.mcs.storage.BaseDispatcher.prepareNewWork(BaseDispatcher.java:2540)
+	at classmcs.device.mcs.storage.BaseDispatcher.checkWork(BaseDispatcher.java:913)
+	at classmcs.device.mcs.AbstractDispatcher.run(AbstractDispatcher.java:782)
+	at java.lang.Thread.run(Thread.java:750)
+Caused by: NotFound | Value=CST_CLEAN_CODE | Reason=Custom Property(CST_CLEAN_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGStockerSEM.lgDeleteCustomPropertyist","","","1755872324780"
+"Error","9","22-Aug-2025 10:18:44:779","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","delete PET_WINDING_CMPL_CODE","NotFound | Value=PET_WINDING_CMPL_CODE | Reason=Custom Property(PET_WINDING_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.corba.BaseProxyJob.A(BaseProxyJob.java:496)
+	at classmcs.corba.BaseProxyJob.getVoidRtnval(BaseProxyJob.java:411)
+	at classmcs.proxy.CarrierProxy.deleteProperty(CarrierProxy.java:370)
+	at classlgmcs.device.mcs.storage.lgstockerSEM.LGStockerSEM.lgDeleteCustomPropertyList(LGStockerSEM.java:2341)
+	at classlgmcs.device.mcs.storage.lgstockerSEM.LGStockerSEM.sendTransferCommand(LGStockerSEM.java:7887)
+	at classmcs.device.mcs.storage.StockerSEM.issueMove(StockerSEM.java:765)
+	at classmcs.device.mcs.storage.BaseDispatcher.G(BaseDispatcher.java:4335)
+	at classmcs.device.mcs.storage.BaseDispatcher.doWork(BaseDispatcher.java:4173)
+	at classmcs.device.mcs.storage.BaseDispatcher.D(BaseDispatcher.java:3898)
+	at classmcs.device.mcs.storage.BaseDispatcher.prepareNewWork(BaseDispatcher.java:2540)
+	at classmcs.device.mcs.storage.BaseDispatcher.checkWork(BaseDispatcher.java:913)
+	at classmcs.device.mcs.AbstractDispatcher.run(AbstractDispatcher.java:782)
+	at java.lang.Thread.run(Thread.java:750)
+Caused by: NotFound | Value=PET_WINDING_CMPL_CODE | Reason=Custom Property(PET_WINDING_CMPL_CODE) not found on Carrier (PTAJFP000124)
+	at classmcs.interfaces.MCSExceptionHelper.read(MCSExceptionHelper.java:80)
+	at classmcs.interfaces._CarrierStub.deleteProperty(_CarrierStub.java:4285)
+	at classmcs.proxy.CarrierProxy.access$1201(CarrierProxy.java:19)
+	at classmcs.proxy.CarrierProxy$ProxyJob.makeIDLCall(CarrierProxy.java:1676)
+	at classmcs.corba.BaseProxyJob.B(BaseProxyJob.java:350)
+	at classmcs.corba.BaseProxyJob.setupTimerAndMakeIDLCall(BaseProxyJob.java:327)
+	at classmcs.corba.ProxyThreadPool$WorkerThread.run(ProxyThreadPool.java:365)
+","error","LGStockerSEM.lgDeleteCustomPropertyist","","","1755872324779"
+"Debug","8","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124","priority after getTransferPriorityByPortCustomProperties is 50","debug","LGStockerSEM.sendTransferCommand","","","1755872324777"
+"Debug","8","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124","priority of host command is 50","debug","LGStockerSEM.sendTransferCommand","","","1755872324777"
+"Info","8","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>> SourceLocation - D_PTT01, NextLocation - J1FSTO13301-401","info","LGStockerSEM.sendTransferCommand","","","1755872324777"
+"Debug","7","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>>PTAJFP000124:waitTime:null","debug","LGStockerSEM.removeLGTimeHashMap","","","1755872324777"
+"Debug","8","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>>PTAJFP000124:cldcSend:null","debug","LGStockerSEM.removeLGSendMsgHashMap","","","1755872324777"
+"Debug","8","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>>PTAJFP000124:cperSend:null","debug","LGStockerSEM.removeLGSendMsgHashMap","","","1755872324777"
+"Info","5","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>> LGStockerSEM.getProceedWithMoveAction w.SourceLoc :  D_PTT01 , proceed ok","info","LGStockerSEM.getProceedWithMoveAction","","","1755872324777"
+"Info","8","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>> J1FCNV13301/J1FCNV13301-CP0C01","info","LGStockerSEM.getProceedWithMoveAction","","","1755872324777"
+"Info","5","22-Aug-2025 10:18:44:777","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124",">>> WorkItem
+  State:       Move Pending
+  Carrier:     PTAJFP000124
+  Source:      D_PTT01
+  Next:        J1FSTO13301-401
+  Priority:    50
+  Interface:   
+  Itinerary:   J1FSTO13301.J1FCNV13301.2
+  Comment:     Scheduled
+ - nextLoc J1FSTO13301-401, requestor : AUTO","info","LGStockerSEM.getProceedWithMoveAction","","","1755872324777"
+"Debug","7","22-Aug-2025 10:18:44:775","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124","Found work: carrier: PTAJFP000124 sourceLoc: D_PTT01 nextLoc: J1FSTO13301-401","debug","BaseDispatcher.doWork","","","1755872324775"
+"Debug","9","22-Aug-2025 10:18:44:774","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.scheduled.PTAJFP000124) to 8 Subscribers.","debug","EventPublisher.publishEvent","","","1755872324774"
+"Debug","9","22-Aug-2025 10:18:44:774","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.scheduled.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872324774"
+"Debug","8","22-Aug-2025 10:18:44:774","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124","Schedule succeeded in 0.007 seconds. Exit Location: J1FSTO13301-401","scheduled","BaseDispatcher.scheduleWorkItem","","","1755872324774"
+"Debug","8","22-Aug-2025 10:18:44:773","","CarrierServer:ORBWorkerThread-18","PTAJFP000124","Publishing Event: theSubject=carrier.movement.scheduled.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755869158796,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=MovePending,itineraryId=J1FSTO13301.J1FCNV13301.2,updateItineraryId=,previousLocationInfo=(J1FSTO13301,J1FSTO13301-101,),currentLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),arrivalTime=22-Aug-2025 09:27:05:510,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=J1FCNV13301,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:18:44:773), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(AREAGROUP,2L),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872324773"
+"Debug","1","22-Aug-2025 10:18:44:773","","TravelAgentServer:ORBWorkerThread-30","PTAJFP000124","Scheduled Itinerary: J1FSTO13301.J1FCNV13301.2","debug","TravelAgentServer.findItinerary","","","1755872324773"
+"Debug","5","22-Aug-2025 10:18:44:773","","TravelAgentServer:ORBWorkerThread-30","PTAJFP000124","Using Itinerary: J1FSTO13301.J1FCNV13301.2","debug","TravelAgentServer.reserveItinerary","","","1755872324773"
+"Error","8","22-Aug-2025 10:18:44:772","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124",">>> [AREAGROUP] PTAJFP000124::J1FCNV13301-306:2L - J1FCNV13301-CP0C01: ( 2L,3L )","debug","LGCnvSEM.processUseAreaGroup","","","1755872324772"
+"Debug","9","22-Aug-2025 10:18:44:772","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124",">>> [USE_AREAGROUP - CHECK 1] device : , locationId : J1FCNV13301-CP0C01","DEBUG","LGCnvSEM.getLocationInfoAtLocationName","","","1755872324772"
+"Debug","9","22-Aug-2025 10:18:44:772","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124",">>> [USE_AREAGROUP - CHECK 1-1 locationInfo null ] set : J1FCNV13301-306","DEBUG","LGCnvSEM.getLocationInfoAtLocationName","","","1755872324772"
+"Debug","9","22-Aug-2025 10:18:44:771","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124",">>> [USE_AREAGROUP - CHECK 1] device : J1FSTO13301, locationId : J1FSTO13301-401","DEBUG","LGCnvSEM.getLocationInfoAtLocationName","","","1755872324771"
+"Debug","7","22-Aug-2025 10:18:44:771","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124",">>> [USE_AREAGROUP - Info Check]  J1FSTO13301/J1FSTO13301-401, /J1FCNV13301-CP0C01","DEBUG","LGCnvSEM.processUseAreaGroup","","","1755872324771"
+"Debug","7","22-Aug-2025 10:18:44:771","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124",">>> [USE_AREAGROUP - reserveInfo] fromLocationId J1FSTO13301-401/J1FCNV13301-CP0C01","DEBUG","LGCnvSEM.processUseAreaGroup","","","1755872324771"
+"Debug","8","22-Aug-2025 10:18:44:771","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124","Reserved Partition: D_PTT01","debug","StorageDevice.reserveLocation","","","1755872324771"
+"Info","6","22-Aug-2025 10:18:44:771","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124","ReserveInfo : PTAJFP000124, currentLoc : J1FSTO13301, fromLoc : J1FSTO13301/J1FSTO13301-401->J1FCNV13301-CP0C01, nextDevice : , itinerary : J1FSTO13301.J1FCNV13301.2","info","LGCnvSEM.reserveLocation","","","1755872324771"
+"Debug","8","22-Aug-2025 10:18:44:771","J1FCNV13301","DeviceServer(1F_Formation_N_2nd_Conveyor_01_Server):ORBWorkerThread-39","PTAJFP000124",">>> Starting : carrierId : PTAJFP000124, fromLocation : J1FSTO13301-401","debug","LGCnvSEM.reserveLocation","","","1755872324771"
+"Debug","8","22-Aug-2025 10:18:44:771","","TravelAgentServer:ORBWorkerThread-30","PTAJFP000124","Checking Device: J1FCNV13301,ReserveType=Normal,FromDevice=J1FSTO13301,FromLocation=J1FSTO13301-401,NextDevice=,NextLocation=J1FCNV13301-CP0C01","debug","TravelAgentServer.reserveItinerary","","","1755872324771"
+"Info","8","22-Aug-2025 10:18:44:771","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-38","PTAJFP000124","ReserveInfo(final) : PTAJFP000124, currentLoc: J1FSTO13301, fromLoc : J1FSTO13301/D_PTT01, nextLoc : J1FCNV13301/J1FSTO13301-401, itinerary : J1FSTO13301.J1FCNV13301.2, reserveResultHolder.value.reasonText : , value : true","info","LGStockerSEM.reserveLocation","","","1755872324771"
+"Debug","5","22-Aug-2025 10:18:44:771","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-38","PTAJFP000124","Custom Property(GROUPPORT) not found on Location (J1FSTO13301/J1FSTO13301-401)","debug","LGStockerSEM.reserveLocation","","","1755872324771"
+"Info","6","22-Aug-2025 10:18:44:771","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-38","PTAJFP000124","ReserveInfo : PTAJFP000124, currentLoc : J1FSTO13301, fromLoc : J1FSTO13301/D_PTT01->J1FSTO13301-401, nextDevice : J1FCNV13301, itinerary : J1FSTO13301.J1FCNV13301.2","info","LGStockerSEM.reserveLocation","","","1755872324771"
+"Debug","8","22-Aug-2025 10:18:44:770","","TravelAgentServer:ORBWorkerThread-30","PTAJFP000124","Checking Device: J1FSTO13301,ReserveType=PassThroughDirect,FromDevice=J1FSTO13301,FromLocation=D_PTT01,NextDevice=J1FCNV13301,NextLocation=J1FSTO13301-401","debug","TravelAgentServer.reserveItinerary","","","1755872324770"
+"Debug","6","22-Aug-2025 10:18:44:770","","TravelAgentServer:ORBWorkerThread-30","PTAJFP000124","Checking Itinerary: J1FSTO13301.J1FCNV13301.2, Priority: 99, Estimated Time: 0","debug","TravelAgentServer.reserveItinerary","","","1755872324770"
+"Debug","8","22-Aug-2025 10:18:44:770","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-38","PTAJFP000124",">>> Starting : carrierId : PTAJFP000124, fromLocation : D_PTT01","debug","LGStockerSEM.reserveLocation","","","1755872324770"
+"Info","3","22-Aug-2025 10:18:44:769","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","MesServer_J1F:Primary:Active","[SEND] 
+BR_MHS_RequestTransportCommandReply 
+{
+  "TXN_ID": "20250822101839154904562443",
+  "inDTName": "REPLY_DATA",
+  "refDS": {
+    "REPLY_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "RETURN_CODE": "0",
+        "COMMAND_CODE": "HPTAJFP0001240822101844",
+        "USER_ID": "AUTO"
+      }
+    ]
+  },
+  "actID": "BR_MHS_RequestTransportCommandReply",
+  "outDTName": ""
+}","info","SolaceClient.send","","","1755872324769"
+"Debug","5","22-Aug-2025 10:18:44:768","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","PTAJFP000124","[CCMV_R] >> {"TXN_ID":"20250822101839154904562443", "inDTName":"REPLY_DATA", "refDS":{"REPLY_DATA":[{"DURABLE_ID":"PTAJFP000124", "RETURN_CODE":"0", "COMMAND_CODE":"HPTAJFP0001240822101844", "USER_ID":"AUTO"}]},"actID":"BR_MHS_RequestTransportCommandReply", "outDTName":""}","debug","RequestTransportCommmand.buildReturnMessage","","","1755872324768"
+"Info","3","22-Aug-2025 10:18:44:768","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","PTAJFP000124","[CCMV] >> Transport command has been completed. carrier=PTAJFP000124[B2000] : J1FSTO13301, D_PTT01 -> J1FCNV13301, J1FCNV13301-CP0C01","info","RequestTransportCommmand.processMessage","","","1755872324768"
+"Debug","1","22-Aug-2025 10:18:44:768","J1FSTO13301","TravelAgentServer:ORBWorkerThread-30","PTAJFP000124","Trying to Schedule Carrier(PTAJFP000124) Origin(J1FSTO13301,D_PTT01) Destination(J1FCNV13301,J1FCNV13301-CP0C01).","debug","TravelAgentServer.schedule","","","1755872324768"
+"Debug","4","22-Aug-2025 10:18:44:767","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","Ignore it. Already exist Host Transfer Command","debug","ReportMCSTransferCommand.processEvent","","","1755872324767"
+"Debug","7","22-Aug-2025 10:18:44:767","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):AbstractDispatcher-J1FSTO13301","PTAJFP000124","Calling Schedule - Check Source: true, SchedulePolicy: Can Wait Or Cancel, Potential Exit Location: ","debug","BaseDispatcher.scheduleWorkItem","","","1755872324767"
+"Debug","7","22-Aug-2025 10:18:44:767","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-40","PTAJFP000124","Requesting carrier move for carrier: PTAJFP000124, Destination (J1FCNV13301,J1FCNV13301-CP0C01)","debug","Device.requestCarrierMove","","","1755872324767"
+"Debug","7","22-Aug-2025 10:18:44:767","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-40","PTAJFP000124","PTAJFP000124 is Not a Prohibited Carrier, so we'll accomplish requestCarrierMove","debug","LGStockerSEM.requestCarrierMove","","","1755872324767"
+"Info","8","22-Aug-2025 10:18:44:766","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):ORBWorkerThread-40","PTAJFP000124","isProhibit(CarrierCustom) : null","info","LGStockerSEM.requestCarrierMove","","","1755872324766"
+"Debug","5","22-Aug-2025 10:18:44:765","MesServer_J1F","MesServer_J1F:CarrierLocUpdateListenerMCSEventThreadPool-5","PTAJFP000124","---> J1FSTO13301, carrier.movement.requested.PTAJFP000124, requestor : AUTO","debug","ReportMCSTransferCommand.processEvent","","","1755872324765"
+"Debug","9","22-Aug-2025 10:18:44:764","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.requested.PTAJFP000124) to 6 Subscribers.","debug","EventPublisher.publishEvent","","","1755872324764"
+"Debug","9","22-Aug-2025 10:18:44:764","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.requested.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872324764"
+"Debug","8","22-Aug-2025 10:18:44:764","","CarrierServer:ORBWorkerThread-82","PTAJFP000124","Publishing Event: theSubject=carrier.movement.requested.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=1755872324764,previousStartedJobId=1755869158796,deadlineProcessed=false,jobLateProcessed=false,needsReroute=false,moveStatus=Requested,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FSTO13301,J1FSTO13301-101,),currentLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),arrivalTime=22-Aug-2025 09:27:05:510,requestor=AUTO,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 10:18:44:764,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),originalLocationInfo=(,,),requestedDestinationInfo=(J1FCNV13301,J1FCNV13301-CP0C01,),assignedDestinationId=,bufferedDestinationId=,bufferedFlag=true,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 10:18:44:764), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(NEXT_EQUIPMENT_ID,),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(CMD_CD,HPTAJFP0001240822101844),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F007976),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(ROLL_WINDING_DIRECTION,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B2000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872324764"
+"Debug","1","22-Aug-2025 10:18:44:764","","CarrierServer:ORBWorkerThread-82","PTAJFP000124","Move Request for carrier 'PTAJFP000124' at (J1FSTO13301,D_PTT01) to (J1FCNV13301,J1FCNV13301-CP0C01) with priority 50.  Current Status is No Move","moveRequest","Carrier.requestMove","","","1755872324764"
+"Debug","9","22-Aug-2025 10:18:44:759","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.typeUpdated.PTAJFP000124) to 0 Subscribers.","debug","EventPublisher.publishEvent","","","1755872324759"
+"Debug","9","22-Aug-2025 10:18:44:759","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.typeUpdated.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872324759"
+"Debug","8","22-Aug-2025 10:18:44:759","","CarrierServer:ORBWorkerThread-55","PTAJFP000124","Publishing Event: theSubject=carrier.typeUpdated.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=,previousStartedJobId=1755869158796,deadlineProcessed=true,jobLateProcessed=false,needsReroute=false,moveStatus=NoMove,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FSTO13301,J1FSTO13301-101,),currentLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),arrivalTime=22-Aug-2025 09:27:05:510,requestor=,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 09:25:58:796,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,J1FSTO13301-251,),originalLocationInfo=(,,),requestedDestinationInfo=(,,),assignedDestinationId=,bufferedDestinationId=,bufferedFlag=false,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 09:27:05:511), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F008000),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B1000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872324759"
+"Debug","5","22-Aug-2025 10:18:44:758","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","PTAJFP000124","[CCMV] >> PTAJFP000124, checkTransferCommand() Return Code : 0","debug","RequestTransportCommmand.processMessage","","","1755872324758"
+"Info","6","22-Aug-2025 10:18:44:750","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","PTAJFP000124","[CCMV] >> FromDevice : J1FSTO13301, FromPortId D_PTT01","info","RequestTransportCommmand.processMessage","","","1755872324750"
+"Debug","6","22-Aug-2025 10:18:44:749","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","PTAJFP000124",">>> Shelf. separate Location Value.. locationId : SN0","debug","RequestTransportCommmand.getStorageDevicePartitionName","","","1755872324749"
+"Info","8","22-Aug-2025 10:18:44:747","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","PTAJFP000124","PTAJFP000124, subtype  []","info","RequestTransportCommmand.processMessage","","","1755872324747"
+"Debug","7","22-Aug-2025 10:18:44:747","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","PTAJFP000124","materialCode is update : ","debug","RequestTransportCommmand.processMessage","","","1755872324747"
+"Debug","9","22-Aug-2025 10:18:44:746","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Sending MCSEvent with Subject(carrier.movement.dataChanged.PTAJFP000124) to 3 Subscribers.","debug","EventPublisher.publishEvent","","","1755872324746"
+"Debug","9","22-Aug-2025 10:18:44:746","","EventBrokerServer:EventBrokerServer-EventProcessorThread","","Received MCSEvent with Subject(carrier.movement.dataChanged.PTAJFP000124).","debug","EventPublisher.publishEvent","","","1755872324746"
+"Debug","8","22-Aug-2025 10:18:44:746","","CarrierServer:ORBWorkerThread-67","PTAJFP000124","Publishing Event: theSubject=carrier.movement.dataChanged.PTAJFP000124, CarrierData=(id=PTAJFP000124,batchId=,idStatus=Trusted,errorReason=,jobId=,previousStartedJobId=1755869158796,deadlineProcessed=true,jobLateProcessed=false,needsReroute=false,moveStatus=NoMove,itineraryId=,updateItineraryId=,previousLocationInfo=(J1FSTO13301,J1FSTO13301-101,),currentLocationInfo=(J1FSTO13301,D_PTT01,J1FSTO13301-10601),arrivalTime=22-Aug-2025 09:27:05:510,requestor=,moveRequestorType=ExternalRequest,moveRequestReason=,requestTime=22-Aug-2025 09:25:58:796,requestedTypeOfMove=Normal,priority=50,autoCancelCriteria=,deadlineTime=0,sourceLocationInfo=(J1FSTO13301,J1FSTO13301-251,),originalLocationInfo=(,,),requestedDestinationInfo=(,,),assignedDestinationId=,bufferedDestinationId=,bufferedFlag=false,alternateDestinationId=,alternateReturnCriteria=Default,intermediateDestinationId=,createTime=28-Jun-2025 13:13:20:788,type=FULL,subTypeAttributes=,idInformation=,idPrefix=,capacity=0,emptyFlag=true,comments=,loopId=,useCount=0,cleanCount=0,lastCleanTime=28-Jun-2025 13:13:20:788,preferredExitLocationInfo=(,,),preferredEnterLocationInfo=(,,),requestedDeliveryTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartTime=31-Dec-1969 19:00:00:000,requestedDeliveryStartSetTime=31-Dec-1969 19:00:00:000,moveStatusTime=22-Aug-2025 09:27:05:511), CustomPropertyInfoList=[(CHANGE_DIRECTION_REINPUT_FLAG,),(PROCESS_GROUP_CODE,),(TO_EQP_WINDING_DIRECTION,),(NEXT_EQUIPMENT_GROUP_CODE,),(PRIO,50),(EQUIPMENT_GROUP_CODE,),(TRANSFER_CREATE_TYPE,R),(ROLL_NOT_COATED_SIDE,),(MATERIALCODE,),(LOT_ID,T1F008000),(NEXT_PROCESS_GROUP_CODE,FORM_PACK),(TO_EQUIPMENT_NOT_COATED_SIDE,),(CRANEID,J1FSTO13301-101),(OUTTIME,20250829092553),(OPER,B1000),(QUERYSENT,TRUE),(TC_REPORT,TRUE),(SHELF,J1FSTO13301-10601),(COMMAND_TEXT,),(ERROR_DURABLE_FLAG,N),(SecondParentId,)]","debug","Carrier.publishCarrierEvent","","","1755872324746"
+"Info","7","22-Aug-2025 10:18:44:743","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","MesServer_J1F:Primary:Active","[CCMV] >> Request MOVE DATA : carrier id = PTAJFP000124, durableStatusCode = INUSE, lotId = T1F007976, prodMtrlCode = , fromEquipmentId = J1FSTO13301, fromPortId = J1FSTO13301-SN0, toEquipmentId = J1FCNV13301, toPortId = J1FCNV13301-CP0C01, processCode = B2000, userId = AUTO, redirectFlag = , priority = 50, nextEquipmentId = , commandText = , rollNotCoatedSide = , rollWindingDirection = , toEquipmentNotCoatedSide = , toEquipmentWindingDirection = , changeDirectionReInputFlag = , transferCreateType = R","info","RequestTransportCommmand.processMessage","","","1755872324743"
+"Info","3","22-Aug-2025 10:18:44:743","MesServer_J1F","MesServer_J1F:MesRequestThreadPool-10","MesServer_J1F:Primary:Active","[RECV] 
+RequestTransportCommand 
+{
+  "TXN_ID": "20250822101839154904562443",
+  "inDTName": "IN_DATA,IN_DURB_LIST",
+  "refDS": {
+    "IN_DURB_LIST": [],
+    "IN_DATA": [
+      {
+        "DURABLE_ID": "PTAJFP000124",
+        "CHANGE_DIRECTION_REINPUT_FLAG": "",
+        "PRIORITY_NO": "50",
+        "TO_EQUIPMENT_WINDING_DIRECTION": "",
+        "TO_PORT_ID": "J1FCNV13301-CP0C01",
+        "FROM_EQUIPMENT_ID": "J1FSTO13301",
+        "USER_ID": "AUTO",
+        "FROM_PORT_ID": "J1FSTO13301-SN0",
+        "DURABLE_STATUS_CODE": "INUSE",
+        "NEXT_EQUIPMENT_ID": "",
+        "TO_EQUIPMENT_ID": "J1FCNV13301",
+        "REPRESENTATIVE_DURABLE_ID": "PTAJFP000124",
+        "STACK_NO": "1",
+        "TRANSFER_CREATE_TYPE": "R",
+        "REDIRECT_FLAG": "",
+        "ROLL_NOT_COATED_SIDE": "",
+        "PROCESS_CODE": "B2000",
+        "LOT_ID": "T1F007976",
+        "PROD_MTRL_CODE": "",
+        "COMMAND_TEXT": "",
+        "TO_EQUIPMENT_NOT_COATED_SIDE": "",
+        "ROLL_WINDING_DIRECTION": ""
+      }
+    ]
+  },
+  "actID": "RequestTransportCommand",
+  "outDTName": "REPLY_DATA"
+}","info","MesRequestCallback.processRequestMCS","","","1755872324743"
+"Debug","5","22-Aug-2025 09:46:12:889","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","PTAJFP000124",">>> 83 :: PTAJFP000124, state :3","debug","LGStockerSEM.getCarriersFromDevice","","","1755870372889"
+"Debug","8","22-Aug-2025 09:46:12:889","J1FSTO13301","DeviceServer(1F_Formation_N_2nd_Stocker_02_Server):EventReportThreadP-J1FSTO13301","","Is matches. carrier : PTAJFP000124 , type : FULL","debug","LGStockerSEM.getCarriersFromDevice","","","1755870372889"
+"Debug","9","22-Aug-2025 09:34:34:804","","StatisticsServer:ORBWorkerThread-101","","select Timestamp, Id, Move_Status, Current_Device, Current_Location, Current_Sub_Location, Requested_Destination, Requested_Location, Trigger#, Move_Complete_Status from (select Timestamp, Id, null as Move_Status, null as Current_Device, null as Current_Location, null as Current_Sub_Location, null as Requested_Destination, null as Requested_Location, 'Created' as Trigger#, null as Move_Complete_Status from SCARCreated 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, null as Move_Status, Current_Device, Current_Location, Current_Sub_Location, Requested_Destination, Requested_Location, 'Requested' as Trigger#, null as Move_Complete_Status from SCARMove_Requested 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, Move_Status, Current_Device, Current_Location, Current_Sub_Location, null as Requested_Destination, null as Requested_Location, '' as Trigger#, null as Move_Complete_Status from SCARLocation_Updated 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, null as Move_Status, Current_Device, Current_Location, Current_Sub_Location, null as Requested_Destination, null as Requested_Location, 'Completed' as Trigger#, Move_Complete_Status from SCARMove_Completed 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, null as Move_Status, null as Current_Device, null as Current_Location, null as Current_Sub_Location, null as Requested_Destination, null as Requested_Location, 'Deleted' as Trigger#, null as Move_Complete_Status from SCARDeleted 
+WHERE Id='PTAJFP000124' 
+) s
+WHERE Timestamp >= 1746051700574 
+AND Id='PTAJFP000124'  ORDER BY Timestamp DESC","Data Query","StatisticsListObject.fireSetupQueries","","","1755869674804"
+"Debug","1","22-Aug-2025 09:34:34:804","","StatisticsServer:ORBWorkerThread-101","","select Timestamp, Id, Move_Status, Current_Device, Current_Location, Current_Sub_Location, Requested_Destination, Requested_Location, Trigger#, Move_Complete_Status from (select Timestamp, Id, null as Move_Status, null as Current_Device, null as Current_Location, null as Current_Sub_Location, null as Requested_Destination, null as Requested_Location, 'Created' as Trigger#, null as Move_Complete_Status from SCARCreated 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, null as Move_Status, Current_Device, Current_Location, Current_Sub_Location, Requested_Destination, Requested_Location, 'Requested' as Trigger#, null as Move_Complete_Status from SCARMove_Requested 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, Move_Status, Current_Device, Current_Location, Current_Sub_Location, null as Requested_Destination, null as Requested_Location, '' as Trigger#, null as Move_Complete_Status from SCARLocation_Updated 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, null as Move_Status, Current_Device, Current_Location, Current_Sub_Location, null as Requested_Destination, null as Requested_Location, 'Completed' as Trigger#, Move_Complete_Status from SCARMove_Completed 
+WHERE Id='PTAJFP000124' 
+union select Timestamp, Id, null as Move_Status, null as Current_Device, null as Current_Location, null as Current_Sub_Location, null as Requested_Destination, null as Requested_Location, 'Deleted' as Trigger#, null as Move_Complete_Status from SCARDeleted 
+WHERE Id='PTAJFP000124' 
+) s
+WHERE Timestamp >= 1746051700574 
+AND Id='PTAJFP000124'  ORDER BY Timestamp DESC","Data Query","StatisticsListObject.initStatisticsList","","","1755869674804"
