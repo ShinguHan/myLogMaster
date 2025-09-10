@@ -68,7 +68,6 @@ class DatabaseManager:
             print(f"Error clearing logs from local cache: {e}")
             return False
 
-    # ✅ 아래 메소드 추가
     def add_fetch_history(self, start_time, end_time, filters):
         """조회 이력을 fetch_history 테이블에 추가합니다."""
         try:
@@ -85,41 +84,62 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error saving fetch history: {e}")
 
-    # ✅ 이 메소드 수정
     def upsert_logs_to_local_cache(self, df):
-        """데이터프레임을 트랜잭션을 사용하여 로컬 캐시에 안전하게 저장합니다."""
-        if df.empty: return 0
-        
-        # 트랜잭션 외부에서 연결을 시작합니다.
+        """
+        데이터프레임을 로컬 캐시에 안전하게 저장(upsert)합니다.
+        - PK의 None 값을 ''로 변환
+        - 데이터 묶음 내 중복 제거
+        - DB와 중복되는 데이터 제거
+        """
+        if df.empty:
+            return 0
+
+        pk_cols = ['NumericalTimeStamp', 'DeviceID', 'TrackingID']
+
+        # 1단계: PK 컬럼의 None 값을 빈 문자열로 변환 (NOT NULL 제약 조건 충족)
+        for col in ['DeviceID', 'TrackingID']:
+            if col in df.columns:
+                df[col] = df[col].fillna('')
+
+        # 2단계: 새로 들어온 데이터 묶음(DataFrame) 내에서 중복 제거
+        df.drop_duplicates(subset=pk_cols, keep='first', inplace=True)
+        if df.empty:
+            return 0  # 모든 데이터가 내부 중복이었습니다.
+
         with self.local_engine.connect() as connection:
-            # 트랜잭션을 시작합니다. 이 블록 내에서 오류 발생 시 자동 롤백됩니다.
-            with connection.begin():
+            with connection.begin():  # 트랜잭션 시작
                 try:
-                    # to_sql은 내부적으로 INSERT를 수행합니다.
-                    # UNIQUE 제약 조건 충돌 시 IntegrityError가 발생할 수 있습니다.
-                    # 이를 방지하기 위해 중복 데이터를 미리 제거합니다.
-                    
-                    # 1. 기존 DB에 있는 키들을 조회합니다.
-                    existing_keys_query = f"SELECT NumericalTimeStamp, DeviceID, TrackingID FROM {LOGS_TABLE_NAME}"
+                    # 3단계: DB에 이미 존재하는 데이터와 중복 제거
+                    existing_keys_query = f"SELECT {', '.join(pk_cols)} FROM {LOGS_TABLE_NAME}"
                     existing_keys_df = pd.read_sql(existing_keys_query, connection)
                     
                     if not existing_keys_df.empty:
-                        # 2. DataFrame에서 중복되는 데이터를 제거합니다.
-                        df = df.merge(existing_keys_df, on=['NumericalTimeStamp', 'DeviceID', 'TrackingID'], how='left', indicator=True)
-                        df = df[df['_merge'] == 'left_only'].drop(columns='_merge')
+                        # DB에서 가져온 키도 None -> '' 처리하여 일관성 유지
+                        for col in ['DeviceID', 'TrackingID']:
+                            if col in existing_keys_df.columns:
+                                existing_keys_df[col] = existing_keys_df[col].fillna('')
+                        
+                        # merge를 통해 DB에 없는 새로운 데이터만 필터링
+                        df_merged = df.merge(
+                            existing_keys_df, on=pk_cols, how='left', indicator=True
+                        )
+                        df_to_insert = df_merged[df_merged['_merge'] == 'left_only'].drop(columns='_merge')
+                    else:
+                        df_to_insert = df
 
-                    if df.empty:
-                        print("No new unique logs to add.")
+                    if df_to_insert.empty:
+                        # print("No new unique logs to add to the cache.")
                         return 0
 
-                    # 3. 중복이 제거된 새로운 데이터만 삽입합니다.
-                    rows_affected = df.to_sql(LOGS_TABLE_NAME, connection, if_exists='append', index=False, chunksize=1000)
+                    # 4단계: 최종적으로 중복이 제거된 데이터만 DB에 추가
+                    rows_affected = df_to_insert.to_sql(
+                        LOGS_TABLE_NAME, connection, if_exists='append', index=False, chunksize=1000
+                    )
                     return rows_affected if rows_affected is not None else 0
                 
                 except Exception as e:
                     print(f"Error during upsert to local cache: {e}. Transaction will be rolled back.")
-                    # with 블록이 끝나면서 자동으로 롤백됩니다.
-                    raise # 에러를 다시 발생시켜 상위 호출자에게 알립니다.
+                    raise
         return 0
     
     def read_all_logs_from_cache(self):
@@ -130,22 +150,17 @@ class DatabaseManager:
             print(f"Error reading from local cache: {e}")
             return pd.DataFrame()
         
-    # shinguhan/mylogmaster/myLogMaster-main/database_manager.py
-
     def add_validation_history(self, scenario_name, status, message, involved_log_indices):
         """시나리오 분석 결과를 validation_history 테이블에 저장합니다."""
         try:
-            # ✅ [수정] 저장 전, Timestamp 객체를 표준 문자열(ISO format)로 변환
             serializable_logs = []
             for log_event in involved_log_indices:
-                # log_event가 딕셔너리인지 확인
                 if isinstance(log_event, dict) and 'timestamp' in log_event:
-                    # 복사본을 만들어 수정
                     event_copy = log_event.copy()
                     event_copy['timestamp'] = event_copy['timestamp'].isoformat()
                     serializable_logs.append(event_copy)
                 else:
-                    serializable_logs.append(log_event) # 딕셔너리가 아니면 그대로 추가
+                    serializable_logs.append(log_event)
 
             with self.local_engine.connect() as connection:
                 with connection.begin():
@@ -161,7 +176,6 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error saving validation history: {e}")
 
-    # ✅ 아래 두 메소드를 클래스 맨 끝에 추가해주세요.
     def get_validation_history_summary(self):
         """저장된 모든 분석 이력의 요약 목록을 반환합니다."""
         try:
@@ -179,11 +193,9 @@ class DatabaseManager:
             with self.local_engine.connect() as connection:
                 result = pd.read_sql(query, connection, params={"id": run_id}).iloc[0]
             
-            # JSON으로 저장된 로그 목록을 다시 파이썬 리스트로 변환
             report = result.to_dict()
             report['involved_logs'] = json.loads(report['involved_log_indices'])
             
-            # 타임스탬프 문자열을 다시 datetime 객체로 변환
             for log_event in report['involved_logs']:
                 if isinstance(log_event, dict) and 'timestamp' in log_event:
                     log_event['timestamp'] = pd.to_datetime(log_event['timestamp'])
