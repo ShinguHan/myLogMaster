@@ -516,9 +516,13 @@ class AppController(QObject):
         return " AND ".join(clauses), params
 
     def _parse_filter_group(self, group, param_index=0):
+        # ✅ [수정] group이 None이거나 비어있는 경우를 처리하는 방어 코드
+        if not group or not group.get('rules'):
+            return "", {}        
+        
         clauses = []
         params = {}
-        logic = f" {group.get('logic', 'AND')} "
+        logic = f" {group.get('logic', 'AND')} "        
         
         for rule in group.get('rules', []):
             if "logic" in rule:
