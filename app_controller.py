@@ -52,6 +52,8 @@ class AppController(QObject):
         
         self.event_matcher = EventMatcher()
 
+        self.MAX_INITIAL_CACHE_ROWS = 5000 # 초기 로딩 시 캐시에서 가져올 최대 행 수
+
         if self.mode == 'realtime':
             if self.connection_name:
                 self.db_manager = DatabaseManager(self.connection_name)
@@ -201,7 +203,8 @@ class AppController(QObject):
             self.update_model_data(pd.DataFrame())
             return
         
-        cached_data = self.db_manager.read_all_logs_from_cache()
+        # 초기 로딩 시에는 제한된 수의 로그만 가져옵니다.
+        cached_data = self.db_manager.read_all_logs_from_cache(limit=self.MAX_INITIAL_CACHE_ROWS)
         
         if not cached_data.empty:
             self.original_data = cached_data

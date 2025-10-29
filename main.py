@@ -3,11 +3,8 @@ import os
 import json
 from PySide6.QtWidgets import QApplication
 
-# 필요한 모든 클래스를 main.py에서 직접 import합니다.
-from app_controller import AppController
-from main_window import MainWindow
+# ModeSelectionDialog는 항상 필요하므로 여기에 유지합니다.
 from dialogs.ModeSelectionDialog import ModeSelectionDialog
-from dialogs.ConnectionManagerDialog import ConnectionManagerDialog
 
 def apply_theme(app, theme_name):
     """지정된 이름의 QSS 파일을 읽어 앱에 적용합니다."""
@@ -36,12 +33,14 @@ if __name__ == "__main__":
     conn_name = None
     conn_info = None
 
-    # 2. 선택된 모드에 따라 컨트롤러를 생성합니다.
-    # AppController는 생성자(__init__)에서 스스로 초기 테마 설정을 로드합니다.
+    # 2. 선택된 모드에 따라 필요한 모듈을 임포트하고 컨트롤러를 생성합니다.
     if app_mode == 'file':
+        from app_controller import AppController # 필요한 시점에 임포트
         controller = AppController(app_mode=app_mode)
     
     elif app_mode == 'realtime':
+        from dialogs.ConnectionManagerDialog import ConnectionManagerDialog # 필요한 시점에 임포트
+        from app_controller import AppController # 필요한 시점에 임포트
         conn_manager = ConnectionManagerDialog()
         if conn_manager.exec():
             conn_name, conn_info = conn_manager.get_selected_connection()
@@ -65,6 +64,7 @@ if __name__ == "__main__":
         initial_theme = controller.get_current_theme()
         apply_theme(app, initial_theme)
         
+        from main_window import MainWindow # 필요한 시점에 임포트
         # MainWindow를 생성하면서 컨트롤러를 전달합니다.
         main_win = MainWindow(controller)
         

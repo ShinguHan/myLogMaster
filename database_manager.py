@@ -142,10 +142,14 @@ class DatabaseManager:
                     raise
         return 0
     
-    def read_all_logs_from_cache(self):
-        """(임시) 로컬 캐시의 모든 로그를 읽어옵니다."""
+    def read_all_logs_from_cache(self, limit=None):
+        """로컬 캐시의 로그를 읽어옵니다. limit가 주어지면 최신 로그부터 해당 개수만큼 읽어옵니다."""
         try:
-            return pd.read_sql(f'SELECT * FROM {LOGS_TABLE_NAME}', self.local_engine)
+            query = f'SELECT * FROM {LOGS_TABLE_NAME}'
+            if limit is not None:
+                # NumericalTimeStamp는 로그의 시간 순서를 나타내는 정수형 타임스탬프라고 가정
+                query += f' ORDER BY NumericalTimeStamp DESC LIMIT {limit}'
+            return pd.read_sql(query, self.local_engine)
         except Exception as e:
             print(f"Error reading from local cache: {e}")
             return pd.DataFrame()
