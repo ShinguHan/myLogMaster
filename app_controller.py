@@ -1,4 +1,3 @@
-import pandas as pd
 import json
 import os
 import re
@@ -6,11 +5,7 @@ from functools import reduce
 import operator
 from PySide6.QtCore import QObject, Signal, QTimer
 
-from universal_parser import parse_log_with_profile
 from models.LogTableModel import LogTableModel
-from analysis_result import AnalysisResult
-from database_manager import DatabaseManager
-from oracle_fetcher import OracleFetcherThread
 from utils.event_matcher import EventMatcher
 
 FILTERS_FILE = 'filters.json'
@@ -25,6 +20,7 @@ class AppController(QObject):
     fetch_error = Signal(str)
 
     def __init__(self, app_mode, connection_name=None, connection_info=None):
+        import pandas as pd
         super().__init__()
         self.mode = app_mode
         self.connection_name = connection_name
@@ -60,10 +56,12 @@ class AppController(QObject):
                 self.load_data_from_cache()
             else:
                 self.db_manager = None
-        else:
-            self.db_manager = DatabaseManager("file_mode")
+        else: # 'file' mode
+            self.db_manager = None # 파일 모드에서는 로컬 캐시 파일을 사용하지 않습니다.
 
     def start_db_fetch(self, query_conditions):
+        import pandas as pd
+        from oracle_fetcher import OracleFetcherThread
         if self.fetch_thread and self.fetch_thread.isRunning():
             return
 
@@ -199,6 +197,7 @@ class AppController(QObject):
         self.source_model.set_highlighting_rules(self.highlighting_rules)
 
     def load_data_from_cache(self):
+        import pandas as pd
         if not self.db_manager: 
             self.update_model_data(pd.DataFrame())
             return
@@ -216,6 +215,8 @@ class AppController(QObject):
         self.update_model_data(self.original_data)
 
     def load_log_file(self, filepath):
+        import pandas as pd
+        from universal_parser import parse_log_with_profile
         try:
             parsed_data = parse_log_with_profile(filepath, self._get_profile())
             if not parsed_data:
@@ -251,6 +252,8 @@ class AppController(QObject):
             self._update_queue.append(df_chunk)
     
     def run_analysis_script(self, script_code, dataframe):
+        import pandas as pd
+        from analysis_result import AnalysisResult
         result_obj = AnalysisResult()
         try:
             exec_globals = {
@@ -283,6 +286,7 @@ class AppController(QObject):
             self.update_model_data(self.original_data)
 
     def _build_mask_recursive(self, query_group, df):
+        import pandas as pd
         masks = []
         for rule in query_group.get('rules', []):
             if 'logic' in rule: 
@@ -329,6 +333,7 @@ class AppController(QObject):
             print(f"Error saving filter '{name}': {e}")
     
     def get_trace_data(self, trace_id):
+        import pandas as pd
         df = self.original_data
         if df.empty:
             return pd.DataFrame()
@@ -348,6 +353,7 @@ class AppController(QObject):
         return com_logs
 
     def run_scenario_validation(self, scenario_to_run=None):
+        import pandas as pd
         if self.original_data.empty: return []
         scenarios = self.load_all_scenarios()
         if "Error" in scenarios:
@@ -443,6 +449,7 @@ class AppController(QObject):
         return [name for name, details in scenarios.items() if details.get("enabled", True)]
     
     def _process_update_queue(self):
+        import pandas as pd
         if not self._update_queue: return
 
         combined_chunk = pd.concat(self._update_queue, ignore_index=True)
@@ -474,6 +481,7 @@ class AppController(QObject):
             self._update_timer.stop()
 
     def save_log_to_csv(self, dataframe, file_path):
+        import pandas as pd
         try:
             dataframe.to_csv(file_path, index=False, encoding='utf-8-sig')
             return True, f"Successfully saved to {os.path.basename(file_path)}"
@@ -500,6 +508,7 @@ class AppController(QObject):
             print(f"Error saving query templates: {e}")
         
     def _build_where_clause(self, query_conditions):
+        import pandas as pd
         clauses = []
         params = {}
         
@@ -552,6 +561,7 @@ class AppController(QObject):
         return logic.join(clauses), params
     
     def _extract_context(self, row, extractors):
+        import pandas as pd
         context_data = {}
         for context_name, rules in extractors.items():
             for rule in rules:
@@ -567,6 +577,7 @@ class AppController(QObject):
         return context_data
     
     def get_history_summary(self):
+        import pandas as pd
         return self.db_manager.get_validation_history_summary() if self.db_manager else pd.DataFrame()
 
     def get_history_detail(self, run_id):
@@ -577,6 +588,7 @@ class AppController(QObject):
         return self.config.copy()
 
     def get_carrier_move_scenario(self, carrier_id, from_device, to_device):
+        import pandas as pd
         """특정 Carrier의 장비 간 이동과 관련된 모든 로그를 추출합니다."""
         
         base_df = self.get_trace_data(carrier_id)

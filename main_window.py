@@ -10,15 +10,6 @@ from functools import partial
 # app_controller는 타입 힌팅을 위해 필요합니다.
 from app_controller import AppController
 from widgets.base_log_viewer import BaseLogViewerWidget
-from dialogs.ScenarioBrowserDialog import ScenarioBrowserDialog
-from dialogs.QueryConditionsDialog import QueryConditionsDialog
-from dialogs.DashboardDialog import DashboardDialog
-from dialogs.ColumnSelectionDialog import ColumnSelectionDialog
-from dialogs.HighlightingDialog import HighlightingDialog
-from dialogs.ValidationResultDialog import ValidationResultDialog
-from dialogs.HistoryBrowserDialog import HistoryBrowserDialog
-from dialogs.ScriptEditorDialog import ScriptEditorDialog
-from dialogs.TemplateManagerDialog import TemplateManagerDialog
 
 
 class MainWindow(QMainWindow):
@@ -92,6 +83,7 @@ class MainWindow(QMainWindow):
             templates = self.controller.load_query_templates()
             column_names = self.controller.get_default_column_names()
 
+            from dialogs.QueryConditionsDialog import QueryConditionsDialog # Deferred import
             dialog = QueryConditionsDialog(
                 column_names=column_names,
                 query_templates=templates,
@@ -235,6 +227,7 @@ class MainWindow(QMainWindow):
 
     def open_template_manager(self):
         """쿼리 템플릿 관리 다이얼로그를 엽니다."""
+        from dialogs.TemplateManagerDialog import TemplateManagerDialog # Deferred import
         dialog = TemplateManagerDialog(self.controller, self)
         dialog.exec()
 
@@ -285,7 +278,7 @@ class MainWindow(QMainWindow):
                 QApplication.restoreOverrideCursor()
 
     def start_event_trace(self, trace_id):
-        from dialogs.TraceDialog import TraceDialog
+        from dialogs.TraceDialog import TraceDialog # Deferred import
         
         trace_data = self.controller.get_trace_data(trace_id)
         if trace_data.empty:
@@ -306,6 +299,7 @@ class MainWindow(QMainWindow):
         
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
+            from dialogs.ValidationResultDialog import ValidationResultDialog # Deferred import
             validation_reports = self.controller.run_scenario_validation(scenario_name)
             
             if not validation_reports:
@@ -320,6 +314,7 @@ class MainWindow(QMainWindow):
             QApplication.restoreOverrideCursor()
 
     def open_scenario_browser(self):
+        from dialogs.ScenarioBrowserDialog import ScenarioBrowserDialog # Deferred import
         all_scenarios = self.controller.load_all_scenarios()
         dialog = ScenarioBrowserDialog(all_scenarios, self)
         dialog.exec()
@@ -330,6 +325,7 @@ class MainWindow(QMainWindow):
             return
             
         column_names = self.controller.source_model._data.columns.tolist()
+        from dialogs.QueryConditionsDialog import QueryConditionsDialog # Deferred import
         dialog = QueryConditionsDialog(column_names, self.controller, self)
         
         if dialog.exec():
@@ -354,6 +350,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
         
+        from dialogs.DashboardDialog import DashboardDialog # Deferred import
         if self.controller.dashboard_dialog is None:
             self.controller.dashboard_dialog = DashboardDialog(self.controller.source_model._data, self)
             self.controller.dashboard_dialog.finished.connect(self._on_dashboard_closed)
@@ -368,6 +365,7 @@ class MainWindow(QMainWindow):
             return
             
         all_columns = source_model._data.columns.tolist()
+        from dialogs.ColumnSelectionDialog import ColumnSelectionDialog # Deferred import
         visible_columns = [col for i, col in enumerate(all_columns) if not self.log_viewer.tableView.isColumnHidden(i)]
         dialog = ColumnSelectionDialog(all_columns, visible_columns, self)
         if dialog.exec():
@@ -416,6 +414,7 @@ class MainWindow(QMainWindow):
             [self.log_viewer.proxy_model.mapToSource(self.log_viewer.proxy_model.index(r,0)).row() 
              for r in range(self.log_viewer.proxy_model.rowCount())]
         ]
+        from dialogs.ScriptEditorDialog import ScriptEditorDialog # Deferred import
         dialog = ScriptEditorDialog(self)
         
         def handle_run_request(script_code):
@@ -475,6 +474,7 @@ class MainWindow(QMainWindow):
 
         column_names = self.controller.source_model._data.columns.tolist()
         rules_data = self.controller.get_highlighting_rules()
+        from dialogs.HighlightingDialog import HighlightingDialog # Deferred import
         self.highlighting_dialog = HighlightingDialog(column_names, rules_data, self)
         
         self.highlighting_dialog.rules_updated.connect(self.controller.set_and_save_highlighting_rules)
@@ -521,6 +521,7 @@ class MainWindow(QMainWindow):
             print(f"Could not find original index {original_index} in the current model.")
 
     def open_history_browser(self):
+        from dialogs.HistoryBrowserDialog import HistoryBrowserDialog # Deferred import
         history_summary = self.controller.get_history_summary()
         if history_summary.empty:
             QMessageBox.information(self, "Info", "No validation history found.")
@@ -533,6 +534,7 @@ class MainWindow(QMainWindow):
     def show_history_detail(self, run_id):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
+            from dialogs.ValidationResultDialog import ValidationResultDialog # Deferred import
             history_report = self.controller.get_history_detail(run_id)
             if not history_report:
                 QMessageBox.warning(self, "Error", f"Could not load details for Run ID: {run_id}")
@@ -551,8 +553,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Info", "Please load a log file first.")
             return
 
-        from dialogs.DetailedTraceDialog import DetailedTraceDialog
-        from dialogs.TraceDialog import TraceDialog
+        from dialogs.DetailedTraceDialog import DetailedTraceDialog # Deferred import
+        from dialogs.TraceDialog import TraceDialog # Deferred import
         
         dialog = DetailedTraceDialog(self)
         if dialog.exec():
@@ -581,4 +583,7 @@ class MainWindow(QMainWindow):
 
             finally:
                 QApplication.restoreOverrideCursor()
+
+
+
 

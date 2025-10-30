@@ -98,9 +98,7 @@ def parse_log_with_profile(log_filepath, profile):
         if not buffer: return
         full_entry_line = "".join(buffer).replace('\n', ' ').replace('\r', '')
         try:
-            if full_entry_line.startswith('"') and full_entry_line.endswith('"'):
-                full_entry_line = full_entry_line[1:-1]
-            row = full_entry_line.split('","')
+            row = next(csv.reader([full_entry_line]))
 
             if len(row) != len(headers): return
 
