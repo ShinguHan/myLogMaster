@@ -8,14 +8,53 @@ from PySide6.QtWidgets import (
     QSplitter,
     QMenu,
     QMessageBox,
+    QInputDialog,
 )
 from PySide6.QtCore import Qt, Signal, QSortFilterProxyModel
 from PySide6.QtGui import QAction
 from models.LogTableModel import LogTableModel
 
 
+class CustomFilterProxyModel(QSortFilterProxyModel):
+    """전체 컬럼에서 검색하는 커스텀 프록시 모델"""
+    def __init__(self):
+        super().__init__()
+        self.filter_text = ""
+        self.case_sensitive = False
+    
+    def set_filter_text(self, text, case_sensitive=False):
+        """전체 컬럼에서 검색할 텍스트 설정"""
+        self.filter_text = text
+        self.case_sensitive = case_sensitive
+        self.invalidateFilter()  # 필터 재적용
+    
+    def filterAcceptsRow(self, source_row, source_parent):
+        """각 행이 필터를 통과하는지 확인 - 모든 컬럼에서 검색"""
+        if not self.filter_text:
+            return True
+        
+        source_model = self.sourceModel()
+        col_count = source_model.columnCount()
+        
+        # 모든 컬럼을 순회하면서 검색 텍스트 찾기
+        for col in range(col_count):
+            index = source_model.index(source_row, col)
+            data = source_model.data(index, Qt.ItemDataRole.DisplayRole)
+            
+            if data:
+                data_str = str(data)
+                if self.case_sensitive:
+                    if self.filter_text in data_str:
+                        return True
+                else:
+                    if self.filter_text.lower() in data_str.lower():
+                        return True
+        
+        return False
+
+
 class BaseLogViewerWidget(QWidget):
-    trace_requested = Signal(str)
+    trace_requested = Signal(str, str)  # (trace_id, additional_filter)
 
     def __init__(self, controller, model=None, parent=None):
         super().__init__(parent)
@@ -27,7 +66,8 @@ class BaseLogViewerWidget(QWidget):
         else:
             self.log_table_model = self.controller.source_model
 
-        self.proxy_model = QSortFilterProxyModel()
+        # 커스텀 프록시 모델 사용 - 전체 컬럼 검색 지원
+        self.proxy_model = CustomFilterProxyModel()
         # 프록시 모델의 소스를 self.log_table_model로 설정합니다.
         self.proxy_model.setSourceModel(self.log_table_model)
 
@@ -59,10 +99,12 @@ class BaseLogViewerWidget(QWidget):
         )
 
     def set_filter_key_column(self, column_index):
-        self.proxy_model.setFilterKeyColumn(column_index)
+        # 커스텀 프록시에서는 이 설정이 무시됩니다 (전체 컬럼 검색)
+        pass
 
     def set_filter_fixed_string(self, pattern):
-        self.proxy_model.setFilterFixedString(pattern)
+        """전체 컬럼에서 대소문자 무시 검색"""
+        self.proxy_model.set_filter_text(pattern, case_sensitive=False)
 
     def show_table_context_menu(self, pos):
         # ... (이전과 동일)
@@ -83,9 +125,19 @@ class BaseLogViewerWidget(QWidget):
                 menu.addSeparator()
                 trace_action = QAction(f"Trace Event Flow: '{tracking_id}'", self)
                 trace_action.triggered.connect(
-                    lambda: self.trace_requested.emit(str(tracking_id))
+                    lambda: self.trace_requested.emit(str(tracking_id), None)
                 )
                 menu.addAction(trace_action)
+
+                trace_with_filter_action = QAction(
+                    "Trace with Additional Filter...", self
+                )
+                trace_with_filter_action.triggered.connect(
+                    lambda: self._trace_with_filter(str(tracking_id))
+                )
+                menu.addAction(trace_with_filter_action)
+
+                menu.addSeparator()
 
                 visualize_action = QAction(
                     f"Visualize SECS Scenario for '{tracking_id}'", self
@@ -94,6 +146,14 @@ class BaseLogViewerWidget(QWidget):
                     lambda: self.visualize_secs_scenario(str(tracking_id))
                 )
                 menu.addAction(visualize_action)
+
+                viz_with_filter_action = QAction(
+                    "Visualize with Additional Filter...", self
+                )
+                viz_with_filter_action.triggered.connect(
+                    lambda: self._visualize_with_filter(str(tracking_id))
+                )
+                menu.addAction(viz_with_filter_action)
 
         if self.detail_view.isVisible():
             if menu.actions() and not menu.actions()[-1].isSeparator():
@@ -190,22 +250,39 @@ class BaseLogViewerWidget(QWidget):
         self.detail_view.setVisible(False)
         self.splitter.setSizes([1, 0])
 
-    def visualize_secs_scenario(self, trace_id):
+    def visualize_secs_scenario(self, trace_id, additional_filter=None):
         # ... (이전과 동일)
         from dialogs.VisualizationDialog import VisualizationDialog
 
-        com_logs = self.controller.get_scenario_data(trace_id)
+        com_logs = self.controller.get_scenario_data(trace_id, additional_filter)
         if com_logs.empty:
-            QMessageBox.information(
-                self,
-                "Info",
-                f"No SECS messages (Com logs) found related to ID: {trace_id}",
-            )
+            msg = f"No SECS messages (Com logs) found related to ID: {trace_id}"
+            if additional_filter:
+                msg += f" with filter: '{additional_filter}'"
+            QMessageBox.information(self, "Info", msg)
             return
         mermaid_code = self._generate_mermaid_code(com_logs)
         # VisualizationDialog는 독립적으로 동작하므로 self에 저장할 필요 없음
         viz_dialog = VisualizationDialog(mermaid_code, self)
         viz_dialog.exec()
+
+    def _trace_with_filter(self, trace_id):
+        text, ok = QInputDialog.getText(
+            self, "Trace with Filter", f"Enter additional filter for '{trace_id}':"
+        )
+        if ok and text.strip():
+            self.trace_requested.emit(trace_id, text.strip())
+        elif ok:
+            self.trace_requested.emit(trace_id, None)
+
+    def _visualize_with_filter(self, trace_id):
+        text, ok = QInputDialog.getText(
+            self, "Visualize with Filter", f"Enter additional filter for '{trace_id}':"
+        )
+        if ok and text.strip():
+            self.visualize_secs_scenario(trace_id, text.strip())
+        elif ok:
+            self.visualize_secs_scenario(trace_id, None)
 
     def _generate_mermaid_code(self, df):
         import html

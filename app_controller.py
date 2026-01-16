@@ -370,7 +370,7 @@ class AppController(QObject):
         except Exception as e:
             print(f"Error saving filter '{name}': {e}")
 
-    def get_trace_data(self, trace_id):
+    def get_trace_data(self, trace_id, additional_filter=None):
         import pandas as pd
 
         df = self.original_data
@@ -393,10 +393,25 @@ class AppController(QObject):
                 for col in valid_search_columns
             ),
         )
-        return df[final_mask]
 
-    def get_scenario_data(self, trace_id):
-        scenario_df = self.get_trace_data(trace_id)
+        trace_df = df[final_mask]
+
+        # 추가 필터가 제공된 경우 적용합니다.
+        if additional_filter and not trace_df.empty:
+            # 모든 컬럼에 대해 additional_filter가 포함된 행을 찾습니다.
+            filter_mask = (
+                trace_df.astype(str)
+                .apply(
+                    lambda x: x.str.contains(additional_filter, case=False, na=False)
+                )
+                .any(axis=1)
+            )
+            trace_df = trace_df[filter_mask]
+
+        return trace_df
+
+    def get_scenario_data(self, trace_id, additional_filter=None):
+        scenario_df = self.get_trace_data(trace_id, additional_filter)
         # Com(SECS)와 Info(MES/Internal) 카테고리의 로그를 모두 포함합니다.
         relevant_logs = scenario_df[
             scenario_df["Category"]
