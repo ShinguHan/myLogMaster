@@ -391,14 +391,15 @@ class MainWindow(QMainWindow):
             return
 
         column_names = self.controller.source_model._data.columns.tolist()
+        query_templates = self.controller.load_query_templates()
         from dialogs.QueryConditionsDialog import (
             QueryConditionsDialog,
         )  # Deferred import
 
-        dialog = QueryConditionsDialog(column_names, self.controller, self)
+        dialog = QueryConditionsDialog(column_names, query_templates, self)
 
         if dialog.exec():
-            query_data = dialog.get_query_data()
+            query_data = dialog.get_conditions()
 
             QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
             try:

@@ -13,5 +13,21 @@
                 }
             ]
         }
+    },
+    "test": {
+        "analysis_mode": "time_range",
+        "start_time": "2026-01-15T16:19:08",
+        "end_time": "2026-01-16T16:19:08",
+        "advanced_filter": {
+            "logic": "AND",
+            "rules": [
+                {
+                    "column": "Category",
+                    "operator": "Does Not Contain",
+                    "type": "rule",
+                    "value": "Debug"
+                }
+            ]
+        }
     }
 }

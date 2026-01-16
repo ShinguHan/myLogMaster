@@ -14,116 +14,126 @@ QUERY_PRESETS_FILE = 'query_presets.json'
 class QueryConditionsDialog(QDialog):
     def __init__(self, column_names, query_templates, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Query Conditions")
+        self.setWindowTitle("Advanced Filter - File Mode")
         self.presets = self.load_presets()
         self.current_preset_name = None
         
         self.column_names = column_names
         self.query_templates = query_templates
         
-        self.setMinimumSize(800, 600)
+        self.setMinimumSize(900, 700)
+        self.setGeometry(100, 100, 1000, 750)
         
         self._init_ui()
 
         self.populate_preset_list()
         self.initialize_filter_tree()
-        self.update_ui_for_mode(True)
 
     def _init_ui(self):
         dialog_layout = QVBoxLayout(self)
-        top_panel_layout = QHBoxLayout()
-
-        # --- Left Panel: Presets ---
-        left_frame = QFrame()
-        left_frame.setFrameShape(QFrame.Shape.StyledPanel)
-        left_layout = QVBoxLayout(left_frame)
-        left_layout.addWidget(create_section_label("Saved Presets"))
-        self.list_widget = QListWidget()
-        self.list_widget.itemClicked.connect(self.on_preset_selected)
-        left_layout.addWidget(self.list_widget)
+        dialog_layout.setSpacing(10)
+        dialog_layout.setContentsMargins(15, 15, 15, 15)
         
-        list_button_layout = QHBoxLayout()
-        add_button = create_action_button("Save Current")
-        add_button.clicked.connect(self.save_current_preset)
-        remove_button = create_action_button("Remove")
-        remove_button.clicked.connect(self.remove_selected_preset)
-        list_button_layout.addWidget(add_button)
-        list_button_layout.addWidget(remove_button)
-        left_layout.addLayout(list_button_layout)
-        top_panel_layout.addWidget(left_frame, 1)
-
-        # --- Right Panel: Editor ---
-        right_frame = QFrame()
-        right_frame.setFrameShape(QFrame.Shape.StyledPanel)
-        right_layout = QVBoxLayout(right_frame)
-
-        # --- 바로 이 부분이 추가된 핵심 UI 코드입니다 ---
-        right_layout.addWidget(create_section_label("1. Query Template"))
-        self.query_template_combo = QComboBox()
-        # 생성자에서 받은 template_names로 드롭다운 목록을 채웁니다.
-        self.query_template_combo.addItems(self.query_templates)
-        right_layout.addWidget(self.query_template_combo)
-        right_layout.addWidget(create_separator())
-        # --- 여기까지 ---
+        # --- Section 1: Time Range ---
+        time_frame = QFrame()
+        time_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        time_frame.setStyleSheet("QFrame { border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; padding: 10px; }")
+        time_section = QVBoxLayout(time_frame)
+        time_section.setContentsMargins(10, 10, 10, 10)
+        time_label = create_section_label("📅 Time Range")
+        time_label.setStyleSheet("font-weight: bold; font-size: 12pt;")
+        time_section.addWidget(time_label)
         
-        right_layout.addWidget(create_section_label("1. Data Source"))
-        source_layout = QHBoxLayout()
-        self.source_group = QButtonGroup(self)
-        self.real_db_btn = create_toggle_button("Real Database", checked=True)
-        self.mock_data_btn = create_toggle_button("Mock Data")
-        self.source_group.addButton(self.real_db_btn)
-        self.source_group.addButton(self.mock_data_btn)
-        source_layout.addWidget(self.real_db_btn); source_layout.addWidget(self.mock_data_btn)
-        right_layout.addLayout(source_layout)
-        right_layout.addWidget(create_separator())
-
-        right_layout.addWidget(create_section_label("2. Analysis Mode"))
-        mode_layout = QHBoxLayout()
-        self.time_range_radio = QRadioButton("Time Range")
-        self.time_range_radio.setChecked(True)
-        self.real_time_radio = QRadioButton("Real-time Tailing")
-        mode_layout.addWidget(self.time_range_radio); mode_layout.addWidget(self.real_time_radio)
-        right_layout.addLayout(mode_layout)
-        self.time_range_radio.toggled.connect(self.update_ui_for_mode)
+        time_range_widget = QWidget()
+        time_layout = QHBoxLayout(time_range_widget)
+        time_layout.setContentsMargins(0, 0, 0, 0)
+        time_layout.setSpacing(15)
         
-        right_layout.addWidget(create_section_label("3. Conditions"))
-        self.time_range_widget = QWidget()
-        time_layout = QHBoxLayout(self.time_range_widget)
-        time_layout.setContentsMargins(0,0,0,0)
+        # 시작 시간
+        time_layout.addWidget(QLabel("From:"))
         self.start_time_edit = QDateTimeEdit(QDateTime.currentDateTime().addDays(-1))
+        self.start_time_edit.setCalendarPopup(True)
+        self.start_time_edit.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+        self.start_time_edit.setMinimumWidth(250)
+        time_layout.addWidget(self.start_time_edit)
+        
+        # 종료 시간
+        time_layout.addWidget(QLabel("To:"))
         self.end_time_edit = QDateTimeEdit(QDateTime.currentDateTime())
-        time_layout.addWidget(QLabel("Start:")); time_layout.addWidget(self.start_time_edit)
-        time_layout.addWidget(QLabel("End:")); time_layout.addWidget(self.end_time_edit)
-        right_layout.addWidget(self.time_range_widget)
-        right_layout.addWidget(create_separator())
-
-        right_layout.addWidget(create_section_label("Advanced Conditions"))
+        self.end_time_edit.setCalendarPopup(True)
+        self.end_time_edit.setDisplayFormat("yyyy-MM-dd HH:mm:ss")
+        self.end_time_edit.setMinimumWidth(250)
+        time_layout.addWidget(self.end_time_edit)
+        time_layout.addStretch()
+        
+        time_section.addWidget(time_range_widget)
+        dialog_layout.addWidget(time_frame)
+        
+        # --- Section 2: Advanced Conditions ---
+        condition_frame = QFrame()
+        condition_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        condition_frame.setStyleSheet("QFrame { border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; padding: 10px; }")
+        condition_section = QVBoxLayout(condition_frame)
+        condition_section.setContentsMargins(10, 10, 10, 10)
+        cond_label = create_section_label("🔍 Filter Conditions (Optional)")
+        cond_label.setStyleSheet("font-weight: bold; font-size: 12pt;")
+        condition_section.addWidget(cond_label)
+        
+        # 트리 뷰
         self.tree_model = QStandardItemModel()
-        self.tree_model.setHorizontalHeaderLabels(['Filter'])
+        self.tree_model.setHorizontalHeaderLabels(['Filter Rules'])
         self.tree_view = QTreeView()
         self.tree_view.setModel(self.tree_model)
+        self.tree_view.setMinimumHeight(280)
         self.tree_view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tree_view.customContextMenuRequested.connect(self.show_tree_context_menu)
         self.tree_view.doubleClicked.connect(self.edit_rule_item)
-        right_layout.addWidget(self.tree_view)
-        top_panel_layout.addWidget(right_frame, 3)
+        condition_section.addWidget(self.tree_view)
+        dialog_layout.addWidget(condition_frame, 1)
         
-        # --- Bottom Buttons ---
-        bottom_button_layout = QHBoxLayout()
-        ok_button = create_action_button("Query", is_default=True)
-        ok_button.clicked.connect(self.accept)
+        # --- Section 3: Presets + Buttons ---
+        bottom_frame = QFrame()
+        bottom_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        bottom_frame.setStyleSheet("QFrame { border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; padding: 10px; }")
+        bottom_layout = QHBoxLayout(bottom_frame)
+        bottom_layout.setContentsMargins(10, 10, 10, 10)
+        
+        preset_section = QVBoxLayout()
+        preset_label = create_section_label("💾 Saved Presets")
+        preset_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
+        preset_section.addWidget(preset_label)
+        self.list_widget = QListWidget()
+        self.list_widget.itemClicked.connect(self.on_preset_selected)
+        self.list_widget.setMaximumHeight(100)
+        preset_section.addWidget(self.list_widget)
+        bottom_layout.addLayout(preset_section, 1)
+        
+        preset_button_layout = QVBoxLayout()
+        add_preset_btn = create_action_button("Save")
+        add_preset_btn.setMinimumWidth(80)
+        add_preset_btn.clicked.connect(self.save_current_preset)
+        remove_preset_btn = create_action_button("Remove")
+        remove_preset_btn.setMinimumWidth(80)
+        remove_preset_btn.clicked.connect(self.remove_selected_preset)
+        preset_button_layout.addWidget(add_preset_btn)
+        preset_button_layout.addWidget(remove_preset_btn)
+        preset_button_layout.addStretch()
+        bottom_layout.addLayout(preset_button_layout)
+        
+        dialog_layout.addWidget(bottom_frame)
+        
+        # --- Action Buttons ---
+        action_layout = QHBoxLayout()
+        action_layout.addStretch()
         cancel_button = create_action_button("Cancel")
+        cancel_button.setMinimumWidth(120)
         cancel_button.clicked.connect(self.reject)
-        bottom_button_layout.addStretch()
-        bottom_button_layout.addWidget(cancel_button)
-        bottom_button_layout.addWidget(ok_button)
-        
-        dialog_layout.addLayout(top_panel_layout)
-        dialog_layout.addLayout(bottom_button_layout)
-
-    def update_ui_for_mode(self, is_time_range_checked):
-        self.time_range_widget.setEnabled(is_time_range_checked)
-        self.tree_view.setEnabled(is_time_range_checked)
+        query_button = create_action_button("Query", is_default=True)
+        query_button.setMinimumWidth(120)
+        query_button.clicked.connect(self.accept)
+        action_layout.addWidget(cancel_button)
+        action_layout.addWidget(query_button)
+        dialog_layout.addLayout(action_layout)
 
     def initialize_filter_tree(self):
         root_item = self.tree_model.invisibleRootItem()
@@ -216,19 +226,16 @@ class QueryConditionsDialog(QDialog):
             return item_data if item_data.get('value') else None
 
     def get_conditions(self):
+        """파일 모드 전용 조건 반환 - apply_advanced_filter 형식"""
         root_item = self.tree_model.invisibleRootItem().child(0)
         filter_data = self.build_data_from_tree(root_item) if root_item else None
         
-        data_source = "real" if self.real_db_btn.isChecked() else "mock"
-        analysis_mode = "time_range" if self.time_range_radio.isChecked() else "real_time"
-
-        return {
-            'data_source': data_source,
-            'analysis_mode': analysis_mode,
-            'start_time': self.start_time_edit.dateTime().toString(Qt.DateFormat.ISODate),
-            'end_time': self.end_time_edit.dateTime().toString(Qt.DateFormat.ISODate),
-            'advanced_filter': filter_data
-        }
+        # apply_advanced_filter()가 기대하는 형식: rules 키 필요
+        if filter_data:
+            return filter_data
+        else:
+            # 빈 필터 = 모든 데이터 표시
+            return None
 
     def on_preset_selected(self, item):
         self.current_preset_name = item.text()
